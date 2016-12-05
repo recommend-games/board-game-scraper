@@ -96,4 +96,5 @@ ENV/
 ._*
 bin/
 include/
+share/
 pip-selfcheck.json
