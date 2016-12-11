@@ -20,6 +20,10 @@ class BggSpider(Spider):
         @scrapes name url image_url rank year geek_rating avg_rating num_votes
         """
 
+        next_page = response.xpath('//a[@title = "next page"]/@href').extract_first()
+        if next_page:
+            yield Request(response.urljoin(next_page), callback=self.parse)
+
         for game in response.css('tr#row_'):
             ldr = GameLoader(item=GameItem(), selector=game, response=response)
             ldr.add_css('name', 'td.collection_objectname a::text')
@@ -35,7 +39,3 @@ class BggSpider(Spider):
             ldr.add_xpath('num_votes', 'td[@class = "collection_bggrating"][3]/text()')
 
             yield ldr.load_item()
-
-        next_page = response.xpath('//a[@title = "next page"]/@href').extract_first()
-        if next_page:
-            yield Request(response.urljoin(next_page), callback=self.parse)
