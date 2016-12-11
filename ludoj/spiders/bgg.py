@@ -17,7 +17,7 @@ class BggSpider(Spider):
         @url https://boardgamegeek.com/browse/boardgame/
         @returns items 100 100
         @returns requests 1 1
-        @scrapes name url image rank year geek_rating avg_rating num_votes
+        @scrapes name url image_url rank year geek_rating avg_rating num_votes
         """
 
         for game in response.css('tr#row_'):
