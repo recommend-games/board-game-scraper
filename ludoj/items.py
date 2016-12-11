@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Define here the models for your scraped items
-#
-# See documentation in:
-# http://doc.scrapy.org/en/latest/topics/items.html
+from scrapy import Field, Item
 
-import scrapy
-
-
-class LudojItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class GameItem(Item):
+    name = Field(required=True)
+    url = Field()
+    image = Field()
+    rank = Field(dtype=int, default=None)
+    year = Field(dtype=int, default=None)
+    geek_rating = Field(dtype=float, default=None)
+    avg_rating = Field(dtype=float, default=None)
+    num_votes = Field(dtype=int, default=0)

@@ -98,3 +98,6 @@ bin/
 include/
 share/
 pip-selfcheck.json
+
+/feeds
+

@@ -1,11 +1,29 @@
 # -*- coding: utf-8 -*-
 
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+from __future__ import unicode_literals
 
+from scrapy.exceptions import DropItem
 
-class LudojPipeline(object):
+class ValidatePipeline(object):
     def process_item(self, item, spider):
+        if all(item.get(field) for field in item.fields if item.fields[field].get('required')):
+            return item
+        else:
+            raise DropItem('Missing required field in {:s}'.format(item))
+
+class DataTypePipeline(object):
+    def process_item(self, item, spider):
+        for field in item.fields:
+            dtype = item.fields[field].get('dtype')
+
+            if dtype and item.get(field) is not None:
+                try:
+                    item[field] = dtype(item[field])
+                except Exception as exc:
+                    if 'default' in item.fields[field]:
+                        item[field] = item.fields[field]['default']
+                    else:
+                        raise DropItem('Could not convert field "{:s}" to datatype "{:s}" '
+                                       'in item "{}"'.format(field, dtype, item)) from exc
+
         return item
