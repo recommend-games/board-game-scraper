@@ -5,8 +5,9 @@ BOT_NAME = 'ludoj'
 SPIDER_MODULES = ['ludoj.spiders']
 NEWSPIDER_MODULE = 'ludoj.spiders'
 
-FEED_EXPORT_FIELDS = ('name', 'url', 'image', 'rank', 'year',
-                      'geek_rating', 'avg_rating', 'num_votes')
+FEED_EXPORT_FIELDS = ('name', 'year', 'designer', 'publisher',
+                      'game_type', 'url', 'image_url', 'link',
+                      'rank', 'geek_rating', 'avg_rating', 'num_votes')
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ludoj (+http://www.yourdomain.com)'

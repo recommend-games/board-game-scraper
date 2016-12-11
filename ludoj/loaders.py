@@ -22,3 +22,10 @@ def normalize_space(item, preserve_newline=False):
 class GameLoader(ItemLoader):
     default_input_processor = MapCompose(remove_tags, normalize_space)
     default_output_processor = TakeFirst()
+
+    def clear_list(self, items):
+        return [item for item in items if item]
+
+    designer_out = clear_list
+    publisher_out = clear_list
+    link_out = clear_list
