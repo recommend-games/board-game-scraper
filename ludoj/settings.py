@@ -5,9 +5,20 @@ BOT_NAME = 'ludoj'
 SPIDER_MODULES = ['ludoj.spiders']
 NEWSPIDER_MODULE = 'ludoj.spiders'
 
-FEED_EXPORT_FIELDS = ('name', 'year', 'designer', 'publisher',
-                      'game_type', 'url', 'image_url', 'link',
-                      'rank', 'geek_rating', 'avg_rating', 'num_votes')
+FEED_EXPORT_FIELDS = ('name', 'year',
+                      'game_type', 'description',
+                      'designer', 'artist', 'publisher',
+                      'url', 'image_url',
+                      'video_url', 'external_link',
+                      'min_players', 'max_players',
+                      'min_age', 'max_age',
+                      'min_time', 'max_time',
+                      'rank', 'num_votes', 'avg_rating',
+                      'stddev_rating', 'bayes_rating',
+                      'worst_rating', 'best_rating',
+                      'complexity', 'easiest_complexity', 'hardest_complexity',
+                      'bgg_id', 'freebase_id', 'wikidata_id',
+                      'wikipedia_id', 'dbpedia_id', 'luding_id')
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ludoj (+http://www.yourdomain.com)'
@@ -23,7 +34,7 @@ ROBOTSTXT_OBEY = True
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = .1
+DOWNLOAD_DELAY = .5
 # The download delay setting will honor only one of:
 CONCURRENT_REQUESTS_PER_DOMAIN = 16
 # CONCURRENT_REQUESTS_PER_IP = 16

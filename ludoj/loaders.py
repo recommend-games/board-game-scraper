@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+from functools import partial
+
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import TakeFirst, MapCompose
 from w3lib.html import remove_tags
@@ -26,6 +28,12 @@ class GameLoader(ItemLoader):
     def clear_list(self, items):
         return [item for item in items if item]
 
+    description_in = MapCompose(remove_tags, partial(normalize_space, preserve_newline=True))
+
     designer_out = clear_list
+    artist_out = clear_list
     publisher_out = clear_list
-    link_out = clear_list
+
+    image_url_out = clear_list
+    video_url_out = clear_list
+    external_link_out = clear_list

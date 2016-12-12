@@ -42,7 +42,7 @@ class LudingSpider(Spider):
             ldr.add_xpath('publisher', 'td[4]//a')
             ldr.add_xpath('game_type', 'td[5]')
             links = game.xpath('td[7]//a/@href').extract()
-            ldr.add_value('link',
+            ldr.add_value('external_link',
                           frozenset(extract_redirects(response.urljoin(link) for link in links)))
 
             yield ldr.load_item()
