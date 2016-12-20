@@ -31,9 +31,8 @@ class SpielenSpider(Spider):
     def parse(self, response):
         """
         @url http://gesellschaftsspiele.spielen.de/alle-brettspiele/
-        @returns items 18
-        @returns requests 1 1
-        @scrapes name url image_url
+        @returns items 0 0
+        @returns requests 19 19
         """
 
         next_page = (response.css('.listPagination a.glyphicon-step-forward::attr(href)')
@@ -46,16 +45,18 @@ class SpielenSpider(Spider):
             if url:
                 yield Request(response.urljoin(url), callback=self.parse_game)
 
-            # ldr = GameLoader(item=GameItem(), selector=game, response=response)
-            # ldr.add_css('name', 'h3 a::text')
-            # url = game.css('h3 a::attr(href)').extract_first()
-            # ldr.add_value('url', response.urljoin(url) if url else None)
-            # image = game.css('img::attr(data-src)').extract_first()
-            # ldr.add_value('image_url', response.urljoin(image) if image else None)
-
-            # yield ldr.load_item()
-
     def parse_game(self, response):
+        """
+        @url http://gesellschaftsspiele.spielen.de/alle-brettspiele/catan-das-spiel/
+        @returns items 1 1
+        @returns requests 0 0
+        @scrapes name year description designer artist publisher \
+                 url image_url video_url \
+                 min_players max_players min_age min_time max_time \
+                 num_votes avg_rating worst_rating best_rating \
+                 complexity easiest_complexity hardest_complexity
+        """
+
         game = response.css('div.fullBox')
 
         ldr = GameLoader(item=GameItem(), selector=game, response=response)
@@ -63,6 +64,7 @@ class SpielenSpider(Spider):
         ldr.add_css('name', 'h2')
         ldr.add_xpath('year', './/b[. = "Erscheinungsjahr:"]/following-sibling::text()[1]')
         ldr.add_xpath('description', './/h2/following-sibling::text()')
+
         ldr.add_xpath('designer', './/text()[(preceding-sibling::b/text() = "Autor:" '
                                   'or preceding-sibling::b = "Autoren:") '
                                   'and (following-sibling::b = "Illustrator:" '
@@ -103,4 +105,4 @@ class SpielenSpider(Spider):
         ldr.add_value('easiest_complexity', '1')
         ldr.add_value('hardest_complexity', '5')
 
-        yield ldr.load_item()
+        return ldr.load_item()

@@ -95,4 +95,4 @@ class LudingSpider(Spider):
         ldr.add_value('bgg_id', extract_bgg_ids(links))
         ldr.add_value('luding_id', extract_luding_id(response.url))
 
-        yield ldr.load_item()
+        return ldr.load_item()
