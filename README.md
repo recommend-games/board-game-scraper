@@ -2,28 +2,29 @@
 
 Scraping data about board games from the web.
 
-### What is this repository for? ###
+## Scraped websites ##
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* [BoardGameGeek](https://boardgamegeek.com/) (`bgg`)
+* [luding.org](http://luding.org/) (`luding`)
+* [spielen.de](http://gesellschaftsspiele.spielen.de/) (`spielen`)
 
-### How do I get set up? ###
+## Run scrapers ##
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+Requires Python 3. Make sure your (virtual) environment is up-to-date:
 
-### Contribution guidelines ###
+```bash
+pip install -Ur requirements.txt
+```
 
-* Writing tests
-* Code review
-* Other guidelines
+Run a spider like so:
 
-### Who do I talk to? ###
+```bash
+scrapy crawl <spider> -o 'feeds/%(name)s/%(time)s.csv'
+```
 
-* Repo owner or admin
-* Other community or team contact
+where `<spider>` is one of the IDs above.
+
+You can run `scrapy check` to perform contract tests for all spiders, or 
+`scrapy check <spider>` to test one particular spider. If tests fails,
+there most likely has been some change on the website and the spider needs
+updating.
