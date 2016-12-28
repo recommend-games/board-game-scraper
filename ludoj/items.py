@@ -4,6 +4,7 @@ from scrapy import Field, Item
 
 class GameItem(Item):
     name = Field(required=True)
+    alt_name = Field()
     year = Field(dtype=int, default=None)
     game_type = Field()
     description = Field()
@@ -16,6 +17,7 @@ class GameItem(Item):
     image_url = Field()
     video_url = Field()
     external_link = Field()
+    list_price = Field()
 
     min_players = Field(dtype=int, default=None)
     max_players = Field(dtype=int, default=None)

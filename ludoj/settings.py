@@ -5,11 +5,11 @@ BOT_NAME = 'ludoj'
 SPIDER_MODULES = ['ludoj.spiders']
 NEWSPIDER_MODULE = 'ludoj.spiders'
 
-FEED_EXPORT_FIELDS = ('name', 'year',
+FEED_EXPORT_FIELDS = ('name', 'alt_name', 'year',
                       'game_type', 'description',
                       'designer', 'artist', 'publisher',
                       'url', 'image_url',
-                      'video_url', 'external_link',
+                      'video_url', 'external_link', 'list_price',
                       'min_players', 'max_players',
                       'min_age', 'max_age',
                       'min_time', 'max_time',

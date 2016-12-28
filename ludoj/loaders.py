@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+from collections import OrderedDict
 from functools import partial
 
 from scrapy.loader import ItemLoader
@@ -27,7 +28,9 @@ class GameLoader(ItemLoader):
     default_output_processor = TakeFirst()
 
     def clear_list(self, items):
-        return [item for item in items if item]
+        return list(OrderedDict.fromkeys(item for item in items if item))
+
+    alt_name_out = clear_list
 
     description_in = MapCompose(remove_tags, replace_entities, replace_entities,
                                 partial(normalize_space, preserve_newline=True))

@@ -55,6 +55,7 @@ class BggSpider(Spider):
             ldr = GameLoader(item=GameItem(), selector=game, response=response)
 
             ldr.add_xpath('name', 'name[@type = "primary"]/@value')
+            ldr.add_xpath('alt_name', 'name/@value')
             ldr.add_xpath('year', 'yearpublished/@value')
             ldr.add_xpath('description', 'description')
 
