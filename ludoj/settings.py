@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
 
+''' Scrapy settings '''
+
 BOT_NAME = 'ludoj'
 
 SPIDER_MODULES = ['ludoj.spiders']
 NEWSPIDER_MODULE = 'ludoj.spiders'
 
-FEED_EXPORT_FIELDS = ('name', 'alt_name', 'year',
-                      'game_type', 'description',
-                      'designer', 'artist', 'publisher',
-                      'url', 'image_url',
-                      'video_url', 'external_link', 'list_price',
-                      'min_players', 'max_players',
-                      'min_age', 'max_age',
-                      'min_time', 'max_time',
-                      'rank', 'num_votes', 'avg_rating',
-                      'stddev_rating', 'bayes_rating',
-                      'worst_rating', 'best_rating',
-                      'complexity', 'easiest_complexity', 'hardest_complexity',
-                      'bgg_id', 'freebase_id', 'wikidata_id',
-                      'wikipedia_id', 'dbpedia_id', 'luding_id')
+FEED_EXPORT_FIELDS = (
+    'name', 'alt_name', 'year',
+    'game_type', 'description',
+    'designer', 'artist', 'publisher',
+    'url', 'image_url',
+    'video_url', 'external_link', 'list_price',
+    'min_players', 'max_players',
+    'min_age', 'max_age',
+    'min_time', 'max_time',
+    'rank', 'num_votes', 'avg_rating',
+    'stddev_rating', 'bayes_rating',
+    'worst_rating', 'best_rating',
+    'complexity', 'easiest_complexity', 'hardest_complexity',
+    'bgg_id', 'freebase_id', 'wikidata_id',
+    'wikipedia_id', 'dbpedia_id', 'luding_id')
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ludoj (+http://www.yourdomain.com)'
@@ -65,9 +68,12 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
-#EXTENSIONS = {
-#    'scrapy.extensions.telnet.TelnetConsole': None,
-#}
+EXTENSIONS = {
+    'scrapy.extensions.feedexport.FeedExporter': None,
+    'ludoj.extensions.MultiFeedExporter': 500,
+}
+
+MULTI_FEED_ENABLED = True
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+''' BoardGameGeek spider '''
+
 from __future__ import unicode_literals
 
 from scrapy import Request, Spider
@@ -7,13 +9,16 @@ from scrapy import Request, Spider
 from ludoj.items import GameItem
 from ludoj.loaders import GameLoader
 
-def extract_bgg_id(url):
+def _extract_bgg_id(url):
     return int(url.split('/')[2]) if url else None
 
 class BggSpider(Spider):
+    ''' BoardGameGeek spider '''
+
     name = 'bgg'
     allowed_domains = ['boardgamegeek.com']
     start_urls = ['https://boardgamegeek.com/browse/boardgame/']
+    item_classes = (GameItem,)
 
     # https://www.boardgamegeek.com/wiki/page/BGG_XML_API2
     xml_api_url = 'https://www.boardgamegeek.com/xmlapi2/thing?id={id}&stats=1&versions=1&videos=1'
@@ -31,13 +36,14 @@ class BggSpider(Spider):
 
         for game in response.css('tr#row_'):
             url = game.css('td.collection_objectname a::attr(href)').extract_first()
-            bgg_id = extract_bgg_id(url)
+            bgg_id = _extract_bgg_id(url)
 
             if bgg_id is not None:
                 request = Request(self.xml_api_url.format(id=bgg_id), callback=self.parse_game)
                 request.meta['profile_url'] = response.urljoin(url) if url else None
                 yield request
 
+    # pylint: disable=no-self-use
     def parse_game(self, response):
         """
         @url https://www.boardgamegeek.com/xmlapi2/thing?id=13&stats=1&versions=1&videos=1

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+''' Spielen.de spider '''
+
 from __future__ import unicode_literals
 
 import re
@@ -9,24 +11,25 @@ from scrapy import Request, Spider
 from ludoj.items import GameItem
 from ludoj.loaders import GameLoader
 
-def parse_interval(text):
+def _parse_interval(text):
     match = re.match(r'^.*?(\d+)(\s*-\s*(\d+))?.*$', text)
     if match:
         return match.group(1), match.group(3)
-    else:
-        return None, None
+    return None, None
 
-def parse_int(text):
+def _parse_int(text):
     match = re.match(r'^.*?(\d+).*$', text)
     if match:
         return match.group(1)
-    else:
-        return None
+    return None
 
 class SpielenSpider(Spider):
+    ''' Spielen.de spider '''
+
     name = "spielen"
     allowed_domains = ["spielen.de"]
     start_urls = ['http://gesellschaftsspiele.spielen.de/alle-brettspiele/']
+    item_classes = (GameItem,)
 
     def parse(self, response):
         """
@@ -45,6 +48,7 @@ class SpielenSpider(Spider):
             if url:
                 yield Request(response.urljoin(url), callback=self.parse_game)
 
+    # pylint: disable=no-self-use
     def parse_game(self, response):
         """
         @url http://gesellschaftsspiele.spielen.de/alle-brettspiele/catan-das-spiel/
@@ -83,13 +87,13 @@ class SpielenSpider(Spider):
         ldr.add_value('video_url', (response.urljoin(v) for v in videos if v))
 
         players = game.xpath('.//b[. = "Spieler:"]/following-sibling::text()').extract_first()
-        min_players, max_players = parse_interval(players) if players else (None, None)
+        min_players, max_players = _parse_interval(players) if players else (None, None)
         ldr.add_value('min_players', min_players)
         ldr.add_value('max_players', max_players)
         age = game.xpath('.//b[. = "Alter:"]/following-sibling::text()').extract_first()
-        ldr.add_value('min_age', parse_int(age) if age else None)
+        ldr.add_value('min_age', _parse_int(age) if age else None)
         time = game.xpath('.//b[. = "Dauer:"]/following-sibling::text()').extract_first()
-        min_time, max_time = parse_interval(time) if time else (None, None)
+        min_time, max_time = _parse_interval(time) if time else (None, None)
         ldr.add_value('min_time', min_time)
         ldr.add_value('max_time', max_time)
 

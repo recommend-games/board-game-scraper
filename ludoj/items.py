@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 
+''' Scrapy items '''
+
 from scrapy import Field, Item
 
+
 class GameItem(Item):
+    ''' item representing a game '''
+
     name = Field(required=True)
     alt_name = Field()
     year = Field(dtype=int, default=None)
@@ -44,3 +49,9 @@ class GameItem(Item):
     wikipedia_id = Field()
     dbpedia_id = Field()
     luding_id = Field(dtype=int, default=None)
+
+
+class RatingItem(Item):
+    ''' item representing a rating '''
+
+    bgg_id = Field(dtype=int, default=None)

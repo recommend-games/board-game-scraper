@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+''' Luding spider '''
+
 from __future__ import unicode_literals
 
 import re
@@ -12,19 +14,19 @@ from scrapy import Spider, Request
 from ludoj.items import GameItem
 from ludoj.loaders import GameLoader
 
-def extract_redirects(urls):
+def _extract_redirects(urls):
     for url in urls:
         url = urlparse(url)
         query = parse_qs(url.query)
         for link in query.get('URL') or ():
             yield link
 
-def extract_luding_id(url):
+def _extract_luding_id(url):
     url = urlparse(url)
     query = parse_qs(url.query)
     return query.get('gameid') or None
 
-def extract_bgg_ids(urls):
+def _extract_bgg_ids(urls):
     for url in urls:
         url = urlparse(url)
         if 'boardgamegeek.com' in url.hostname:
@@ -34,10 +36,13 @@ def extract_bgg_ids(urls):
                 pass
 
 class LudingSpider(Spider):
+    ''' Luding spider '''
+
     name = 'luding'
     allowed_domains = ['luding.org']
     start_urls = ['http://luding.org/cgi-bin/GameFirstLetter.py?letter={}'.format(letter)
                   for letter in string.ascii_uppercase + '0']
+    item_classes = (GameItem,)
 
     def parse(self, response):
         """
@@ -51,6 +56,7 @@ class LudingSpider(Spider):
             if url:
                 yield Request(response.urljoin(url), callback=self.parse_game)
 
+    # pylint: disable=no-self-use
     def parse_game(self, response):
         """
         @url http://luding.org/cgi-bin/GameData.py?f=00w^E4W&gameid=1508
@@ -61,12 +67,12 @@ class LudingSpider(Spider):
                  min_players max_players min_age
         """
 
-        h1 = response.css('h1')
-        game = h1.xpath('following-sibling::table')
+        headline = response.css('h1')
+        game = headline.xpath('following-sibling::table')
 
         ldr = GameLoader(item=GameItem(), selector=game, response=response)
 
-        ldr.add_value('name', h1.extract_first())
+        ldr.add_value('name', headline.extract_first())
         ldr.add_xpath('year', 'tr[td = "Year:"]/td[2]')
         ldr.add_xpath('game_type', 'tr[td = "Type:"]/td[2]')
         ldr.add_xpath('description', 'tr[td = "Box text:"]/td[2]')
@@ -79,7 +85,7 @@ class LudingSpider(Spider):
         images = game.css('img::attr(src)').extract()
         ldr.add_value('image_url', {response.urljoin(i) for i in images})
         links = game.xpath('.//a/@href[starts-with(., "/cgi-bin/Redirect.py")]').extract()
-        links = frozenset(extract_redirects(response.urljoin(link) for link in links))
+        links = frozenset(_extract_redirects(response.urljoin(link) for link in links))
         ldr.add_value('external_link', links)
 
         players = game.xpath('tr[td = "No. of players:"]/td[2]/text()').extract_first()
@@ -92,7 +98,7 @@ class LudingSpider(Spider):
         # ldr.add_xpath('min_time', 'minplaytime/@value')
         # ldr.add_xpath('max_time', 'maxplaytime/@value')
 
-        ldr.add_value('bgg_id', extract_bgg_ids(links))
-        ldr.add_value('luding_id', extract_luding_id(response.url))
+        ldr.add_value('bgg_id', _extract_bgg_ids(links))
+        ldr.add_value('luding_id', _extract_luding_id(response.url))
 
         return ldr.load_item()
