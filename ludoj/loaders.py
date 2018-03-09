@@ -2,14 +2,13 @@
 
 ''' Scrapy item loaders '''
 
-from __future__ import unicode_literals
-
 from collections import OrderedDict
 from functools import partial
 
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import TakeFirst, MapCompose
 from w3lib.html import remove_tags, replace_entities
+
 
 def normalize_space(item, preserve_newline=False):
     ''' normalize space in a string '''
@@ -25,6 +24,7 @@ def normalize_space(item, preserve_newline=False):
             return ' '.join(item.split())
         except Exception:
             return ''
+
 
 class GameLoader(ItemLoader):
     ''' loader for GameItem '''
@@ -49,3 +49,11 @@ class GameLoader(ItemLoader):
     image_url_out = _clear_list
     video_url_out = _clear_list
     external_link_out = _clear_list
+
+
+class RatingLoader(ItemLoader):
+    ''' loader for RatingItem '''
+
+    default_input_processor = MapCompose(
+        remove_tags, replace_entities, replace_entities, normalize_space)
+    default_output_processor = TakeFirst()

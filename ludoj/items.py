@@ -54,4 +54,6 @@ class GameItem(Item):
 class RatingItem(Item):
     ''' item representing a rating '''
 
-    bgg_id = Field(dtype=int, default=None)
+    bgg_id = Field(dtype=int, required=True)
+    bgg_user_name = Field(dtype=str, required=True)
+    avg_rating = Field(dtype=float, required=True)

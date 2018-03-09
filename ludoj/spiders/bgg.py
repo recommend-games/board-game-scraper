@@ -2,12 +2,12 @@
 
 ''' BoardGameGeek spider '''
 
-from __future__ import unicode_literals
+from urllib.parse import urlencode
 
 from scrapy import Request, Spider
 
-from ludoj.items import GameItem
-from ludoj.loaders import GameLoader
+from ..items import GameItem, RatingItem
+from ..loaders import GameLoader, RatingLoader
 
 def _extract_bgg_id(url):
     return int(url.split('/')[2]) if url else None
@@ -18,17 +18,29 @@ class BggSpider(Spider):
     name = 'bgg'
     allowed_domains = ['boardgamegeek.com']
     start_urls = ['https://boardgamegeek.com/browse/boardgame/']
-    item_classes = (GameItem,)
+    item_classes = (GameItem, RatingItem)
 
     # https://www.boardgamegeek.com/wiki/page/BGG_XML_API2
-    xml_api_url = 'https://www.boardgamegeek.com/xmlapi2/thing?id={id}&stats=1&versions=1&videos=1'
+    xml_api_url = 'https://www.boardgamegeek.com/xmlapi2/thing'
+    page_size = 100
+
+    custom_settings = {
+        'DOWNLOAD_DELAY': 2.0,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': .5,
+    }
+
+    def _api_url(self, bgg_id, **kwargs):
+        kwargs['id'] = bgg_id
+        kwargs['pagesize'] = self.page_size
+        return '{}?{}'.format(self.xml_api_url, urlencode(kwargs))
 
     def parse(self, response):
-        """
+        '''
         @url https://boardgamegeek.com/browse/boardgame/
         @returns items 0 0
         @returns requests 101 101
-        """
+        '''
 
         next_page = response.xpath('//a[@title = "next page"]/@href').extract_first()
         if next_page:
@@ -39,13 +51,15 @@ class BggSpider(Spider):
             bgg_id = _extract_bgg_id(url)
 
             if bgg_id is not None:
-                request = Request(self.xml_api_url.format(id=bgg_id), callback=self.parse_game)
+                req_url = self._api_url(bgg_id, stats=1, versions=1, videos=1, ratingcomments=1)
+                request = Request(req_url, callback=self.parse_game)
+                request.meta['bgg_id'] = bgg_id
                 request.meta['profile_url'] = response.urljoin(url) if url else None
                 yield request
 
     # pylint: disable=no-self-use
     def parse_game(self, response):
-        """
+        '''
         @url https://www.boardgamegeek.com/xmlapi2/thing?id=13&stats=1&versions=1&videos=1
         @returns items 1 1
         @returns requests 0 0
@@ -55,9 +69,22 @@ class BggSpider(Spider):
                  rank num_votes avg_rating stddev_rating bayes_rating \
                  worst_rating best_rating complexity \
                  easiest_complexity hardest_complexity bgg_id
-        """
+        '''
 
         for game in response.xpath('/items/item'):
+            bgg_id = game.xpath('@id').extract_first() or response.meta.get('bgg_id')
+
+            # TODO yield requests for other pages
+            for comment in game.xpath('comments/comment'):
+                ldr = RatingLoader(
+                    item=RatingItem(bgg_id=bgg_id), selector=comment, response=response)
+                ldr.add_xpath('bgg_user_name', '@username')
+                ldr.add_xpath('avg_rating', '@rating')
+                yield ldr.load_item()
+
+            if response.meta.get('skip_game_item'):
+                continue
+
             ldr = GameLoader(item=GameItem(), selector=game, response=response)
 
             ldr.add_xpath('name', 'name[@type = "primary"]/@value')
@@ -96,6 +123,6 @@ class BggSpider(Spider):
             ldr.add_value('easiest_complexity', '1')
             ldr.add_value('hardest_complexity', '5')
 
-            ldr.add_xpath('bgg_id', '@id')
+            ldr.add_value('bgg_id', bgg_id)
 
             yield ldr.load_item()

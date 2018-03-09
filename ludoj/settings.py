@@ -21,7 +21,8 @@ FEED_EXPORT_FIELDS = (
     'worst_rating', 'best_rating',
     'complexity', 'easiest_complexity', 'hardest_complexity',
     'bgg_id', 'freebase_id', 'wikidata_id',
-    'wikipedia_id', 'dbpedia_id', 'luding_id')
+    'wikipedia_id', 'dbpedia_id', 'luding_id',
+    'bgg_user_name',)
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ludoj (+http://www.yourdomain.com)'
@@ -37,9 +38,9 @@ ROBOTSTXT_OBEY = True
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 2.0
+DOWNLOAD_DELAY = .5
 # The download delay setting will honor only one of:
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
+CONCURRENT_REQUESTS_PER_DOMAIN = 8
 # CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
@@ -62,9 +63,9 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    'ludoj.middlewares.MyCustomDownloaderMiddleware': 543,
-#}
+DOWNLOADER_MIDDLEWARES = {
+    'ludoj.middlewares.DelayedRetry': 555,
+}
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -91,18 +92,25 @@ AUTOTHROTTLE_ENABLED = True
 #AUTOTHROTTLE_MAX_DELAY = 60
 # The average number of requests Scrapy should be sending in parallel to
 # each remote server
-AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
+AUTOTHROTTLE_TARGET_CONCURRENCY = CONCURRENT_REQUESTS_PER_DOMAIN
 # Enable showing throttling stats for every response received:
 #AUTOTHROTTLE_DEBUG = False
 
 # Enable and configure HTTP caching (disabled by default)
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 HTTPCACHE_ENABLED = True
-HTTPCACHE_EXPIRATION_SECS = 60 * 60 * 24
+HTTPCACHE_EXPIRATION_SECS = 60 * 60 * 24 * 7 # 1 week
 #HTTPCACHE_DIR = 'httpcache'
-HTTPCACHE_IGNORE_HTTP_CODES = [500, 502, 503, 504, 408, 429]
+HTTPCACHE_IGNORE_HTTP_CODES = (500, 502, 503, 504, 408, 429, 202)
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.RFC2616Policy'
 
 RETRY_ENABLED = True
-RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429]
+RETRY_HTTP_CODES = (500, 502, 503, 504, 408, 429)
+
+DELAYED_RETRY_ENABLED = True
+DELAYED_RETRY_TIMES = -1
+DELAYED_RETRY_HTTP_CODES = (202,)
+DELAYED_RETRY_DELAY = 60.0 # 1 min
+DELAYED_RETRY_BACKOFF = True
+DELAYED_RETRY_BACKOFF_MAX_DELAY = 300.0 # 5 min
