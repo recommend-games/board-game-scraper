@@ -45,6 +45,8 @@ class BggSpider(Spider):
         'DOWNLOAD_DELAY': 2.0,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 1,
+        'DELAYED_RETRY_ENABLED': True,
+        'DELAYED_RETRY_HTTP_CODES': (202,),
     }
 
     def _api_url(self, action, **kwargs):
