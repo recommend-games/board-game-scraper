@@ -2,22 +2,39 @@
 
 ''' BoardGameGeek spider '''
 
-from urllib.parse import urlencode
+import re
+
+from urllib.parse import unquote_plus, urlencode
 
 from scrapy import Request, Spider
 
 from ..items import GameItem, RatingItem
 from ..loaders import GameLoader, RatingLoader
 
+
+URL_REGEX_BOARD_GAME = re.compile(r'^.*/boardgame/(\d+).*$')
+URL_REGEX_USER = re.compile(r'^.*/user/([^/]+).*$')
+
+
 def _extract_bgg_id(url):
-    return int(url.split('/')[2]) if url else None
+    match = URL_REGEX_BOARD_GAME.match(url)
+    return int(match.group(1)) if match else None
+
+
+def _extract_user_name(url):
+    match = URL_REGEX_USER.match(url)
+    return unquote_plus(match.group(1)) if match else None
+
 
 class BggSpider(Spider):
     ''' BoardGameGeek spider '''
 
     name = 'bgg'
     allowed_domains = ['boardgamegeek.com']
-    start_urls = ['https://boardgamegeek.com/browse/boardgame/']
+    start_urls = (
+        'https://boardgamegeek.com/browse/boardgame/',
+        'https://boardgamegeek.com/browse/user/numreviews',
+        'https://boardgamegeek.com/browse/user/numsessions')
     item_classes = (GameItem, RatingItem)
 
     # https://www.boardgamegeek.com/wiki/page/BGG_XML_API2
@@ -61,12 +78,14 @@ class BggSpider(Spider):
         if next_page:
             yield Request(response.urljoin(next_page), callback=self.parse)
 
-        for game in response.css('tr#row_'):
-            url = game.css('td.collection_objectname a::attr(href)').extract_first()
+        for url in response.xpath('//@href').extract():
             bgg_id = _extract_bgg_id(url)
-
             if bgg_id is not None:
-                yield self._game_request(bgg_id, response.urljoin(url) if url else None)
+                yield self._game_request(bgg_id, response.urljoin(url))
+
+            user_name = _extract_user_name(url)
+            if user_name:
+                yield self._collection_request(user_name)
 
     def parse_game(self, response):
         '''
