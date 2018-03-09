@@ -27,12 +27,20 @@ class BggSpider(Spider):
     custom_settings = {
         'DOWNLOAD_DELAY': 2.0,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': .5,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 1,
     }
 
     def _api_url(self, action, **kwargs):
         kwargs['pagesize'] = self.page_size
         return '{}/{}?{}'.format(self.xml_api_url, action, urlencode(kwargs))
+
+    def _game_request(self, bgg_id, profile_url=None):
+        url = self._api_url(
+            action='thing', id=bgg_id, stats=1, versions=1, videos=1, ratingcomments=1)
+        request = Request(url, callback=self.parse_game)
+        request.meta['bgg_id'] = bgg_id
+        request.meta['profile_url'] = profile_url
+        return request
 
     def _collection_request(self, user_name):
         url = self._api_url(
@@ -58,12 +66,7 @@ class BggSpider(Spider):
             bgg_id = _extract_bgg_id(url)
 
             if bgg_id is not None:
-                req_url = self._api_url(
-                    action='thing', id=bgg_id, stats=1, versions=1, videos=1, ratingcomments=1)
-                request = Request(req_url, callback=self.parse_game)
-                request.meta['bgg_id'] = bgg_id
-                request.meta['profile_url'] = response.urljoin(url) if url else None
-                yield request
+                yield self._game_request(bgg_id, response.urljoin(url) if url else None)
 
     def parse_game(self, response):
         '''
@@ -112,6 +115,7 @@ class BggSpider(Spider):
             ldr.add_xpath('publisher', 'link[@type = "boardgamepublisher"]/@value')
 
             ldr.add_value('url', response.meta.get('profile_url'))
+            ldr.add_value('url', 'https://boardgamegeek.com/boardgame/{}'.format(bgg_id))
             images = game.xpath('image/text()').extract()
             ldr.add_value('image_url', (response.urljoin(i) for i in images))
             images = game.xpath('thumbnail/text()').extract()
@@ -155,10 +159,16 @@ class BggSpider(Spider):
             return
 
         for game in response.xpath('/items/item'):
-            ldr = RatingLoader(item=RatingItem(), selector=game, response=response)
+            bgg_id = game.xpath('@objectid').extract_first()
 
-            ldr.add_xpath('bgg_id', '@objectid')
-            ldr.add_value('bgg_user_name', user_name)
+            if not bgg_id:
+                self.logger.warning('no BGG ID found, cannot process rating')
+                continue
+
+            yield self._game_request(bgg_id)
+
+            ldr = RatingLoader(
+                item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name),
+                selector=game, response=response)
             ldr.add_xpath('avg_rating', 'stats/rating/@value')
-
             yield ldr.load_item()
