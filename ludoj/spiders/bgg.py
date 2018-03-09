@@ -21,7 +21,7 @@ class BggSpider(Spider):
     item_classes = (GameItem, RatingItem)
 
     # https://www.boardgamegeek.com/wiki/page/BGG_XML_API2
-    xml_api_url = 'https://www.boardgamegeek.com/xmlapi2/thing'
+    xml_api_url = 'https://www.boardgamegeek.com/xmlapi2'
     page_size = 100
 
     custom_settings = {
@@ -30,10 +30,17 @@ class BggSpider(Spider):
         'AUTOTHROTTLE_TARGET_CONCURRENCY': .5,
     }
 
-    def _api_url(self, bgg_id, **kwargs):
-        kwargs['id'] = bgg_id
+    def _api_url(self, action, **kwargs):
         kwargs['pagesize'] = self.page_size
-        return '{}?{}'.format(self.xml_api_url, urlencode(kwargs))
+        return '{}/{}?{}'.format(self.xml_api_url, action, urlencode(kwargs))
+
+    def _collection_request(self, user_name):
+        url = self._api_url(
+            action='collection', username=user_name, subtype='boardgame',
+            excludesubtype='boardgameexpansion', rated=1, brief=1, stats=1, version=0)
+        request = Request(url, callback=self.parse_collection)
+        request.meta['bgg_user_name'] = user_name
+        return request
 
     def parse(self, response):
         '''
@@ -51,13 +58,13 @@ class BggSpider(Spider):
             bgg_id = _extract_bgg_id(url)
 
             if bgg_id is not None:
-                req_url = self._api_url(bgg_id, stats=1, versions=1, videos=1, ratingcomments=1)
+                req_url = self._api_url(
+                    action='thing', id=bgg_id, stats=1, versions=1, videos=1, ratingcomments=1)
                 request = Request(req_url, callback=self.parse_game)
                 request.meta['bgg_id'] = bgg_id
                 request.meta['profile_url'] = response.urljoin(url) if url else None
                 yield request
 
-    # pylint: disable=no-self-use
     def parse_game(self, response):
         '''
         @url https://www.boardgamegeek.com/xmlapi2/thing?id=13&stats=1&versions=1&videos=1
@@ -76,9 +83,17 @@ class BggSpider(Spider):
 
             # TODO yield requests for other pages
             for comment in game.xpath('comments/comment'):
+                user_name = comment.xpath('@username').extract_first()
+
+                if not user_name:
+                    self.logger.warning('no user name found, cannot process rating')
+                    continue
+
+                yield self._collection_request(user_name)
+
                 ldr = RatingLoader(
-                    item=RatingItem(bgg_id=bgg_id), selector=comment, response=response)
-                ldr.add_xpath('bgg_user_name', '@username')
+                    item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name),
+                    selector=comment, response=response)
                 ldr.add_xpath('avg_rating', '@rating')
                 yield ldr.load_item()
 
@@ -124,5 +139,26 @@ class BggSpider(Spider):
             ldr.add_value('hardest_complexity', '5')
 
             ldr.add_value('bgg_id', bgg_id)
+
+            yield ldr.load_item()
+
+    def parse_collection(self, response):
+        '''
+        TODO contract
+        '''
+
+        user_name = response.meta.get('bgg_user_name')
+        # TODO parse from URL if necessary
+
+        if not user_name:
+            self.logger.warning('no user name found, cannot process collection')
+            return
+
+        for game in response.xpath('/items/item'):
+            ldr = RatingLoader(item=RatingItem(), selector=game, response=response)
+
+            ldr.add_xpath('bgg_id', '@objectid')
+            ldr.add_value('bgg_user_name', user_name)
+            ldr.add_xpath('avg_rating', 'stats/rating/@value')
 
             yield ldr.load_item()
