@@ -27,14 +27,14 @@ def _parse_int(text):
 class SpielenSpider(Spider):
     ''' Spielen.de spider '''
 
-    name = "spielen"
-    allowed_domains = ["spielen.de"]
-    start_urls = ['http://gesellschaftsspiele.spielen.de/alle-brettspiele/']
+    name = 'spielen'
+    allowed_domains = ['spielen.de']
+    start_urls = ['https://gesellschaftsspiele.spielen.de/alle-brettspiele/']
     item_classes = (GameItem,)
 
     def parse(self, response):
         '''
-        @url http://gesellschaftsspiele.spielen.de/alle-brettspiele/
+        @url https://gesellschaftsspiele.spielen.de/alle-brettspiele/
         @returns items 0 0
         @returns requests 19 19
         '''
@@ -52,7 +52,7 @@ class SpielenSpider(Spider):
     # pylint: disable=no-self-use
     def parse_game(self, response):
         '''
-        @url http://gesellschaftsspiele.spielen.de/alle-brettspiele/catan-das-spiel/
+        @url https://gesellschaftsspiele.spielen.de/alle-brettspiele/catan-das-spiel/
         @returns items 1 1
         @returns requests 0 0
         @scrapes name year description designer artist publisher \
