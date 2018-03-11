@@ -2,8 +2,6 @@
 
 ''' Scrapy item pipelines '''
 
-from __future__ import unicode_literals
-
 from scrapy.exceptions import DropItem
 
 
@@ -18,6 +16,7 @@ class ValidatePipeline(object):
             return item
 
         raise DropItem('Missing required field in {:s}'.format(item))
+
 
 class DataTypePipeline(object):
     ''' convert fields to their required data type '''

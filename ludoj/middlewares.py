@@ -7,11 +7,9 @@ import logging
 from scrapy.exceptions import NotConfigured
 from twisted.internet import reactor, defer
 
+from .utils import identity
+
 LOGGER = logging.getLogger(__name__)
-
-
-def _identity(obj):
-    return obj
 
 
 class DelayedRetry(object):
@@ -85,7 +83,7 @@ class DelayedRetry(object):
         LOGGER.info('retry request %r in %d seconds', req, delay)
 
         deferred = defer.Deferred()
-        deferred.addCallback(_identity)
+        deferred.addCallback(identity)
         # pylint: disable=no-member
         reactor.callLater(delay, deferred.callback, req)
 

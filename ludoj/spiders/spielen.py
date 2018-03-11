@@ -2,14 +2,13 @@
 
 ''' Spielen.de spider '''
 
-from __future__ import unicode_literals
-
 import re
 
 from scrapy import Request, Spider
 
-from ludoj.items import GameItem
-from ludoj.loaders import GameLoader
+from ..items import GameItem
+from ..loaders import GameLoader
+
 
 def _parse_interval(text):
     match = re.match(r'^.*?(\d+)(\s*-\s*(\d+))?.*$', text)
@@ -17,11 +16,13 @@ def _parse_interval(text):
         return match.group(1), match.group(3)
     return None, None
 
+
 def _parse_int(text):
     match = re.match(r'^.*?(\d+).*$', text)
     if match:
         return match.group(1)
     return None
+
 
 class SpielenSpider(Spider):
     ''' Spielen.de spider '''
@@ -32,11 +33,11 @@ class SpielenSpider(Spider):
     item_classes = (GameItem,)
 
     def parse(self, response):
-        """
+        '''
         @url http://gesellschaftsspiele.spielen.de/alle-brettspiele/
         @returns items 0 0
         @returns requests 19 19
-        """
+        '''
 
         next_page = (response.css('.listPagination a.glyphicon-step-forward::attr(href)')
                      .extract_first())
@@ -50,7 +51,7 @@ class SpielenSpider(Spider):
 
     # pylint: disable=no-self-use
     def parse_game(self, response):
-        """
+        '''
         @url http://gesellschaftsspiele.spielen.de/alle-brettspiele/catan-das-spiel/
         @returns items 1 1
         @returns requests 0 0
@@ -59,7 +60,7 @@ class SpielenSpider(Spider):
                  min_players max_players min_age min_time max_time \
                  num_votes avg_rating worst_rating best_rating \
                  complexity easiest_complexity hardest_complexity
-        """
+        '''
 
         game = response.css('div.fullBox')
 

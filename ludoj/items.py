@@ -2,26 +2,35 @@
 
 ''' Scrapy items '''
 
+from functools import partial
+
 from scrapy import Field, Item
+from scrapy.loader.processors import MapCompose
+from w3lib.html import remove_tags, replace_entities
+
+from .utils import clear_list, normalize_space
 
 
 class GameItem(Item):
     ''' item representing a game '''
 
     name = Field(required=True)
-    alt_name = Field()
+    alt_name = Field(output_processor=clear_list)
     year = Field(dtype=int, default=None)
     game_type = Field()
-    description = Field()
+    description = Field(
+        input_processor=MapCompose(
+            remove_tags, replace_entities, replace_entities,
+            partial(normalize_space, preserve_newline=True)))
 
-    designer = Field()
-    artist = Field()
-    publisher = Field()
+    designer = Field(output_processor=clear_list)
+    artist = Field(output_processor=clear_list)
+    publisher = Field(output_processor=clear_list)
 
     url = Field()
-    image_url = Field()
-    video_url = Field()
-    external_link = Field()
+    image_url = Field(output_processor=clear_list)
+    video_url = Field(output_processor=clear_list)
+    external_link = Field(output_processor=clear_list)
     list_price = Field()
 
     min_players = Field(dtype=int, default=None)
