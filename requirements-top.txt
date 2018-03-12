@@ -1,0 +1,3 @@
+Scrapy
+Twisted
+w3lib
