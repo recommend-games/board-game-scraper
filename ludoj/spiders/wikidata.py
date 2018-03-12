@@ -2,20 +2,12 @@
 
 ''' Wikidata spider '''
 
-from itertools import groupby
 from urllib.parse import urlencode
 
 from scrapy import Request, Spider
 
 from ..items import GameItem
-
-
-def batchify(iterable, size, skip=None):
-    ''' yields batches of the given size '''
-
-    iterable = (x for x in iterable if x not in skip) if skip is not None else iterable
-    for _, group in groupby(enumerate(iterable), key=lambda x: x[0] // size):
-        yield (x[1] for x in group)
+from ..utils import batchify
 
 
 class WikidataSpider(Spider):

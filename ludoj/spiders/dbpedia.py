@@ -6,8 +6,8 @@ from urllib.parse import urlencode
 
 from scrapy import Request, Spider
 
-from .wikidata import batchify
 from ..items import GameItem
+from ..utils import batchify
 
 
 class DBpediaSpider(Spider):
