@@ -1,3 +1,4 @@
+jmespath
 Scrapy
 Twisted
 w3lib
