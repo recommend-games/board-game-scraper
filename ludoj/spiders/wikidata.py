@@ -68,21 +68,24 @@ class WikidataSpider(Spider):
     def _entity_url(self, wikidata_id, fformat='json'):
         return self.entity_data_url.format(wikidata_id=wikidata_id, fformat=fformat)
 
-    def _type_requests(self, types):
+    def _type_requests(self, types, batch_size=10):
         query_tmpl = normalize_space('''
             SELECT DISTINCT ?game WHERE {{
                 ?game <http://www.wikidata.org/prop/direct/P31> ?type .
                 VALUES ?type {{ {} }}
             }}''')
 
-        # query = query_tmpl.format(' '.join(types))
-        # return Request(
-        #     self.sparql_api_url,
-        #     method='POST',
-        #     body=urlencode({'query': query}),
-        #     callback=self.parse_games)
+        if not batch_size:
+            query = query_tmpl.format(' '.join(types))
+            self.logger.debug(query)
+            yield Request(
+                self.sparql_api_url,
+                method='POST',
+                body=urlencode({'query': query}),
+                callback=self.parse_games)
+            return
 
-        for batch in batchify(types, 10):
+        for batch in batchify(types, batch_size):
             query = query_tmpl.format(' '.join(batch))
             self.logger.debug(query)
             yield Request(self._api_url(query), callback=self.parse_games)
@@ -105,18 +108,26 @@ class WikidataSpider(Spider):
         self.logger.debug(query)
         yield Request(self._api_url(query), callback=self.parse)
 
-    # TODO contract
     def parse(self, response):
-        ''' contract '''
+        # pylint: disable=line-too-long
+        '''
+        @url https://query.wikidata.org/sparql?format=xml&query=SELECT+DISTINCT+%3Ftype+WHERE+%7B+%3Fgame+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fprop%2Fdirect%2FP2339%3E+%3Fbgg+%3B+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fprop%2Fdirect%2FP31%3E+%3Ftype+.+%7D
+        @returns items 0 0
+        @returns requests 5
+        '''
 
         response.selector.register_namespace('sparql', 'http://www.w3.org/2005/sparql-results#')
         types = response.xpath('//sparql:binding[@name = "type"]/sparql:uri/text()').extract()
         self.logger.info('received %d types', len(types))
         yield from self._type_requests('<{}>'.format(t) for t in types)
 
-    # TODO contract
     def parse_games(self, response):
-        ''' contract '''
+        # pylint: disable=line-too-long
+        '''
+        @url https://query.wikidata.org/sparql?format=xml&query=SELECT+DISTINCT+%3Fgame+WHERE+%7B+%3Fgame+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fprop%2Fdirect%2FP31%3E+%3Ftype+.+VALUES+%3Ftype+%7B+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ131436%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ11410%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ142714%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ573573%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ839864%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ734698%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ788553%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1191150%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1272194%3E+%3Chttp%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1150710%3E+%7D+%7D
+        @returns items 0 0
+        @returns requests 3000
+        '''
 
         response.selector.register_namespace('sparql', 'http://www.w3.org/2005/sparql-results#')
 
@@ -125,7 +136,7 @@ class WikidataSpider(Spider):
         self.logger.info('received %d games', len(games))
 
         for game in games:
-            # TODO make more robust
+            # TODO make more robust (regex)
             wikidata_id = game.split('/')[-1]
             yield Request(self._entity_url(wikidata_id), callback=self.parse_game)
 
@@ -155,6 +166,7 @@ class WikidataSpider(Spider):
             ldr.add_jmes('alt_name', 'aliases.*[].value')
             # TODO parse time to year
             ldr.add_jmes('year', 'claims.P577[].mainsnak.datavalue.value.time')
+            # TODO P571 inception
 
             # TODO only ID, need to fetch label
             ldr.add_jmes('designer', 'claims.P178[].mainsnak.datavalue.value.id')
@@ -170,10 +182,14 @@ class WikidataSpider(Spider):
 
             ldr.add_jmes('min_players', 'claims.P1872[].mainsnak.datavalue.value.amount')
             ldr.add_jmes('max_players', 'claims.P1873[].mainsnak.datavalue.value.amount')
+            ldr.add_jmes('min_age', 'claims.P2899[].mainsnak.datavalue.value.amount')
+            ldr.add_jmes('max_age', 'claims.P4135[].mainsnak.datavalue.value.amount')
+            # TODO duration = P2047
 
             ldr.add_jmes('bgg_id', 'claims.P2339[].mainsnak.datavalue.value')
+            ldr.add_jmes('freebase_id', 'claims.P646[].mainsnak.datavalue.value')
             ldr.add_jmes('wikidata_id', 'id')
             ldr.add_jmes('wikidata_id', 'title')
-            ldr.add_jmes('freebase_id', 'claims.P646[].mainsnak.datavalue.value')
+            ldr.add_jmes('luding_id', 'claims.P3528[].mainsnak.datavalue.value')
 
             yield ldr.load_item()
