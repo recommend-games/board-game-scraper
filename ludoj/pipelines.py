@@ -15,7 +15,7 @@ class ValidatePipeline(object):
         if all(item.get(field) for field in item.fields if item.fields[field].get('required')):
             return item
 
-        raise DropItem('Missing required field in {:s}'.format(item))
+        raise DropItem('Missing required field in {}'.format(item))
 
 
 class DataTypePipeline(object):
@@ -35,7 +35,8 @@ class DataTypePipeline(object):
                     if 'default' in item.fields[field]:
                         item[field] = item.fields[field]['default']
                     else:
-                        raise DropItem('Could not convert field "{:s}" to datatype "{:s}" '
-                                       'in item "{}"'.format(field, dtype, item)) from exc
+                        raise DropItem(
+                            'Could not convert field "{}" to datatype "{}" in item "{}"'
+                            .format(field, dtype, item)) from exc
 
         return item
