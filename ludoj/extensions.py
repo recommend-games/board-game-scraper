@@ -66,7 +66,14 @@ class MultiFeedExporter:
                 LOGGER.info('_uripar(%r, %r, %r)', params, spider, cls_name)
                 return params
 
-            exporter = self.exporter_cls(self.settings)
+            export_fields = (
+                self.settings.getdict('MULTI_FEED_EXPORT_FIELDS').get(item_cls.__name__) or None)
+
+            settings = self.settings.copy()
+            settings.frozen = False
+            settings.set('FEED_EXPORT_FIELDS', export_fields, 50)
+
+            exporter = self.exporter_cls(settings)
             exporter._uripar = _uripar
             exporter.open_spider(spider)
             self._exporters[item_cls] = exporter

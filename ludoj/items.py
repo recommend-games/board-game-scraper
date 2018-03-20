@@ -70,7 +70,7 @@ class RatingItem(Item):
 
     bgg_id = Field(dtype=int, required=True)
     bgg_user_name = Field(dtype=str, required=True)
-    avg_rating = Field(dtype=float, required=True)
+    bgg_user_rating = Field(dtype=float, required=True)
 
     published_at = Field(dtype=datetime)
     updated_at = Field(dtype=datetime)

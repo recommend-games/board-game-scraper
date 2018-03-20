@@ -21,9 +21,18 @@ FEED_EXPORT_FIELDS = (
     'worst_rating', 'best_rating',
     'complexity', 'easiest_complexity', 'hardest_complexity',
     'bgg_id', 'freebase_id', 'wikidata_id',
-    'wikipedia_id', 'dbpedia_id', 'luding_id', 'bgg_user_name',
+    'wikipedia_id', 'dbpedia_id', 'luding_id', # 'bgg_user_name',
     'published_at', 'updated_at', 'scraped_at',
 )
+
+MULTI_FEED_ENABLED = True
+MULTI_FEED_EXPORT_FIELDS = {
+    'GameItem': FEED_EXPORT_FIELDS,
+    'RatingItem': (
+        'bgg_id', 'bgg_user_name', 'bgg_user_rating',
+        'published_at', 'updated_at', 'scraped_at',
+    )
+}
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ludoj (+http://www.yourdomain.com)'
@@ -78,8 +87,6 @@ EXTENSIONS = {
     'ludoj.extensions.MonitorDownloadsExtension': 500,
     'ludoj.extensions.DumpStatsExtension': 500,
 }
-
-MULTI_FEED_ENABLED = True
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html

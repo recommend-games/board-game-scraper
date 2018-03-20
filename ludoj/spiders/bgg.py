@@ -111,7 +111,7 @@ class BggSpider(Spider):
         @url https://www.boardgamegeek.com/xmlapi2/thing?id=13&stats=1&versions=1&videos=1&ratingcomments=1&page=1&pagesize=100
         @returns items 101 101
         @returns requests 101 101
-        @scrapes bgg_id avg_rating
+        @scrapes bgg_id scraped_at
         '''
 
         profile_url = response.meta.get('profile_url')
@@ -147,7 +147,7 @@ class BggSpider(Spider):
                 ldr = RatingLoader(
                     item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
                     selector=comment, response=response)
-                ldr.add_xpath('avg_rating', '@rating')
+                ldr.add_xpath('bgg_user_rating', '@rating')
                 yield ldr.load_item()
 
             if response.meta.get('skip_game_item'):
@@ -200,7 +200,7 @@ class BggSpider(Spider):
         @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&rated=1&brief=1&stats=1&version=0
         @returns items 130
         @returns requests 130
-        @scrapes bgg_id bgg_user_name avg_rating
+        @scrapes bgg_id bgg_user_name bgg_user_rating scraped_at
         '''
 
         user_name = response.meta.get('bgg_user_name') or extract_user_name(response.url)
@@ -222,5 +222,5 @@ class BggSpider(Spider):
             ldr = RatingLoader(
                 item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
                 selector=game, response=response)
-            ldr.add_xpath('avg_rating', 'stats/rating/@value')
+            ldr.add_xpath('bgg_user_rating', 'stats/rating/@value')
             yield ldr.load_item()
