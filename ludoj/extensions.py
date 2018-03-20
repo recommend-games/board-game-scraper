@@ -3,6 +3,7 @@
 ''' Scrapy extensions '''
 
 import logging
+import pprint
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
@@ -10,6 +11,7 @@ from scrapy.extensions.feedexport import FeedExporter
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.utils.misc import load_object
 from twisted.internet.defer import DeferredList, maybeDeferred
+from twisted.internet.task import LoopingCall
 
 LOGGER = logging.getLogger(__name__)
 
@@ -110,3 +112,68 @@ class NicerAutoThrottle(AutoThrottle):
                 response.status, slot.delay, new_delay, response)
 
         slot.delay = new_delay
+
+
+# see https://github.com/scrapy/scrapy/issues/2173
+class _LoopingExtension:
+    _interval = None
+    _task = None
+
+    def setup_looping_task(self, task, crawler, interval):
+        ''' setup task to run periodically at a given interval '''
+
+        self._interval = interval
+        self._task = LoopingCall(task)
+        crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(self._spider_closed, signal=signals.spider_closed)
+
+    def _spider_opened(self):
+        self._task.start(self._interval, now=False)
+
+    def _spider_closed(self):
+        if self._task.running:
+            self._task.stop()
+
+
+class MonitorDownloadsExtension(_LoopingExtension):
+    ''' monitor download queue '''
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        ''' init from crawler '''
+
+        if not crawler.settings.getbool('MONITOR_DOWNLOADS_ENABLED'):
+            raise NotConfigured
+
+        interval = crawler.settings.getfloat('MONITOR_DOWNLOADS_INTERVAL', 20.0)
+        return cls(crawler, interval)
+
+    def __init__(self, crawler, interval):
+        self.crawler = crawler
+        self.setup_looping_task(self._monitor, crawler, interval)
+
+    def _monitor(self):
+        active_downloads = len(self.crawler.engine.downloader.active)
+        LOGGER.info('active downloads: %d', active_downloads)
+
+
+class DumpStatsExtension(_LoopingExtension):
+    ''' periodically print stats '''
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        ''' init from crawler '''
+
+        if not crawler.settings.getbool('DUMP_STATS_ENABLED'):
+            raise NotConfigured
+
+        interval = crawler.settings.getfloat('DUMP_STATS_INTERVAL', 60.0)
+        return cls(crawler, interval)
+
+    def __init__(self, crawler, interval):
+        self.stats = crawler.stats
+        self.setup_looping_task(self._print_stats, crawler, interval)
+
+    def _print_stats(self):
+        stats = self.stats.get_stats()
+        LOGGER.info('Scrapy stats: %s', pprint.pformat(stats))

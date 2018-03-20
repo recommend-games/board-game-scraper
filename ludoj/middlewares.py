@@ -21,7 +21,7 @@ class DelayedRetry(object):
 
         settings = crawler.settings
 
-        http_codes = set(int(x) for x in settings.getlist('DELAYED_RETRY_HTTP_CODES'))
+        http_codes = frozenset(int(x) for x in settings.getlist('DELAYED_RETRY_HTTP_CODES'))
         delay = settings.getfloat('DELAYED_RETRY_DELAY', .1)
         times = settings.getint('DELAYED_RETRY_TIMES', -1)
         backoff = settings.getbool('DELAYED_RETRY_BACKOFF')

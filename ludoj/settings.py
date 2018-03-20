@@ -75,6 +75,8 @@ EXTENSIONS = {
     'ludoj.extensions.MultiFeedExporter': 0,
     'scrapy.extensions.throttle.AutoThrottle': None,
     'ludoj.extensions.NicerAutoThrottle': 0,
+    'ludoj.extensions.MonitorDownloadsExtension': 500,
+    'ludoj.extensions.DumpStatsExtension': 500,
 }
 
 MULTI_FEED_ENABLED = True
@@ -119,3 +121,8 @@ DELAYED_RETRY_DELAY = 10.0
 DELAYED_RETRY_PRIORITY_ADJUST = 0
 DELAYED_RETRY_BACKOFF = True
 DELAYED_RETRY_BACKOFF_MAX_DELAY = 100.0
+
+# Monitoring settings
+MONITOR_DOWNLOADS_ENABLED = True
+DUMP_STATS_ENABLED = True
+DUMP_STATS_INTERVAL = 5 * 60
