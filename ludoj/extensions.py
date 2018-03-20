@@ -7,6 +7,7 @@ import logging
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import FeedExporter
+from scrapy.extensions.throttle import AutoThrottle
 from scrapy.utils.misc import load_object
 from twisted.internet.defer import DeferredList, maybeDeferred
 
@@ -84,3 +85,28 @@ class MultiFeedExporter(object):
             item = exporter.item_scraped(item, spider)
 
         return item
+
+
+class NicerAutoThrottle(AutoThrottle):
+    ''' autothrottling with exponential backoff depending on status codes '''
+
+    def __init__(self, crawler):
+        super().__init__(crawler)
+        self.http_codes = frozenset(
+            int(x) for x in crawler.settings.getlist('AUTOTHROTTLE_HTTP_CODES'))
+        LOGGER.info('throttle requests on status codes: %s', sorted(self.http_codes))
+
+    def _adjust_delay(self, slot, latency, response):
+        super()._adjust_delay(slot, latency, response)
+
+        if response.status not in self.http_codes:
+            return
+
+        new_delay = min(2 * slot.delay, self.maxdelay) if self.maxdelay else 2 * slot.delay
+
+        if self.debug:
+            LOGGER.info(
+                'status <%d> throttled from %.1fs to %.1fs: %r',
+                response.status, slot.delay, new_delay, response)
+
+        slot.delay = new_delay

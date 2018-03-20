@@ -72,7 +72,9 @@ DOWNLOADER_MIDDLEWARES = {
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
     'scrapy.extensions.feedexport.FeedExporter': None,
-    'ludoj.extensions.MultiFeedExporter': 500,
+    'ludoj.extensions.MultiFeedExporter': 0,
+    'scrapy.extensions.throttle.AutoThrottle': None,
+    'ludoj.extensions.NicerAutoThrottle': 0,
 }
 
 MULTI_FEED_ENABLED = True
@@ -95,7 +97,8 @@ AUTOTHROTTLE_MAX_DELAY = 60
 # each remote server
 AUTOTHROTTLE_TARGET_CONCURRENCY = CONCURRENT_REQUESTS_PER_DOMAIN
 # Enable showing throttling stats for every response received:
-AUTOTHROTTLE_DEBUG = False
+AUTOTHROTTLE_DEBUG = True
+AUTOTHROTTLE_HTTP_CODES = (429,)
 
 # Enable and configure HTTP caching (disabled by default)
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html

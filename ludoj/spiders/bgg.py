@@ -49,11 +49,12 @@ class BggSpider(Spider):
 
     custom_settings = {
         'DOWNLOAD_DELAY': 1.0,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 2,
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': 1,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 8,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 4,
         'DELAYED_RETRY_ENABLED': True,
         'DELAYED_RETRY_HTTP_CODES': (202,),
         'DELAYED_RETRY_DELAY': 5.0,
+        'AUTOTHROTTLE_HTTP_CODES': (429, 503),
     }
 
     def _api_url(self, action, **kwargs):
