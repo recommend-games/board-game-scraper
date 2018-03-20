@@ -10,7 +10,7 @@ from scrapy import Request, Spider
 
 from ..items import GameItem, RatingItem
 from ..loaders import GameLoader, RatingLoader
-from ..utils import extract_query_param, parse_int
+from ..utils import extract_query_param, now, parse_int
 
 
 URL_REGEX_BOARD_GAME = re.compile(r'^.*/boardgame/(\d+).*$')
@@ -114,6 +114,7 @@ class BggSpider(Spider):
         '''
 
         profile_url = response.meta.get('profile_url')
+        scraped_at = now()
 
         for game in response.xpath('/items/item'):
             bgg_id = game.xpath('@id').extract_first() or response.meta.get('bgg_id')
@@ -143,7 +144,7 @@ class BggSpider(Spider):
                 yield self._collection_request(user_name)
 
                 ldr = RatingLoader(
-                    item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name),
+                    item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
                     selector=comment, response=response)
                 ldr.add_xpath('avg_rating', '@rating')
                 yield ldr.load_item()
@@ -151,7 +152,12 @@ class BggSpider(Spider):
             if response.meta.get('skip_game_item'):
                 continue
 
-            ldr = GameLoader(item=GameItem(), selector=game, response=response)
+            ldr = GameLoader(
+                item=GameItem(
+                    bgg_id=bgg_id, scraped_at=scraped_at,
+                    worst_rating=1, best_rating=10,
+                    easiest_complexity=1, hardest_complexity=5),
+                selector=game, response=response)
 
             ldr.add_xpath('name', 'name[@type = "primary"]/@value')
             ldr.add_xpath('alt_name', 'name/@value')
@@ -183,14 +189,7 @@ class BggSpider(Spider):
             ldr.add_xpath('avg_rating', 'statistics/ratings/average/@value')
             ldr.add_xpath('stddev_rating', 'statistics/ratings/stddev/@value')
             ldr.add_xpath('bayes_rating', 'statistics/ratings/bayesaverage/@value')
-            ldr.add_value('worst_rating', '1')
-            ldr.add_value('best_rating', '10')
-
             ldr.add_xpath('complexity', 'statistics/ratings/averageweight/@value')
-            ldr.add_value('easiest_complexity', '1')
-            ldr.add_value('hardest_complexity', '5')
-
-            ldr.add_value('bgg_id', bgg_id)
 
             yield ldr.load_item()
 
@@ -204,6 +203,7 @@ class BggSpider(Spider):
         '''
 
         user_name = response.meta.get('bgg_user_name') or extract_user_name(response.url)
+        scraped_at = now()
 
         if not user_name:
             self.logger.warning('no user name found, cannot process collection')
@@ -219,7 +219,7 @@ class BggSpider(Spider):
             yield self._game_request(bgg_id)
 
             ldr = RatingLoader(
-                item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name),
+                item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
                 selector=game, response=response)
             ldr.add_xpath('avg_rating', 'stats/rating/@value')
             yield ldr.load_item()

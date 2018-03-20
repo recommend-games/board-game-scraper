@@ -27,16 +27,22 @@ class DataTypePipeline(object):
 
         for field in item.fields:
             dtype = item.fields[field].get('dtype')
+            default = item.fields[field].get('default', NotImplemented)
 
-            if dtype and item.get(field) is not None:
-                try:
-                    item[field] = dtype(item[field])
-                except Exception as exc:
-                    if 'default' in item.fields[field]:
-                        item[field] = item.fields[field]['default']
-                    else:
-                        raise DropItem(
-                            'Could not convert field "{}" to datatype "{}" in item "{}"'
-                            .format(field, dtype, item)) from exc
+            if item.get(field) is None and default is not NotImplemented:
+                item[field] = default() if callable(default) else default
+
+            if not dtype or item.get(field) is None or isinstance(item[field], dtype):
+                continue
+
+            try:
+                item[field] = dtype(item[field])
+            except Exception as exc:
+                if default is NotImplemented:
+                    raise DropItem(
+                        'Could not convert field "{}" to datatype "{}" in item "{}"'
+                        .format(field, dtype, item)) from exc
+
+                item[field] = default() if callable(default) else default
 
         return item

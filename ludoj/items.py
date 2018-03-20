@@ -2,13 +2,14 @@
 
 ''' Scrapy items '''
 
+from datetime import datetime
 from functools import partial
 
 from scrapy import Field, Item
 from scrapy.loader.processors import MapCompose
 from w3lib.html import remove_tags, replace_entities
 
-from .utils import clear_list, normalize_space
+from .utils import clear_list, normalize_space, now
 
 
 class GameItem(Item):
@@ -59,6 +60,10 @@ class GameItem(Item):
     dbpedia_id = Field()
     luding_id = Field(dtype=int, default=None)
 
+    published_at = Field(dtype=datetime)
+    updated_at = Field(dtype=datetime)
+    scraped_at = Field(dtype=datetime, required=True, default=now)
+
 
 class RatingItem(Item):
     ''' item representing a rating '''
@@ -66,3 +71,7 @@ class RatingItem(Item):
     bgg_id = Field(dtype=int, required=True)
     bgg_user_name = Field(dtype=str, required=True)
     avg_rating = Field(dtype=float, required=True)
+
+    published_at = Field(dtype=datetime)
+    updated_at = Field(dtype=datetime)
+    scraped_at = Field(dtype=datetime, required=True, default=now)

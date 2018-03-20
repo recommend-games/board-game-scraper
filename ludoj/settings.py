@@ -21,8 +21,9 @@ FEED_EXPORT_FIELDS = (
     'worst_rating', 'best_rating',
     'complexity', 'easiest_complexity', 'hardest_complexity',
     'bgg_id', 'freebase_id', 'wikidata_id',
-    'wikipedia_id', 'dbpedia_id', 'luding_id',
-    'bgg_user_name',)
+    'wikipedia_id', 'dbpedia_id', 'luding_id', 'bgg_user_name',
+    'published_at', 'updated_at', 'scraped_at',
+)
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ludoj (+http://www.yourdomain.com)'
@@ -79,8 +80,8 @@ MULTI_FEED_ENABLED = True
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'ludoj.pipelines.ValidatePipeline': 100,
-    'ludoj.pipelines.DataTypePipeline': 200,
+    'ludoj.pipelines.DataTypePipeline': 100,
+    'ludoj.pipelines.ValidatePipeline': 200,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

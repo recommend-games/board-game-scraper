@@ -3,6 +3,7 @@
 ''' util functions '''
 
 from collections import OrderedDict
+from datetime import datetime, timezone
 from itertools import groupby
 from urllib.parse import parse_qs, urlparse
 
@@ -63,3 +64,10 @@ def extract_query_param(url, field):
     values = query.get(field)
 
     return values[0] if values else None
+
+
+def now(tzinfo=None):
+    ''' current time in UTC or given timezone '''
+
+    result = datetime.utcnow().replace(microsecond=0, tzinfo=timezone.utc)
+    return result if tzinfo is None else result.astimezone(tzinfo)
