@@ -12,7 +12,7 @@ from .utils import identity
 LOGGER = logging.getLogger(__name__)
 
 
-class DelayedRetry(object):
+class DelayedRetry:
     ''' retry requests with a delay '''
 
     @classmethod

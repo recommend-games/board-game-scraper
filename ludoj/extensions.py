@@ -20,7 +20,7 @@ def _safe_load_object(obj):
     return load_object(obj) if isinstance(obj, str) else obj
 
 
-class MultiFeedExporter(object):
+class MultiFeedExporter:
     ''' allows exporting several types of items in the same spider '''
 
     @classmethod

@@ -5,7 +5,7 @@
 from scrapy.exceptions import DropItem
 
 
-class ValidatePipeline(object):
+class ValidatePipeline:
     ''' validate items '''
 
     # pylint: disable=no-self-use,unused-argument
@@ -18,7 +18,7 @@ class ValidatePipeline(object):
         raise DropItem('Missing required field in {}'.format(item))
 
 
-class DataTypePipeline(object):
+class DataTypePipeline:
     ''' convert fields to their required data type '''
 
     # pylint: disable=no-self-use,unused-argument
