@@ -7,6 +7,8 @@ BOT_NAME = 'ludoj'
 SPIDER_MODULES = ['ludoj.spiders']
 NEWSPIDER_MODULE = 'ludoj.spiders'
 
+LOG_LEVEL = 'INFO'
+
 FEED_EXPORT_FIELDS = (
     'name', 'alt_name', 'year',
     'game_type', 'description',
@@ -106,7 +108,7 @@ AUTOTHROTTLE_MAX_DELAY = 60
 # each remote server
 AUTOTHROTTLE_TARGET_CONCURRENCY = CONCURRENT_REQUESTS_PER_DOMAIN
 # Enable showing throttling stats for every response received:
-AUTOTHROTTLE_DEBUG = True
+AUTOTHROTTLE_DEBUG = False
 AUTOTHROTTLE_HTTP_CODES = (429,)
 
 # Enable and configure HTTP caching (disabled by default)
