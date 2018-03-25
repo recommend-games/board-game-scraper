@@ -9,14 +9,14 @@ from scrapy import Field, Item
 from scrapy.loader.processors import MapCompose
 from w3lib.html import remove_tags, replace_entities
 
-from .utils import clear_list, normalize_space, now
+from .utils import clear_list, normalize_space, now, serialize_date, serialize_json
 
 
 class GameItem(Item):
     ''' item representing a game '''
 
     name = Field(required=True)
-    alt_name = Field(output_processor=clear_list)
+    alt_name = Field(output_processor=clear_list, serializer=serialize_json)
     year = Field(dtype=int, default=None)
     game_type = Field()
     description = Field(
@@ -24,14 +24,14 @@ class GameItem(Item):
             remove_tags, replace_entities, replace_entities,
             partial(normalize_space, preserve_newline=True)))
 
-    designer = Field(output_processor=clear_list)
-    artist = Field(output_processor=clear_list)
-    publisher = Field(output_processor=clear_list)
+    designer = Field(output_processor=clear_list, serializer=serialize_json)
+    artist = Field(output_processor=clear_list, serializer=serialize_json)
+    publisher = Field(output_processor=clear_list, serializer=serialize_json)
 
     url = Field()
-    image_url = Field(output_processor=clear_list)
-    video_url = Field(output_processor=clear_list)
-    external_link = Field(output_processor=clear_list)
+    image_url = Field(output_processor=clear_list, serializer=serialize_json)
+    video_url = Field(output_processor=clear_list, serializer=serialize_json)
+    external_link = Field(output_processor=clear_list, serializer=serialize_json)
     list_price = Field()
 
     min_players = Field(dtype=int, default=None)
@@ -60,9 +60,9 @@ class GameItem(Item):
     dbpedia_id = Field()
     luding_id = Field(dtype=int, default=None)
 
-    published_at = Field(dtype=datetime)
-    updated_at = Field(dtype=datetime)
-    scraped_at = Field(dtype=datetime, required=True, default=now)
+    published_at = Field(dtype=datetime, serializer=serialize_date)
+    updated_at = Field(dtype=datetime, serializer=serialize_date)
+    scraped_at = Field(dtype=datetime, required=True, default=now, serializer=serialize_date)
 
 
 class RatingItem(Item):
@@ -72,6 +72,6 @@ class RatingItem(Item):
     bgg_user_name = Field(dtype=str, required=True)
     bgg_user_rating = Field(dtype=float, required=True)
 
-    published_at = Field(dtype=datetime)
-    updated_at = Field(dtype=datetime)
-    scraped_at = Field(dtype=datetime, required=True, default=now)
+    published_at = Field(dtype=datetime, serializer=serialize_date)
+    updated_at = Field(dtype=datetime, serializer=serialize_date)
+    scraped_at = Field(dtype=datetime, required=True, default=now, serializer=serialize_date)

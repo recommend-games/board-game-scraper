@@ -80,7 +80,7 @@ class DelayedRetry:
         req.dont_filter = True
         req.priority = request.priority + self.priority_adjust
 
-        LOGGER.info('retry request %r in %d seconds', req, delay)
+        LOGGER.debug('retry request %r in %d seconds', req, delay)
 
         deferred = defer.Deferred()
         deferred.addCallback(identity)
