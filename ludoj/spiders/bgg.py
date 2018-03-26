@@ -10,7 +10,7 @@ from scrapy import Request, Spider
 
 from ..items import GameItem, RatingItem
 from ..loaders import GameLoader, RatingLoader
-from ..utils import extract_query_param, now, parse_int
+from ..utils import batchify, clear_list, extract_query_param, now, parse_int
 
 
 URL_REGEX_BOARD_GAME = re.compile(r'^.*/boardgame/(\d+).*$')
@@ -48,31 +48,56 @@ class BggSpider(Spider):
     page_size = 100
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 1.0,
+        'DOWNLOAD_DELAY': .5,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 8,
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 4,
         'DELAYED_RETRY_ENABLED': True,
         'DELAYED_RETRY_HTTP_CODES': (202,),
         'DELAYED_RETRY_DELAY': 5.0,
-        'AUTOTHROTTLE_HTTP_CODES': (429, 503),
+        'AUTOTHROTTLE_HTTP_CODES': (429, 503, 504),
     }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._ids_seen = set()
 
     def _api_url(self, action, **kwargs):
         kwargs['pagesize'] = self.page_size
-        return '{}/{}?{}'.format(self.xml_api_url, action, urlencode(kwargs))
+        return '{}/{}?{}'.format(
+            self.xml_api_url, action, urlencode(sorted(kwargs.items(), key=lambda x: x[0])))
 
-    def _game_request(self, bgg_id, *, page=1, priority=0, **kwargs):
-        url = self._api_url(
-            action='thing', id=bgg_id, stats=1, versions=1, videos=1, ratingcomments=1, page=1
-        ) if page == 1 else self._api_url(
-            action='thing', id=bgg_id, ratingcomments=1, page=page)
+    def _game_requests(self, *bgg_ids, batch_size=10, page=1, priority=0, **kwargs):
+        bgg_ids = clear_list(filter(None, map(parse_int, bgg_ids)))
 
-        request = Request(url, callback=self.parse_game, priority=priority)
-        request.meta['bgg_id'] = bgg_id
-        request.meta['page'] = page
-        request.meta.update(kwargs)
+        if not bgg_ids:
+            return
 
-        return request
+        for batch in batchify(bgg_ids, batch_size, skip=self._ids_seen if page == 1 else None):
+            batch = tuple(batch)
+
+            ids = ','.join(map(str, batch))
+
+            url = self._api_url(
+                action='thing', id=ids, stats=1, versions=1, videos=1, ratingcomments=1, page=1
+            ) if page == 1 else self._api_url(
+                action='thing', id=ids, ratingcomments=1, page=page)
+
+            request = Request(url, callback=self.parse_game, priority=priority)
+
+            if len(batch) == 1:
+                request.meta['bgg_id'] = batch[0]
+            request.meta['page'] = page
+            request.meta.update(kwargs)
+
+            yield request
+
+            if page == 1:
+                self._ids_seen.update(batch)
+
+        self.logger.debug('seen %d games in total', len(self._ids_seen))
+
+    def _game_request(self, bgg_id, default=None, **kwargs):
+        return next(self._game_requests(bgg_id, **kwargs), default)
 
     def _collection_request(self, user_name, *, priority=0, **kwargs):
         url = self._api_url(
@@ -89,28 +114,31 @@ class BggSpider(Spider):
         '''
         @url https://boardgamegeek.com/browse/boardgame/
         @returns items 0 0
-        @returns requests 200
+        @returns requests 11
         '''
 
         next_page = response.xpath('//a[@title = "next page"]/@href').extract_first()
         if next_page:
-            yield Request(response.urljoin(next_page), callback=self.parse)
+            yield Request(
+                response.urljoin(next_page),
+                callback=self.parse,
+                priority=1,
+                meta={'max_retry_times': 10})
 
-        for url in response.xpath('//@href').extract():
-            bgg_id = extract_bgg_id(url)
-            if bgg_id is not None:
-                yield self._game_request(bgg_id, profile_url=response.urljoin(url))
+        urls = response.xpath('//@href').extract()
+        bgg_ids = filter(None, map(extract_bgg_id, urls))
+        yield from self._game_requests(*bgg_ids)
 
-            user_name = extract_user_name(url)
-            if user_name:
-                yield self._collection_request(user_name)
+        user_names = filter(None, map(extract_user_name, urls))
+        for user_name in clear_list(user_names):
+            yield self._collection_request(user_name)
 
     def parse_game(self, response):
         # pylint: disable=line-too-long
         '''
-        @url https://www.boardgamegeek.com/xmlapi2/thing?id=13&stats=1&versions=1&videos=1&ratingcomments=1&page=1&pagesize=100
-        @returns items 101 101
-        @returns requests 101 101
+        @url https://www.boardgamegeek.com/xmlapi2/thing?id=13,822,36218&stats=1&versions=1&videos=1&ratingcomments=1&page=1&pagesize=100
+        @returns items 303 303
+        @returns requests 303 303
         @scrapes bgg_id scraped_at
         '''
 
@@ -199,7 +227,7 @@ class BggSpider(Spider):
         '''
         @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&rated=1&brief=1&stats=1&version=0
         @returns items 130
-        @returns requests 130
+        @returns requests 12
         @scrapes bgg_id bgg_user_name bgg_user_rating scraped_at
         '''
 
@@ -210,14 +238,16 @@ class BggSpider(Spider):
             self.logger.warning('no user name found, cannot process collection')
             return
 
-        for game in response.xpath('/items/item'):
+        games = response.xpath('/items/item')
+        bgg_ids = games.xpath('@objectid').extract()
+        yield from self._game_requests(*bgg_ids)
+
+        for game in games:
             bgg_id = game.xpath('@objectid').extract_first()
 
             if not bgg_id:
                 self.logger.warning('no BGG ID found, cannot process rating')
                 continue
-
-            yield self._game_request(bgg_id)
 
             ldr = RatingLoader(
                 item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
