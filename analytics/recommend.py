@@ -70,7 +70,9 @@ ratings = tc.SFrame.read_csv(
         'bgg_user_rating': float,
     },
     usecols=('bgg_id', 'bgg_user_name', 'bgg_user_rating'),
-).filter_by(games['bgg_id'], 'bgg_id')
+).filter_by(games['bgg_id'], 'bgg_id').unstack('bgg_user_rating', 'ratings')
+ratings['bgg_user_rating'] = ratings['ratings'].apply(lambda x: x[-1])
+del ratings['ratings']
 
 # training_data, validation_data = tc.recommender.util.random_split_by_user(ratings, 'bgg_user_name', 'bgg_id')
 model = tc.recommender.create(ratings, user_id='bgg_user_name', item_id='bgg_id', target='bgg_user_rating') # item_data=games
