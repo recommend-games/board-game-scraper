@@ -3,18 +3,22 @@
 ''' BoardGameGeek spider '''
 
 import re
+import statistics
 
+from itertools import repeat
 from urllib.parse import unquote_plus, urlencode
 
 from scrapy import Request, Spider
+from scrapy.utils.project import get_project_settings
 
 from ..items import GameItem, RatingItem
 from ..loaders import GameLoader, RatingLoader
-from ..utils import batchify, clear_list, extract_query_param, now, parse_int
+from ..utils import batchify, clear_list, extract_query_param, normalize_space, now, parse_int
 
 
 URL_REGEX_BOARD_GAME = re.compile(r'^.*/boardgame/(\d+).*$')
 URL_REGEX_USER = re.compile(r'^.*/user/([^/]+).*$')
+DIGITS_REGEX = re.compile(r'^\D*(\d+).*$')
 
 
 def extract_bgg_id(url):
@@ -30,6 +34,55 @@ def extract_user_name(url):
 
     match = URL_REGEX_USER.match(url)
     return unquote_plus(match.group(1)) if match else extract_query_param(url, 'username')
+
+
+def _parse_int(element, xpath, default=None, lenient=False):
+    if not element or not xpath:
+        return default
+
+    string = normalize_space(element.xpath(xpath).extract_first())
+
+    if not string:
+        return default
+
+    result = parse_int(string)
+
+    if result is None and lenient:
+        match = DIGITS_REGEX.match(string)
+        result = parse_int(match.group(1)) if match else None
+
+    return result if result is not None else default
+
+
+def _parse_player_count(poll):
+    for result in poll.xpath('results'):
+        numplayers = normalize_space(result.xpath('@numplayers').extract_first())
+        players = parse_int(numplayers)
+
+        if not players and numplayers.endswith('+'):
+            players = parse_int(numplayers[:-1]) or -1
+            players += 1
+
+        if not players:
+            continue
+
+        votes_best = _parse_int(result, 'result[@value = "Best"]/@numvotes', 0)
+        votes_rec = _parse_int(result, 'result[@value = "Recommended"]/@numvotes', 0)
+        votes_not = _parse_int(result, 'result[@value = "Not Recommended"]/@numvotes', 0)
+
+        yield players, votes_best, votes_rec, votes_not
+
+
+def _parse_votes(poll, attr='value', enum=False):
+    if not poll:
+        return
+
+    for i, result in enumerate(poll.xpath('results/result'), start=1):
+        value = i if enum else _parse_int(result, '@' + attr, lenient=True)
+        numvotes = _parse_int(result, '@numvotes', 0)
+
+        if value is not None:
+            yield from repeat(value, numvotes)
 
 
 class BggSpider(Spider):
@@ -57,9 +110,24 @@ class BggSpider(Spider):
         'AUTOTHROTTLE_HTTP_CODES': (429, 503, 504),
     }
 
-    def __init__(self, *args, **kwargs):
+    min_votes = 20
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        ''' initialise spider from crawler '''
+
+        kwargs.pop('settings', None)
+        spider = cls(*args, settings=crawler.settings, **kwargs)
+        spider._set_crawler(crawler)
+        return spider
+
+    def __init__(self, *args, settings=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._ids_seen = set()
+
+        settings = settings or get_project_settings()
+
+        self.min_votes = settings.getint('MIN_VOTES', self.min_votes)
 
     def _api_url(self, action, **kwargs):
         kwargs['pagesize'] = self.page_size
@@ -109,6 +177,54 @@ class BggSpider(Spider):
         request.meta.update(kwargs)
 
         return request
+
+    def _filter_votes(self, votes_best, votes_rec, votes_not, best=False):
+        if votes_best + votes_rec + votes_not < self.min_votes / 2:
+            return False
+
+        votes_true = votes_best
+        votes_false = votes_not
+        if best:
+            votes_false += votes_rec
+        else:
+            votes_true += votes_rec
+
+        return votes_true > votes_false
+
+    def _player_count_votes(self, game):
+        min_players = _parse_int(game, 'minplayers/@value')
+        max_players = _parse_int(game, 'maxplayers/@value')
+
+        polls = game.xpath('poll[@name = "suggested_numplayers"]')
+        poll = polls[0] if polls else None
+
+        if not poll or _parse_int(poll, '@totalvotes', 0) < self.min_votes:
+            return min_players, max_players, min_players, max_players
+
+        votes = sorted(_parse_player_count(poll), key=lambda x: x[0])
+        recommended = [vote[0] for vote in votes if self._filter_votes(*vote[1:], best=False)]
+        best = [vote[0] for vote in votes if self._filter_votes(*vote[1:], best=True)]
+
+        return (
+            min(recommended, default=min_players),
+            max(recommended, default=max_players),
+            min(best, default=min_players),
+            max(best, default=max_players),
+        )
+
+    def _poll(self, game, name, attr='value', enum=False, func=statistics.mean, default=None):
+        polls = game.xpath('poll[@name = "{}"]'.format(name))
+        poll = polls[0] if polls else None
+
+        if not poll or _parse_int(poll, '@totalvotes', 0) < self.min_votes:
+            return default
+
+        try:
+            return func(_parse_votes(poll, attr, enum))
+        except Exception as exc:
+            self.logger.exception(exc)
+
+        return default
 
     def parse(self, response):
         '''
@@ -174,7 +290,9 @@ class BggSpider(Spider):
 
                 ldr = RatingLoader(
                     item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
-                    selector=comment, response=response)
+                    selector=comment,
+                    response=response,
+                )
                 ldr.add_xpath('bgg_user_rating', '@rating')
                 yield ldr.load_item()
 
@@ -183,10 +301,18 @@ class BggSpider(Spider):
 
             ldr = GameLoader(
                 item=GameItem(
-                    bgg_id=bgg_id, scraped_at=scraped_at,
-                    worst_rating=1, best_rating=10,
-                    easiest_complexity=1, hardest_complexity=5),
-                selector=game, response=response)
+                    bgg_id=bgg_id,
+                    scraped_at=scraped_at,
+                    worst_rating=1,
+                    best_rating=10,
+                    easiest_complexity=1,
+                    hardest_complexity=5,
+                    lowest_language_dependency=1,
+                    highest_language_dependency=5,
+                ),
+                selector=game,
+                response=response,
+            )
 
             ldr.add_xpath('name', 'name[@type = "primary"]/@value')
             ldr.add_xpath('alt_name', 'name/@value')
@@ -206,12 +332,38 @@ class BggSpider(Spider):
             videos = game.xpath('videos/video/@link').extract()
             ldr.add_value('video_url', (response.urljoin(v) for v in videos))
 
+            (min_players_rec, max_players_rec,
+             min_players_best, max_players_best) = self._player_count_votes(game)
+
             ldr.add_xpath('min_players', 'minplayers/@value')
             ldr.add_xpath('max_players', 'maxplayers/@value')
+            ldr.add_value('min_players_rec', min_players_rec)
+            ldr.add_value('max_players_rec', max_players_rec)
+            ldr.add_value('min_players_best', min_players_best)
+            ldr.add_value('max_players_best', max_players_best)
+
             ldr.add_xpath('min_age', 'minage/@value')
             ldr.add_xpath('max_age', 'maxage/@value')
+            ldr.add_value(
+                'min_age_rec',
+                self._poll(game, 'suggested_playerage', func=statistics.median_grouped))
             ldr.add_xpath('min_time', 'minplaytime/@value')
+            ldr.add_xpath('min_time', 'playingtime/@value')
             ldr.add_xpath('max_time', 'maxplaytime/@value')
+            ldr.add_xpath('max_time', 'playingtime/@value')
+
+            ldr.add_xpath('category', 'link[@type = "boardgamecategory"]/@value')
+            ldr.add_xpath('mechanic', 'link[@type = "boardgamemechanic"]/@value')
+            # look for <link type="boardgamemechanic" id="2023" value="Co-operative Play" />
+            ldr.add_value(
+                'cooperative',
+                bool(game.xpath('link[@type = "boardgamemechanic" and @id = "2023"]')))
+            ldr.add_value(
+                'compilation',
+                bool(game.xpath('link[@type = "boardgamecompilation" and @inbound = "true"]')))
+            ldr.add_xpath('family', 'link[@type = "boardgamefamily"]/@value')
+            ldr.add_xpath('expansion', 'link[@type = "boardgameexpansion"]/@value')
+            ldr.add_xpath('implementation', 'link[@type = "boardgameimplementation"]/@id')
 
             ldr.add_xpath('rank', 'statistics/ratings/ranks/rank[@name = "boardgame"]/@value')
             ldr.add_xpath('num_votes', 'statistics/ratings/usersrated/@value')
@@ -219,6 +371,11 @@ class BggSpider(Spider):
             ldr.add_xpath('stddev_rating', 'statistics/ratings/stddev/@value')
             ldr.add_xpath('bayes_rating', 'statistics/ratings/bayesaverage/@value')
             ldr.add_xpath('complexity', 'statistics/ratings/averageweight/@value')
+            ldr.add_value(
+                'language_dependency',
+                self._poll(
+                    game, 'language_dependence',
+                    attr='level', enum=True, func=statistics.median_grouped))
 
             yield ldr.load_item()
 
@@ -251,6 +408,8 @@ class BggSpider(Spider):
 
             ldr = RatingLoader(
                 item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
-                selector=game, response=response)
+                selector=game,
+                response=response,
+            )
             ldr.add_xpath('bgg_user_rating', 'stats/rating/@value')
             yield ldr.load_item()
