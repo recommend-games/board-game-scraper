@@ -50,8 +50,12 @@ class GameItem(Item):
 
     category = Field(dtype=list, output_processor=clear_list, serializer=serialize_json)
     mechanic = Field(dtype=list, output_processor=clear_list, serializer=serialize_json)
-    cooperative = Field(dtype=bool, default=None, input_processor=Identity(), serializer=int)
-    compilation = Field(dtype=bool, default=None, input_processor=Identity(), serializer=int)
+    cooperative = Field(
+        dtype=bool, default=None, input_processor=Identity(),
+        serializer=lambda x: int(x) if isinstance(x, bool) else None)
+    compilation = Field(
+        dtype=bool, default=None, input_processor=Identity(),
+        serializer=lambda x: int(x) if isinstance(x, bool) else None)
     family = Field(dtype=list, output_processor=clear_list, serializer=serialize_json)
     expansion = Field(dtype=list, output_processor=clear_list, serializer=serialize_json)
     implementation = Field(dtype=list, output_processor=clear_list, serializer=serialize_json)
