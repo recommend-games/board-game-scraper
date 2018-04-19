@@ -24,10 +24,9 @@ cols_game = (
     'complexity',
 )
 
-min_num_vote = 100
+min_num_vote = 50
 
 with open('results/bgg.csv') as in_file, open('results/bgg_cond.csv', 'w') as out_file:
-    columns = cols_game
     reader = csv.DictReader(in_file)
     writer = csv.DictWriter(out_file, cols_game)
     writer.writeheader()
@@ -61,6 +60,19 @@ games = tc.SFrame.read_csv(
     },
     usecols=cols_game,
 ).dropna()
+games = games[
+    (games['complexity'] >= 1)
+    & (games['min_players'] > 0)
+    & (games['max_players'] > 0)
+    & (games['min_age'] >= 2)
+    & (games['min_age'] <= 21)
+    & (games['min_time'] > 0)
+    & (games['min_time'] <= 24 * 60)
+    & (games['max_time'] > 0)
+    & (games['max_time'] <= 4 * 24 * 60)
+    & (games['year'] >= 1500)
+]
+# TODO dedupe games by bgg_id
 
 # TODO parse dates
 ratings = tc.SFrame.read_csv(
@@ -74,8 +86,16 @@ ratings = tc.SFrame.read_csv(
 ratings['bgg_user_rating'] = ratings['ratings'].apply(lambda x: x[-1])
 del ratings['ratings']
 
-# training_data, validation_data = tc.recommender.util.random_split_by_user(ratings, 'bgg_user_name', 'bgg_id')
-model = tc.recommender.create(ratings, user_id='bgg_user_name', item_id='bgg_id', target='bgg_user_rating') # item_data=games
+# training_data, validation_data = tc.recommender.util.random_split_by_user(
+#     ratings, 'bgg_user_name', 'bgg_id')
+model = model = tc.recommender.ranking_factorization_recommender.create(
+    ratings,
+    user_id='bgg_user_name',
+    item_id='bgg_id',
+    target='bgg_user_rating',
+    # item_data=games,
+    max_iterations=100,
+)
 # model.evaluate(validation_data)
 model.save('recommender')
 

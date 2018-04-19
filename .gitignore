@@ -100,4 +100,5 @@ share/
 pip-selfcheck.json
 
 /feeds
+/recommender
 
