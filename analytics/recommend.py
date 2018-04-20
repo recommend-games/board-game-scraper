@@ -103,3 +103,7 @@ recommendations = model.recommend(['Markus Shepherd'], k=1000000)
 recommendations.print_rows(num_rows=100)
 recommendations[-100:].print_rows(num_rows=100)
 model.get_similar_users(['Markus Shepherd'])
+
+recommendations = model.recommend([None], k=1000000)
+recommendations.print_rows(num_rows=100)
+recommendations[-100:].print_rows(num_rows=100)

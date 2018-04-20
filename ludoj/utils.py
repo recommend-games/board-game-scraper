@@ -42,7 +42,7 @@ def normalize_space(item, preserve_newline=False):
 def clear_list(items):
     ''' return unique items in order of first ocurrence '''
 
-    return list(OrderedDict.fromkeys(item for item in items if item))
+    return list(OrderedDict.fromkeys(filter(None, items)))
 
 
 def parse_int(string, base=10):

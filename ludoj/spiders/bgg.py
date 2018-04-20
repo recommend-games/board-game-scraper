@@ -110,6 +110,7 @@ class BggSpider(Spider):
         'AUTOTHROTTLE_HTTP_CODES': (429, 503, 504),
     }
 
+    scrape_ratings = False
     min_votes = 20
 
     @classmethod
@@ -127,6 +128,7 @@ class BggSpider(Spider):
 
         settings = settings or get_project_settings()
 
+        self.scrape_ratings = settings.getbool('SCRAPE_BGG_RATINGS')
         self.min_votes = settings.getint('MIN_VOTES', self.min_votes)
 
     def _api_url(self, action, **kwargs):
@@ -135,7 +137,7 @@ class BggSpider(Spider):
             self.xml_api_url, action, urlencode(sorted(kwargs.items(), key=lambda x: x[0])))
 
     def _game_requests(self, *bgg_ids, batch_size=10, page=1, priority=0, **kwargs):
-        bgg_ids = clear_list(filter(None, map(parse_int, bgg_ids)))
+        bgg_ids = clear_list(map(parse_int, bgg_ids))
 
         if not bgg_ids:
             return
@@ -146,9 +148,20 @@ class BggSpider(Spider):
             ids = ','.join(map(str, batch))
 
             url = self._api_url(
-                action='thing', id=ids, stats=1, versions=1, videos=1, ratingcomments=1, page=1
+                action='thing',
+                id=ids,
+                stats=1,
+                videos=1,
+                versions=int(self.scrape_ratings),
+                ratingcomments=int(self.scrape_ratings),
+                page=1,
             ) if page == 1 else self._api_url(
-                action='thing', id=ids, ratingcomments=1, page=page)
+                action='thing',
+                id=ids,
+                versions=1,
+                ratingcomments=1,
+                page=page,
+            )
 
             request = Request(url, callback=self.parse_game, priority=priority)
 
@@ -245,6 +258,9 @@ class BggSpider(Spider):
         bgg_ids = filter(None, map(extract_bgg_id, urls))
         yield from self._game_requests(*bgg_ids)
 
+        if not self.scrape_ratings:
+            return
+
         user_names = filter(None, map(extract_user_name, urls))
         for user_name in clear_list(user_names):
             yield self._collection_request(user_name)
@@ -268,7 +284,7 @@ class BggSpider(Spider):
             total_items = parse_int(
                 game.xpath('comments/@totalitems').extract_first()
                 or response.meta.get('total_items'))
-            comments = game.xpath('comments/comment')
+            comments = game.xpath('comments/comment') if self.scrape_ratings else ()
 
             if (page is not None and total_items is not None
                     and comments and page * self.page_size < total_items):
