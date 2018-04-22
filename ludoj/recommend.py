@@ -174,6 +174,7 @@ def train_recommender(games_csv, ratings_csv, out_dir=None, **min_max):
     min_max.setdefault('num_votes', MIN_NUM_VOTES)
 
     bgg_ids, model = _train_recommender(games, ratings, columns, **min_max)
+    # TODO not actually saved in the model
     model.bgg_ids = frozenset(bgg_ids)
 
     if out_dir:
@@ -218,29 +219,39 @@ def _main():
         model = tc.load_model(args.model)
 
     for user in [None] + args.users:
-        LOGGER.info('recommending games for %s', user or 'everyone')
+        LOGGER.info('#' * 100)
+
+        # TODO try `diversity` argument
         recommendations = (
-            model.recommend([user], k=args.num_rec)
+            model.recommend([user], k=len(games))
             .join(games, on='bgg_id', how='left')[
                 'rank',
                 'name',
                 'bgg_id',
                 'score',
-            ].sort('rank'))
-        recommendations.print_rows(num_rows=args.num_rec)
+            ])
+
+        LOGGER.info('best games for <%s>', user or 'everyone')
+        recommendations.sort('rank').print_rows(num_rows=args.num_rec)
+        LOGGER.info('worst games for <%s>', user or 'everyone')
+        recommendations.sort('rank', False).print_rows(num_rows=args.num_rec)
+
+        if not user:
+            continue
+
+        similar = model.get_similar_users([user], k=args.num_rec)[
+            'rank',
+            'similar',
+            'score',
+        ]
+
+        LOGGER.info('similar users to <%s>', user)
+        similar.sort('rank').print_rows(num_rows=args.num_rec)
 
 
 if __name__ == '__main__':
     _main()
 
-# recommendations = model.recommend(['Markus Shepherd'], k=1000000)
-# recommendations.print_rows(num_rows=100)
-# recommendations[-100:].print_rows(num_rows=100)
-# model.get_similar_users(['Markus Shepherd'])
-
-# recommendations = model.recommend([None], k=1000000)
-# recommendations.print_rows(num_rows=100)
-# recommendations[-100:].print_rows(num_rows=100)
 
 # if not implementations:
 #     return
