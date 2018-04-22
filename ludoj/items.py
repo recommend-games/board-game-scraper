@@ -9,7 +9,7 @@ from scrapy import Field, Item
 from scrapy.loader.processors import Identity, MapCompose
 from w3lib.html import remove_tags, replace_entities
 
-from .utils import clear_list, normalize_space, now, serialize_date, serialize_json
+from .utils import clear_list, normalize_space, now, parse_int, serialize_date, serialize_json
 
 
 class GameItem(Item):
@@ -43,8 +43,8 @@ class GameItem(Item):
     max_players_best = Field(dtype=int, default=None)
     min_age = Field(dtype=int, default=None)
     max_age = Field(dtype=int, default=None)
-    min_age_rec = Field(dtype=int, default=None)
-    max_age_rec = Field(dtype=int, default=None)
+    min_age_rec = Field(dtype=float, default=None)
+    max_age_rec = Field(dtype=float, default=None)
     min_time = Field(dtype=int, default=None)
     max_time = Field(dtype=int, default=None)
 
@@ -58,7 +58,9 @@ class GameItem(Item):
         serializer=lambda x: int(x) if isinstance(x, bool) else None)
     family = Field(dtype=list, output_processor=clear_list, serializer=serialize_json)
     expansion = Field(dtype=list, output_processor=clear_list, serializer=serialize_json)
-    implementation = Field(dtype=list, output_processor=clear_list, serializer=serialize_json)
+    implementation = Field(
+        dtype=list, input_processor=MapCompose(parse_int), output_processor=clear_list,
+        serializer=serialize_json)
 
     rank = Field(dtype=int, default=None)
     num_votes = Field(dtype=int, default=0)

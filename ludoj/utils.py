@@ -2,9 +2,11 @@
 
 ''' util functions '''
 
+import csv
 import json
 import logging
 import os
+import sys
 
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -13,6 +15,8 @@ from types import GeneratorType
 from urllib.parse import parse_qs, urlparse
 
 import dateutil.parser
+
+csv.field_size_limit(sys.maxsize)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -187,3 +191,30 @@ def serialize_json(obj, file=None, **kwargs):
         return json.dump(obj, file, **kwargs)
 
     return json.dumps(obj, **kwargs)
+
+
+def condense_csv(in_file, out_file, columns, header=True):
+    ''' copying only columns from in_file to out_file '''
+
+    if isinstance(in_file, str):
+        with open(in_file) as in_file_obj:
+            return condense_csv(in_file_obj, out_file, columns)
+
+    if isinstance(out_file, str):
+        with open(out_file, 'w') as out_file_obj:
+            return condense_csv(in_file, out_file_obj, columns)
+
+    columns = tuple(columns)
+
+    reader = csv.DictReader(in_file)
+    writer = csv.DictWriter(out_file, columns)
+
+    if header:
+        writer.writeheader()
+
+    count = -1
+
+    for count, item in enumerate(reader):
+        writer.writerow({k: item.get(k) for k in columns})
+
+    return count + 1
