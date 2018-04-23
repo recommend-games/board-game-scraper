@@ -62,7 +62,7 @@ def make_cluster(data, item_id, target, target_dtype=str):
     clusters = components_model.component_id.groupby(
         'component_id', {'cluster': tc.aggregate.CONCAT('__id')})['cluster']
 
-    return clusters.filter(lambda x: x and len(x) > 1)
+    return clusters.filter(lambda x: x is not None and len(x) > 1)
 
 
 class GamesRecommender(object):
@@ -124,7 +124,9 @@ class GamesRecommender(object):
     def __init__(self, model, games=None, clusters=None):
         self.model = model
         self.games = games
-        if clusters:
+
+        # pylint: disable=len-as-condition
+        if clusters is not None and len(clusters):
             self._clusters = clusters
 
     @property
@@ -163,13 +165,14 @@ class GamesRecommender(object):
     def cluster(self, bgg_id):
         ''' get implementation cluster for a given game '''
 
-        if not self.clusters:
+        # pylint: disable=len-as-condition
+        if self.clusters is None or not len(self.clusters):
             return (bgg_id,)
 
         if self._game_clusters is None:
             self._game_clusters = {
                 id_: cluster for cluster in self.clusters
-                for id_ in cluster if cluster and len(cluster) > 1
+                for id_ in cluster if cluster is not None and len(cluster) > 1
             }
 
         return self._game_clusters.get(bgg_id) or (bgg_id,)
@@ -194,6 +197,35 @@ class GamesRecommender(object):
 
         return recommendations.sort('rank', ascending=ascending)[columns]
 
+    def lead_game(self, bgg_id, user=None, exclude_known=False, **kwargs):
+        ''' find the highest rated game in a cluster '''
+
+        cluster = (frozenset(self.cluster(bgg_id)) & self.rated_games)
+        other_games = cluster - {bgg_id}
+
+        if not other_games:
+            return bgg_id
+
+        if len(cluster) == 1:
+            return next(iter(cluster))
+
+        cluster = sorted(cluster)
+
+        kwargs.pop('items', None)
+
+        recommendations = self.recommend(
+            user, items=cluster, exclude_known=exclude_known, **kwargs)
+
+        if recommendations:
+            return recommendations['bgg_id'][0]
+
+        if not self.games or 'rank' not in self.games.column_names():
+            return bgg_id
+
+        ranked = self.games.filter_by(cluster, 'bgg_id').sort('rank')
+
+        return ranked['bgg_id'][0] if ranked else bgg_id
+
     def save(
             self,
             path,
@@ -212,7 +244,8 @@ class GamesRecommender(object):
             self.logger.info('saving games to <%s>', path_games)
             self.games.save(path_games)
 
-        if self.clusters:
+        # pylint: disable=len-as-condition
+        if self.clusters is not None and len(self.clusters):
             path_clusters = os.path.join(path, dir_clusters, '')
             self.logger.info('saving clusters to <%s>', path_clusters)
             self.clusters.save(path_clusters)
@@ -403,9 +436,11 @@ def _main():
 
     LOGGER.info(args)
 
-    recommender = (
-        GamesRecommender.train_from_csv(args.games, args.ratings) if args.train
-        else GamesRecommender.load(args.model))
+    if args.train:
+        recommender = GamesRecommender.train_from_csv(args.games, args.ratings)
+        recommender.save(args.model)
+    else:
+        recommender = GamesRecommender.load(args.model)
 
     for user in [None] + args.users:
         LOGGER.info('#' * 100)
