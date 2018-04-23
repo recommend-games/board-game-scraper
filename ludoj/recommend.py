@@ -16,179 +16,17 @@ import turicreate as tc
 
 from scrapy.utils.misc import arg_to_iter
 
-from .utils import condense_csv # clear_list, parse_int
+from .utils import condense_csv
 
 csv.field_size_limit(sys.maxsize)
 
 LOGGER = logging.getLogger(__name__)
 
-# model = tc.load_model('recommender')
-
-COLUMNS_GAMES = {
-    'name': str,
-    'year': int,
-    'min_players': int,
-    'max_players': int,
-    'min_players_rec': int,
-    'max_players_rec': int,
-    'min_players_best': int,
-    'max_players_best': int,
-    'min_age': int,
-    'max_age': int,
-    'min_age_rec': float,
-    'max_age_rec': float,
-    'min_time': int,
-    'max_time': int,
-    'cooperative': bool,
-    'compilation': bool,
-    'implementation': list,
-    'rank': int,
-    'num_votes': int,
-    'avg_rating': float,
-    'stddev_rating': float,
-    'bayes_rating': float,
-    'complexity': float,
-    'language_dependency': float,
-    'bgg_id': int,
-}
-COLUMNS_RATINGS = {
-    'bgg_id': int,
-    'bgg_user_name': str,
-    'bgg_user_rating': float,
-}
-MIN_NUM_VOTES = 50
-
-
-def _load_games(games_csv, columns=None):
-    columns = COLUMNS_GAMES if columns is None else columns
-    _, csv_cond = tempfile.mkstemp(text=True)
-    num_games = condense_csv(games_csv, csv_cond, columns.keys())
-
-    LOGGER.info('condensed %d games into <%s>', num_games, csv_cond)
-
-    games = tc.SFrame.read_csv(
-        csv_cond,
-        column_type_hints=columns,
-        usecols=columns.keys(),
-    )
-
-    try:
-        os.remove(csv_cond)
-    except Exception as exc:
-        LOGGER.exception(exc)
-
-    if 'compilation' in columns:
-        # pylint: disable=unexpected-keyword-arg
-        games['compilation'] = games['compilation'].apply(bool, skip_na=False)
-
-    return games
-
-
-def _load_ratings(ratings_csv, columns=None, dedupe=True):
-    columns = COLUMNS_RATINGS if columns is None else columns
-    ratings = tc.SFrame.read_csv(
-        ratings_csv,
-        column_type_hints=columns,
-        usecols=columns.keys(),
-    ).dropna()
-
-    if dedupe and 'bgg_user_rating' in columns:
-        ratings = ratings.unstack('bgg_user_rating', 'ratings')
-        ratings['bgg_user_rating'] = ratings['ratings'].apply(lambda x: x[-1], dtype=float)
-        del ratings['ratings']
-
-    return ratings
-
-
-def _train_recommender(
-        games,
-        ratings,
-        columns=None,
-        **min_max,
-    ):
-    columns = [] if columns is None else list(columns)
-
-    if 'bgg_id' not in columns:
-        columns.append('bgg_id')
-
-    games = games[columns].dropna()
-
-    ind = games['bgg_id'].apply(bool, skip_na=False)
-
-    for column, values in min_max.items():
-        if column not in columns:
-            continue
-
-        lower = None
-        upper = None
-
-        if not isinstance(values, (tuple, list)):
-            lower = values
-        elif len(values) == 1:
-            lower = values[0]
-        else:
-            lower, upper = values
-
-        if lower is not None:
-            ind &= games[column] >= lower
-        if upper is not None:
-            ind &= games[column] <= upper
-
-    games = games[ind]
-
-    return games['bgg_id'], tc.ranking_factorization_recommender.create(
-        ratings.filter_by(games['bgg_id'], 'bgg_id'),
-        user_id='bgg_user_name',
-        item_id='bgg_id',
-        target='bgg_user_rating',
-        # item_data=games,
-        max_iterations=100,
-    )
-
-
-def train_recommender(games_csv, ratings_csv, out_dir=None, **min_max):
-    ''' load games and ratings and train a recommender with the data '''
-
-    games = _load_games(games_csv)
-    ratings = _load_ratings(ratings_csv)
-
-    columns = (
-        'year',
-        'complexity',
-        'min_players',
-        'max_players',
-        'min_age',
-        'min_time',
-        'max_time',
-        'compilation',
-        'num_votes',
-        'bgg_id',
-    )
-
-    min_max.setdefault('year', (1500, date.today().year))
-    min_max.setdefault('complexity', (1, 5))
-    min_max.setdefault('min_players', 1)
-    min_max.setdefault('max_players', 1)
-    min_max.setdefault('min_age', (2, 21))
-    min_max.setdefault('min_time', (1, 24 * 60))
-    min_max.setdefault('max_time', (1, 4 * 24 * 60))
-    min_max.setdefault('compilation', (None, 0))
-    min_max.setdefault('num_votes', MIN_NUM_VOTES)
-
-    bgg_ids, model = _train_recommender(games, ratings, columns, **min_max)
-    # TODO not actually saved in the model
-    model.bgg_ids = frozenset(bgg_ids)
-
-    if out_dir:
-        model.save(out_dir)
-
-    return games, ratings, model
-
 
 def make_cluster(data, item_id, target, target_dtype=str):
     ''' take an SFrame and cluster by target '''
 
-    if not data:
+    if not data or item_id not in data.column_names() or target not in data.column_names():
         return tc.SArray(dtype=list)
 
     data = data[item_id, target].dropna()
@@ -230,7 +68,52 @@ def make_cluster(data, item_id, target, target_dtype=str):
 class GamesRecommender(object):
     ''' games recommender '''
 
+    DEFAULT_MIN_NUM_VOTES = 50
+
     logger = logging.getLogger('GamesRecommender')
+    columns_games = {
+        'name': str,
+        'year': int,
+        'min_players': int,
+        'max_players': int,
+        'min_players_rec': int,
+        'max_players_rec': int,
+        'min_players_best': int,
+        'max_players_best': int,
+        'min_age': int,
+        'max_age': int,
+        'min_age_rec': float,
+        'max_age_rec': float,
+        'min_time': int,
+        'max_time': int,
+        'cooperative': bool,
+        'compilation': bool,
+        'implementation': list,
+        'rank': int,
+        'num_votes': int,
+        'avg_rating': float,
+        'stddev_rating': float,
+        'bayes_rating': float,
+        'complexity': float,
+        'language_dependency': float,
+        'bgg_id': int,
+    }
+    columns_ratings = {
+        'bgg_id': int,
+        'bgg_user_name': str,
+        'bgg_user_rating': float,
+    }
+    default_limits = {
+        'year': (1500, date.today().year),
+        'complexity': (1, 5),
+        'min_players': 1,
+        'max_players': 1,
+        'min_age': (2, 21),
+        'min_time': (1, 24 * 60),
+        'max_time': (1, 4 * 24 * 60),
+        # 'compilation': (None, 0),
+        'num_votes': DEFAULT_MIN_NUM_VOTES,
+    }
 
     _rated_games = None
     _known_games = None
@@ -247,6 +130,7 @@ class GamesRecommender(object):
     @property
     def rated_games(self):
         ''' rated games '''
+
         if self._rated_games is None:
             self._rated_games = frozenset(self.model.coefficients['bgg_id']['bgg_id'])
         return self._rated_games
@@ -254,6 +138,7 @@ class GamesRecommender(object):
     @property
     def known_games(self):
         ''' known games '''
+
         if self._known_games is None:
             self._known_games = frozenset(
                 self.games['bgg_id'] if self.games else ()) | self.rated_games
@@ -262,6 +147,7 @@ class GamesRecommender(object):
     @property
     def num_games(self):
         ''' total number of games known to the recommender '''
+
         if self._num_games is None:
             self._num_games = len(self.known_games)
         return self._num_games
@@ -269,8 +155,9 @@ class GamesRecommender(object):
     @property
     def clusters(self):
         ''' game implementation clusters '''
+
         if self._clusters is None:
-            self._clusters = make_cluster(self.games, 'bgg_id', 'implementation')
+            self._clusters = make_cluster(self.games, 'bgg_id', 'implementation', int)
         return self._clusters
 
     def cluster(self, bgg_id):
@@ -371,14 +258,17 @@ class GamesRecommender(object):
             cls,
             games,
             ratings,
-            columns=None,
             max_iterations=100,
+            defaults=True,
             **min_max,
         ):
         ''' train recommender from data '''
 
-        columns = [] if columns is None else list(columns)
+        if defaults:
+            for column, values in cls.default_limits.items():
+                min_max.setdefault(column, values)
 
+        columns = list(min_max.keys())
         if 'bgg_id' not in columns:
             columns.append('bgg_id')
 
@@ -387,18 +277,8 @@ class GamesRecommender(object):
         ind = games['bgg_id'].apply(bool, skip_na=False)
 
         for column, values in min_max.items():
-            if column not in columns:
-                cls.logger.warning('received unknown column <%s>', column)
-                continue
-
-            lower, upper = None, None
-
-            if not isinstance(values, (tuple, list)):
-                lower = values
-            elif len(values) == 1:
-                lower = values[0]
-            else:
-                lower, upper = values
+            values = tuple(arg_to_iter(values)) + (None, None)
+            lower, upper = values[:2]
 
             if lower is not None:
                 ind &= games[column] >= lower
@@ -418,11 +298,88 @@ class GamesRecommender(object):
 
         return cls(model, all_games)
 
+    @classmethod
+    def load_games(cls, games_csv, columns=None):
+        ''' load games from CSV '''
+
+        columns = cls.columns_games if columns is None else columns
+        _, csv_cond = tempfile.mkstemp(text=True)
+        num_games = condense_csv(games_csv, csv_cond, columns.keys())
+
+        cls.logger.info('condensed %d games into <%s>', num_games, csv_cond)
+
+        games = tc.SFrame.read_csv(
+            csv_cond,
+            column_type_hints=columns,
+            usecols=columns.keys(),
+        )
+
+        try:
+            os.remove(csv_cond)
+        except Exception as exc:
+            cls.logger.exception(exc)
+
+        if 'compilation' in columns:
+            # pylint: disable=unexpected-keyword-arg
+            games['compilation'] = games['compilation'].apply(bool, skip_na=False)
+
+        # TODO dedupe games by bgg_id
+
+        return games
+
+    @classmethod
+    def load_ratings(cls, ratings_csv, columns=None, dedupe=True):
+        ''' load games from CSV '''
+
+        columns = cls.columns_ratings if columns is None else columns
+        ratings = tc.SFrame.read_csv(
+            ratings_csv,
+            column_type_hints=columns,
+            usecols=columns.keys(),
+        ).dropna()
+
+        if dedupe and 'bgg_user_rating' in columns:
+            ratings = ratings.unstack('bgg_user_rating', 'ratings')
+            ratings['bgg_user_rating'] = ratings['ratings'].apply(lambda x: x[-1], dtype=float)
+            del ratings['ratings']
+
+        return ratings
+
+    @classmethod
+    def train_from_csv(
+            cls,
+            games_csv,
+            ratings_csv,
+            games_columns=None,
+            ratings_columns=None,
+            max_iterations=100,
+            defaults=True,
+            **min_max,
+        ):
+        ''' load data from CSV and train recommender '''
+
+        games = cls.load_games(games_csv, games_columns)
+        ratings = cls.load_ratings(ratings_csv, ratings_columns)
+
+        return cls.train(
+            games=games,
+            ratings=ratings,
+            max_iterations=max_iterations,
+            defaults=defaults,
+            **min_max
+        )
+
+    def __str__(self):
+        return str(self.model)
+
+    def __repr__(self):
+        return repr(self.model)
+
 
 def _parse_args():
     parser = argparse.ArgumentParser(description='train board game recommender model')
     parser.add_argument('users', nargs='*', help='users to be recommended games')
-    parser.add_argument('--model', '-m', default='recommender', help='model directory')
+    parser.add_argument('--model', '-m', default='.tc', help='model directory')
     parser.add_argument('--train', '-t', action='store_true', help='train a new model')
     parser.add_argument('--games', '-g', default='results/bgg.csv', help='games CSV file')
     parser.add_argument(
@@ -446,36 +403,26 @@ def _main():
 
     LOGGER.info(args)
 
-    if args.train:
-        games, _, model = train_recommender(args.games, args.ratings, args.model)
-    elif not args.model:
-        raise ValueError('no model directory given')
-    else:
-        games = _load_games(args.games)
-        model = tc.load_model(args.model)
+    recommender = (
+        GamesRecommender.train_from_csv(args.games, args.ratings) if args.train
+        else GamesRecommender.load(args.model))
 
     for user in [None] + args.users:
         LOGGER.info('#' * 100)
 
         # TODO try `diversity` argument
-        recommendations = (
-            model.recommend([user], k=len(games))
-            .join(games, on='bgg_id', how='left')[
-                'rank',
-                'name',
-                'bgg_id',
-                'score',
-            ])
+        recommendations = recommender.recommend(user)
 
         LOGGER.info('best games for <%s>', user or 'everyone')
-        recommendations.sort('rank').print_rows(num_rows=args.num_rec)
+        recommendations.print_rows(num_rows=args.num_rec)
         LOGGER.info('worst games for <%s>', user or 'everyone')
         recommendations.sort('rank', False).print_rows(num_rows=args.num_rec)
 
         if not user:
             continue
 
-        similar = model.get_similar_users([user], k=args.num_rec)[
+        # TODO add to GamesRecommender
+        similar = recommender.model.get_similar_users([user], k=args.num_rec)[
             'rank',
             'similar',
             'score',
