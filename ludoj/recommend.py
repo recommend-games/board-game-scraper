@@ -14,6 +14,8 @@ from datetime import date
 
 import turicreate as tc
 
+from scrapy.utils.misc import arg_to_iter
+
 from .utils import condense_csv # clear_list, parse_int
 
 csv.field_size_limit(sys.maxsize)
@@ -183,6 +185,240 @@ def train_recommender(games_csv, ratings_csv, out_dir=None, **min_max):
     return games, ratings, model
 
 
+def make_cluster(data, item_id, target, target_dtype=str):
+    ''' take an SFrame and cluster by target '''
+
+    if not data:
+        return tc.SArray(dtype=list)
+
+    data = data[item_id, target].dropna()
+
+    if not data:
+        return tc.SArray(dtype=list)
+
+    def _convert(item):
+        try:
+            return target_dtype(item)
+        except Exception:
+            pass
+        return None
+
+    data[target] = data[target].apply(
+        lambda x: [i for i in map(_convert, x or ()) if i is not None],
+        dtype=list,
+        skip_na=True,
+    )
+
+    data = data.stack(
+        column_name=target,
+        new_column_name=target,
+        new_column_type=target_dtype,
+        drop_na=True,
+    )
+
+    if not data:
+        return tc.SArray(dtype=list)
+
+    graph = tc.SGraph(edges=data, src_field=item_id, dst_field=target)
+    components_model = tc.connected_components.create(graph)
+    clusters = components_model.component_id.groupby(
+        'component_id', {'cluster': tc.aggregate.CONCAT('__id')})['cluster']
+
+    return clusters.filter(lambda x: x and len(x) > 1)
+
+
+class GamesRecommender(object):
+    ''' games recommender '''
+
+    logger = logging.getLogger('GamesRecommender')
+
+    _rated_games = None
+    _known_games = None
+    _num_games = None
+    _clusters = None
+    _game_clusters = None
+
+    def __init__(self, model, games=None, clusters=None):
+        self.model = model
+        self.games = games
+        if clusters:
+            self._clusters = clusters
+
+    @property
+    def rated_games(self):
+        ''' rated games '''
+        if self._rated_games is None:
+            self._rated_games = frozenset(self.model.coefficients['bgg_id']['bgg_id'])
+        return self._rated_games
+
+    @property
+    def known_games(self):
+        ''' known games '''
+        if self._known_games is None:
+            self._known_games = frozenset(
+                self.games['bgg_id'] if self.games else ()) | self.rated_games
+        return self._known_games
+
+    @property
+    def num_games(self):
+        ''' total number of games known to the recommender '''
+        if self._num_games is None:
+            self._num_games = len(self.known_games)
+        return self._num_games
+
+    @property
+    def clusters(self):
+        ''' game implementation clusters '''
+        if self._clusters is None:
+            self._clusters = make_cluster(self.games, 'bgg_id', 'implementation')
+        return self._clusters
+
+    def cluster(self, bgg_id):
+        ''' get implementation cluster for a given game '''
+
+        if not self.clusters:
+            return (bgg_id,)
+
+        if self._game_clusters is None:
+            self._game_clusters = {
+                id_: cluster for cluster in self.clusters
+                for id_ in cluster if cluster and len(cluster) > 1
+            }
+
+        return self._game_clusters.get(bgg_id) or (bgg_id,)
+
+    def recommend(self, users=None, num_games=None, ascending=True, columns=None, **kwargs):
+        ''' recommend games '''
+
+        users = list(arg_to_iter(users)) or [None]
+
+        kwargs['k'] = kwargs.get('k', self.num_games) if num_games is None else num_games
+
+        columns = list(arg_to_iter(columns)) or ['rank', 'name', 'bgg_id', 'score']
+        if len(users) > 1 and 'bgg_user_name' not in columns:
+            columns.insert(0, 'bgg_user_name')
+
+        recommendations = self.model.recommend(users=users, **kwargs)
+
+        if self.games:
+            recommendations = recommendations.join(self.games, on='bgg_id', how='left')
+        else:
+            recommendations['name'] = None
+
+        return recommendations.sort('rank', ascending=ascending)[columns]
+
+    def save(
+            self,
+            path,
+            dir_model='recommender',
+            dir_games='games',
+            dir_clusters='clusters',
+        ):
+        ''' save all recommender data to files in the give dir '''
+
+        path_model = os.path.join(path, dir_model, '')
+        self.logger.info('saving model to <%s>', path_model)
+        self.model.save(path_model)
+
+        if self.games:
+            path_games = os.path.join(path, dir_games, '')
+            self.logger.info('saving games to <%s>', path_games)
+            self.games.save(path_games)
+
+        if self.clusters:
+            path_clusters = os.path.join(path, dir_clusters, '')
+            self.logger.info('saving clusters to <%s>', path_clusters)
+            self.clusters.save(path_clusters)
+
+    @classmethod
+    def load(
+            cls,
+            path,
+            dir_model='recommender',
+            dir_games='games',
+            dir_clusters='clusters',
+        ):
+        ''' load all recommender data from files in the give dir '''
+
+        path_model = os.path.join(path, dir_model, '')
+        cls.logger.info('loading model from <%s>', path_model)
+        model = tc.load_model(path_model)
+
+        if dir_games:
+            path_games = os.path.join(path, dir_games, '')
+            cls.logger.info('loading games from <%s>', path_games)
+            try:
+                games = tc.load_sframe(path_games)
+            except Exception:
+                games = None
+        else:
+            games = None
+
+        if dir_clusters:
+            path_clusters = os.path.join(path, dir_clusters, '')
+            cls.logger.info('loading clusters from <%s>', path_clusters)
+            try:
+                clusters = tc.SArray(path_clusters)
+            except Exception:
+                clusters = None
+        else:
+            clusters = None
+
+        return cls(model, games, clusters)
+
+    @classmethod
+    def train(
+            cls,
+            games,
+            ratings,
+            columns=None,
+            max_iterations=100,
+            **min_max,
+        ):
+        ''' train recommender from data '''
+
+        columns = [] if columns is None else list(columns)
+
+        if 'bgg_id' not in columns:
+            columns.append('bgg_id')
+
+        all_games = games
+        games = games[columns].dropna()
+        ind = games['bgg_id'].apply(bool, skip_na=False)
+
+        for column, values in min_max.items():
+            if column not in columns:
+                cls.logger.warning('received unknown column <%s>', column)
+                continue
+
+            lower, upper = None, None
+
+            if not isinstance(values, (tuple, list)):
+                lower = values
+            elif len(values) == 1:
+                lower = values[0]
+            else:
+                lower, upper = values
+
+            if lower is not None:
+                ind &= games[column] >= lower
+            if upper is not None:
+                ind &= games[column] <= upper
+
+        games = games[ind]
+
+        model = tc.ranking_factorization_recommender.create(
+            ratings.filter_by(games['bgg_id'], 'bgg_id'),
+            user_id='bgg_user_name',
+            item_id='bgg_id',
+            target='bgg_user_rating',
+            # item_data=games,
+            max_iterations=max_iterations,
+        )
+
+        return cls(model, all_games)
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description='train board game recommender model')
     parser.add_argument('users', nargs='*', help='users to be recommended games')
@@ -251,19 +487,6 @@ def _main():
 
 if __name__ == '__main__':
     _main()
-
-
-# if not implementations:
-#     return
-# implementations = implementations.stack(
-#     column_name='implementation',
-#     new_column_name='implementation',
-#     new_column_type=int,
-# )
-# graph = tc.SGraph(edges=implementations, src_field='bgg_id', dst_field='implementation')
-# components_model = tc.connected_components.create(graph)
-# clusters = components_model.component_id.groupby(
-#     'component_id', {'bgg_ids': tc.aggregate.CONCAT('__id')})['bgg_ids']
 
 # ids = set(games['bgg_id'])
 
