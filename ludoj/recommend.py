@@ -120,6 +120,8 @@ class GamesRecommender(object):
     _num_games = None
     _clusters = None
     _game_clusters = None
+    _compilations = None
+    _cooperatives = None
 
     def __init__(self, model, games=None, clusters=None):
         self.model = model
@@ -162,6 +164,28 @@ class GamesRecommender(object):
             self._clusters = make_cluster(self.games, 'bgg_id', 'implementation', int)
         return self._clusters
 
+    @property
+    def compilations(self):
+        ''' compilation games '''
+
+        if self._compilations is None:
+            self._compilations = (
+                self.games[self.games['compilation']]['bgg_id']
+                if self.games and 'compilation' in self.games.column_names()
+                else tc.SArray(dtype=int))
+        return self._compilations
+
+    @property
+    def cooperatives(self):
+        ''' cooperative games '''
+
+        if self._cooperatives is None:
+            self._cooperatives = (
+                self.games[self.games['cooperative']]['bgg_id']
+                if self.games and 'cooperative' in self.games.column_names()
+                else tc.SArray(dtype=int))
+        return self._cooperatives
+
     def cluster(self, bgg_id):
         ''' get implementation cluster for a given game '''
 
@@ -177,10 +201,28 @@ class GamesRecommender(object):
 
         return self._game_clusters.get(bgg_id) or (bgg_id,)
 
-    def recommend(self, users=None, num_games=None, ascending=True, columns=None, **kwargs):
+    def recommend(
+            self,
+            users=None,
+            num_games=None,
+            exclude=None,
+            exclude_compilations=True,
+            ascending=True,
+            columns=None,
+            **kwargs
+        ):
         ''' recommend games '''
 
         users = list(arg_to_iter(users)) or [None]
+
+        # pylint: disable=len-as-condition
+        if exclude_compilations and len(self.compilations):
+            comp = tc.SFrame({'bgg_id': self.compilations})
+            for user in users:
+                comp['bgg_user_name'] = user
+                # pylint: disable=no-member
+                comp['bgg_user_name'] = comp['bgg_user_name'].astype(str, True)
+                exclude = comp.copy() if exclude is None else exclude.append(comp)
 
         kwargs['k'] = kwargs.get('k', self.num_games) if num_games is None else num_games
 
@@ -188,7 +230,7 @@ class GamesRecommender(object):
         if len(users) > 1 and 'bgg_user_name' not in columns:
             columns.insert(0, 'bgg_user_name')
 
-        recommendations = self.model.recommend(users=users, **kwargs)
+        recommendations = self.model.recommend(users=users, exclude=exclude, **kwargs)
 
         if self.games:
             recommendations = recommendations.join(self.games, on='bgg_id', how='left')
@@ -197,10 +239,19 @@ class GamesRecommender(object):
 
         return recommendations.sort('rank', ascending=ascending)[columns]
 
-    def lead_game(self, bgg_id, user=None, exclude_known=False, **kwargs):
+    def lead_game(
+            self,
+            bgg_id,
+            user=None,
+            exclude_known=False,
+            exclude_compilations=True,
+            **kwargs
+        ):
         ''' find the highest rated game in a cluster '''
 
-        cluster = (frozenset(self.cluster(bgg_id)) & self.rated_games)
+        cluster = frozenset(self.cluster(bgg_id)) & self.rated_games
+        if exclude_compilations:
+            cluster -= frozenset(self.compilations)
         other_games = cluster - {bgg_id}
 
         if not other_games:
@@ -214,7 +265,11 @@ class GamesRecommender(object):
         kwargs.pop('items', None)
 
         recommendations = self.recommend(
-            user, items=cluster, exclude_known=exclude_known, **kwargs)
+            user,
+            items=cluster,
+            exclude_known=exclude_known,
+            exclude_compilations=exclude_compilations,
+            **kwargs)
 
         if recommendations:
             return recommendations['bgg_id'][0]
@@ -335,6 +390,7 @@ class GamesRecommender(object):
     def load_games(cls, games_csv, columns=None):
         ''' load games from CSV '''
 
+        # TODO parse dates, e.g., scraped_at
         columns = cls.columns_games if columns is None else columns
         _, csv_cond = tempfile.mkstemp(text=True)
         num_games = condense_csv(games_csv, csv_cond, columns.keys())
@@ -364,6 +420,7 @@ class GamesRecommender(object):
     def load_ratings(cls, ratings_csv, columns=None, dedupe=True):
         ''' load games from CSV '''
 
+        # TODO parse dates, e.g., scraped_at
         columns = cls.columns_ratings if columns is None else columns
         ratings = tc.SFrame.read_csv(
             ratings_csv,
@@ -429,7 +486,7 @@ def _main():
     args = _parse_args()
 
     logging.basicConfig(
-        stream=sys.stderr,
+        stream=sys.stdout,
         level=logging.DEBUG if args.verbose > 0 else logging.INFO,
         format='%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s'
     )
