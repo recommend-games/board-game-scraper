@@ -16,7 +16,7 @@ import turicreate as tc
 
 from scrapy.utils.misc import arg_to_iter
 
-from .utils import condense_csv
+from .utils import condense_csv, filter_sframe
 
 csv.field_size_limit(sys.maxsize)
 
@@ -186,6 +186,11 @@ class GamesRecommender(object):
                 else tc.SArray(dtype=int))
         return self._cooperatives
 
+    def filter_games(self, **filters):
+        ''' return games filtered by given criteria '''
+
+        return filter_sframe(self.games, **filters)
+
     def cluster(self, bgg_id):
         ''' get implementation cluster for a given game '''
 
@@ -204,9 +209,11 @@ class GamesRecommender(object):
     def recommend(
             self,
             users=None,
-            num_games=None,
+            games=None,
+            games_filters=None,
             exclude=None,
             exclude_compilations=True,
+            num_games=None,
             ascending=True,
             columns=None,
             **kwargs
@@ -214,6 +221,21 @@ class GamesRecommender(object):
         ''' recommend games '''
 
         users = list(arg_to_iter(users)) or [None]
+
+        items = kwargs.pop('items', None)
+        assert games is None or items is None, 'cannot use <games> and <items> together'
+        games = items if games is None else games
+
+        if games_filters and self.games:
+            games = (
+                tc.SArray(dtype=int) if games is None
+                else games['bgg_id'].astype(int, True) if isinstance(games, tc.SFrame)
+                else tc.SArray(games, dtype=int))
+            bgg_id_in = frozenset(games_filters.get('bgg_id__in') or ())
+            games_filters['bgg_id__in'] = (
+                bgg_id_in & self.rated_games if bgg_id_in else self.rated_games)
+            filtered_games = self.filter_games(**games_filters)
+            games = games.append(filtered_games['bgg_id']).unique()
 
         # pylint: disable=len-as-condition
         if exclude_compilations and len(self.compilations):
@@ -230,7 +252,7 @@ class GamesRecommender(object):
         if len(users) > 1 and 'bgg_user_name' not in columns:
             columns.insert(0, 'bgg_user_name')
 
-        recommendations = self.model.recommend(users=users, exclude=exclude, **kwargs)
+        recommendations = self.model.recommend(users=users, items=games, exclude=exclude, **kwargs)
 
         if self.games:
             recommendations = recommendations.join(self.games, on='bgg_id', how='left')

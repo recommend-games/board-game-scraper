@@ -15,6 +15,7 @@ from types import GeneratorType
 from urllib.parse import parse_qs, urlparse
 
 import dateutil.parser
+import turicreate as tc
 
 csv.field_size_limit(sys.maxsize)
 
@@ -218,3 +219,51 @@ def condense_csv(in_file, out_file, columns, header=True):
         writer.writerow({k: item.get(k) for k in columns})
 
     return count + 1
+
+
+def filter_sframe(sframe, **params):
+    ''' query an SFrame with given parameters '''
+
+    if not params:
+        return sframe
+
+    ind = tc.SArray.from_const(True, len(sframe))
+
+    for key, value in params.items():
+        split = key.split('__')
+        if len(split) == 1:
+            split.append('exact')
+        field, operation = split
+
+        sarray = sframe[field]
+
+        if operation == 'exact':
+            ind &= sarray == value
+        elif operation == 'iexact':
+            value = value.lower()
+            ind &= sarray.apply(str.lower) == value
+        elif operation == 'contains':
+            ind &= sarray.apply(lambda string, v=value: v in string)
+        elif operation == 'icontains':
+            value = value.lower()
+            ind &= sarray.apply(lambda string, v=value: v in string.lower())
+        elif operation == 'in':
+            value = frozenset(value)
+            ind &= sarray.apply(lambda item, v=value: item in v)
+        elif operation == 'gt':
+            ind &= sarray > value
+        elif operation == 'gte':
+            ind &= sarray >= value
+        elif operation == 'lt':
+            ind &= sarray < value
+        elif operation == 'lte':
+            ind &= sarray <= value
+        elif operation == 'range':
+            lower, upper = value
+            ind &= (sarray >= lower) & (sarray <= upper)
+        elif operation == 'apply':
+            ind &= sarray.apply(value)
+        else:
+            raise ValueError('unknown operation <{}>'.format(operation))
+
+    return sframe[ind]
