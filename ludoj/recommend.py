@@ -250,17 +250,26 @@ class GamesRecommender(object):
                 rated = self.ratings.filter_by([user], 'bgg_user_name')['bgg_id', 'bgg_user_name']
                 exclude = rated.copy() if exclude is None else exclude.append(rated)
 
-        if exclude_clusters and exclude is not None:
-            # TODO for each excluded game, also exclude clusters
-            pass
+        if exclude_clusters and exclude:
+            grouped = exclude.groupby('bgg_user_name', {'bgg_ids': tc.aggregate.CONCAT('bgg_id')})
+            for user, bgg_ids in zip(grouped['bgg_user_name'], grouped['bgg_ids']):
+                bgg_ids = frozenset(bgg_ids)
+                if not user or not bgg_ids:
+                    continue
+                bgg_ids = {
+                    linked for bgg_id in bgg_ids
+                    for linked in self.cluster(bgg_id) if linked not in bgg_ids}
+                custers = tc.SFrame({
+                    'bgg_id': list(bgg_ids),
+                    'bgg_user_name': tc.SArray.from_const(user, len(bgg_ids), str),
+                })
+                exclude = exclude.append(custers)
 
         # pylint: disable=len-as-condition
         if exclude_compilations and len(self.compilations):
             comp = tc.SFrame({'bgg_id': self.compilations})
             for user in users:
-                comp['bgg_user_name'] = user
-                # pylint: disable=no-member
-                comp['bgg_user_name'] = comp['bgg_user_name'].astype(str, True)
+                comp['bgg_user_name'] = tc.SArray.from_const(user, len(self.compilations), str)
                 exclude = comp.copy() if exclude is None else exclude.append(comp)
 
         kwargs['k'] = kwargs.get('k', self.num_games) if num_games is None else num_games
