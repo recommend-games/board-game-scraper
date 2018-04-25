@@ -123,9 +123,10 @@ class GamesRecommender(object):
     _compilations = None
     _cooperatives = None
 
-    def __init__(self, model, games=None, clusters=None):
+    def __init__(self, model, games=None, ratings=None, clusters=None):
         self.model = model
         self.games = games
+        self.ratings = ratings
 
         # pylint: disable=len-as-condition
         if clusters is not None and len(clusters):
@@ -144,8 +145,10 @@ class GamesRecommender(object):
         ''' known games '''
 
         if self._known_games is None:
-            self._known_games = frozenset(
-                self.games['bgg_id'] if self.games else ()) | self.rated_games
+            self._known_games = (
+                frozenset(self.ratings['bgg_id'] if self.ratings else ())
+                | frozenset(self.games['bgg_id'] if self.games else ())
+                | self.rated_games)
         return self._known_games
 
     @property
@@ -212,6 +215,8 @@ class GamesRecommender(object):
             games=None,
             games_filters=None,
             exclude=None,
+            exclude_known=True,
+            exclude_clusters=True,
             exclude_compilations=True,
             num_games=None,
             ascending=True,
@@ -237,6 +242,18 @@ class GamesRecommender(object):
             filtered_games = self.filter_games(**games_filters)
             games = games.append(filtered_games['bgg_id']).unique()
 
+        if exclude_known and self.ratings:
+            # TODO also exclude games that the user owns or played
+            for user in users:
+                if not user:
+                    continue
+                rated = self.ratings.filter_by([user], 'bgg_user_name')['bgg_id', 'bgg_user_name']
+                exclude = rated.copy() if exclude is None else exclude.append(rated)
+
+        if exclude_clusters and exclude is not None:
+            # TODO for each excluded game, also exclude clusters
+            pass
+
         # pylint: disable=len-as-condition
         if exclude_compilations and len(self.compilations):
             comp = tc.SFrame({'bgg_id': self.compilations})
@@ -252,7 +269,12 @@ class GamesRecommender(object):
         if len(users) > 1 and 'bgg_user_name' not in columns:
             columns.insert(0, 'bgg_user_name')
 
-        recommendations = self.model.recommend(users=users, items=games, exclude=exclude, **kwargs)
+        recommendations = self.model.recommend(
+            users=users,
+            items=games,
+            exclude=exclude,
+            exclude_known=exclude_known,
+            **kwargs)
 
         if self.games:
             recommendations = recommendations.join(self.games, on='bgg_id', how='left')
@@ -308,6 +330,7 @@ class GamesRecommender(object):
             path,
             dir_model='recommender',
             dir_games='games',
+            dir_ratings='ratings',
             dir_clusters='clusters',
         ):
         ''' save all recommender data to files in the give dir '''
@@ -321,6 +344,11 @@ class GamesRecommender(object):
             self.logger.info('saving games to <%s>', path_games)
             self.games.save(path_games)
 
+        if self.ratings:
+            path_ratings = os.path.join(path, dir_ratings, '')
+            self.logger.info('saving ratings to <%s>', path_ratings)
+            self.ratings.save(path_ratings)
+
         # pylint: disable=len-as-condition
         if self.clusters is not None and len(self.clusters):
             path_clusters = os.path.join(path, dir_clusters, '')
@@ -333,6 +361,7 @@ class GamesRecommender(object):
             path,
             dir_model='recommender',
             dir_games='games',
+            dir_ratings='ratings',
             dir_clusters='clusters',
         ):
         ''' load all recommender data from files in the give dir '''
@@ -351,6 +380,16 @@ class GamesRecommender(object):
         else:
             games = None
 
+        if dir_ratings:
+            path_ratings = os.path.join(path, dir_ratings, '')
+            cls.logger.info('loading ratings from <%s>', path_ratings)
+            try:
+                ratings = tc.load_sframe(path_ratings)
+            except Exception:
+                ratings = None
+        else:
+            ratings = None
+
         if dir_clusters:
             path_clusters = os.path.join(path, dir_clusters, '')
             cls.logger.info('loading clusters from <%s>', path_clusters)
@@ -361,7 +400,7 @@ class GamesRecommender(object):
         else:
             clusters = None
 
-        return cls(model, games, clusters)
+        return cls(model=model, games=games, ratings=ratings, clusters=clusters)
 
     @classmethod
     def train(
@@ -406,7 +445,7 @@ class GamesRecommender(object):
             max_iterations=max_iterations,
         )
 
-        return cls(model, all_games)
+        return cls(model=model, games=all_games, ratings=ratings)
 
     @classmethod
     def load_games(cls, games_csv, columns=None):
