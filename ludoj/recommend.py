@@ -230,12 +230,16 @@ class GamesRecommender(object):
         items = kwargs.pop('items', None)
         assert games is None or items is None, 'cannot use <games> and <items> together'
         games = items if games is None else games
+        games = (
+            games['bgg_id'].astype(int, True) if isinstance(games, tc.SFrame)
+            else arg_to_iter(games) if games is not None
+            else None)
+        games = (
+            games if isinstance(games, tc.SArray) or games is None
+            else tc.SArray(list(games), dtype=int))
 
         if games_filters and self.games:
-            games = (
-                tc.SArray(dtype=int) if games is None
-                else games['bgg_id'].astype(int, True) if isinstance(games, tc.SFrame)
-                else tc.SArray(games, dtype=int))
+            games = tc.SArray(dtype=int) if games is None else games
             bgg_id_in = frozenset(games_filters.get('bgg_id__in') or ())
             games_filters['bgg_id__in'] = (
                 bgg_id_in & self.rated_games if bgg_id_in else self.rated_games)
