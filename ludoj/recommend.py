@@ -243,6 +243,12 @@ class GamesRecommender(object):
             bgg_id_in = frozenset(games_filters.get('bgg_id__in') or ())
             games_filters['bgg_id__in'] = (
                 bgg_id_in & self.rated_games if bgg_id_in else self.rated_games)
+
+            self.logger.debug(
+                'games filters: %r', {
+                    k: '[{:d} games]'.format(len(v)) if k == 'bgg_id__in' else v
+                    for k, v in games_filters.items()})
+
             filtered_games = self.filter_games(**games_filters)
             games = games.append(filtered_games['bgg_id']).unique()
 
@@ -551,6 +557,13 @@ def _parse_args():
     parser.add_argument(
         '--num-rec', '-n', type=int, default=10, help='number of games to recommend')
     parser.add_argument(
+        '--cooperative', '-c', action='store_true', help='recommend cooperative games')
+    parser.add_argument('--players', '-p', type=int, help='player count')
+    parser.add_argument('--complexity', '-C', type=float, nargs='+', help='complexity')
+    parser.add_argument('--time', '-T', type=float, help='max playing time')
+    parser.add_argument('--worst', '-w', action='store_true', help='show worst games')
+    parser.add_argument('--similar', '-s', action='store_true', help='find similar users')
+    parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
     return parser.parse_args()
@@ -567,6 +580,26 @@ def _main():
 
     LOGGER.info(args)
 
+    games_filters = {}
+
+    if args.cooperative:
+        games_filters['cooperative'] = True
+
+    if args.players:
+        # TODO min_players, min_players_rec, or min_players_best?
+        games_filters['min_players__lte'] = args.players
+        games_filters['max_players__gte'] = args.players
+
+    if args.complexity:
+        if len(args.complexity) == 1:
+            games_filters['complexity__lte'] = args.complexity[0]
+        else:
+            games_filters['complexity__gte'] = args.complexity[0]
+            games_filters['complexity__lte'] = args.complexity[1]
+
+    if args.time:
+        games_filters['min_time__lte'] = args.time * 1.1
+
     if args.train:
         recommender = GamesRecommender.train_from_csv(args.games, args.ratings)
         recommender.save(args.model)
@@ -577,14 +610,20 @@ def _main():
         LOGGER.info('#' * 100)
 
         # TODO try `diversity` argument
-        recommendations = recommender.recommend(user)
+        recommendations = recommender.recommend(
+            users=user,
+            games_filters=games_filters,
+            num_games=None if args.worst else args.num_rec,
+        )
 
         LOGGER.info('best games for <%s>', user or 'everyone')
         recommendations.print_rows(num_rows=args.num_rec)
-        LOGGER.info('worst games for <%s>', user or 'everyone')
-        recommendations.sort('rank', False).print_rows(num_rows=args.num_rec)
 
-        if not user:
+        if args.worst:
+            LOGGER.info('worst games for <%s>', user or 'everyone')
+            recommendations.sort('rank', False).print_rows(num_rows=args.num_rec)
+
+        if not user or not args.similar:
             continue
 
         # TODO add to GamesRecommender
