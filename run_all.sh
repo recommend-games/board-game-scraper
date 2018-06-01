@@ -2,6 +2,8 @@
 
 set -euxo pipefail
 
+mkdir -p logs
+
 for SCRAPER in $(scrapy list)
 do
 	echo "Starting <$SCRAPER> spider..."

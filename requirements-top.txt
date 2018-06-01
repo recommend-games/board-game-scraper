@@ -1,6 +1,5 @@
 jmespath
 python-dateutil
 Scrapy
-turicreate
 Twisted
 w3lib

@@ -15,7 +15,6 @@ from types import GeneratorType
 from urllib.parse import parse_qs, urlparse
 
 import dateutil.parser
-import turicreate as tc
 
 csv.field_size_limit(sys.maxsize)
 
@@ -192,78 +191,3 @@ def serialize_json(obj, file=None, **kwargs):
         return json.dump(obj, file, **kwargs)
 
     return json.dumps(obj, **kwargs)
-
-
-def condense_csv(in_file, out_file, columns, header=True):
-    ''' copying only columns from in_file to out_file '''
-
-    if isinstance(in_file, str):
-        with open(in_file) as in_file_obj:
-            return condense_csv(in_file_obj, out_file, columns)
-
-    if isinstance(out_file, str):
-        with open(out_file, 'w') as out_file_obj:
-            return condense_csv(in_file, out_file_obj, columns)
-
-    columns = tuple(columns)
-
-    reader = csv.DictReader(in_file)
-    writer = csv.DictWriter(out_file, columns)
-
-    if header:
-        writer.writeheader()
-
-    count = -1
-
-    for count, item in enumerate(reader):
-        writer.writerow({k: item.get(k) for k in columns})
-
-    return count + 1
-
-
-def filter_sframe(sframe, **params):
-    ''' query an SFrame with given parameters '''
-
-    if not params:
-        return sframe
-
-    ind = tc.SArray.from_const(True, len(sframe))
-
-    for key, value in params.items():
-        split = key.split('__')
-        if len(split) == 1:
-            split.append('exact')
-        field, operation = split
-
-        sarray = sframe[field]
-
-        if operation == 'exact':
-            ind &= sarray == value
-        elif operation == 'iexact':
-            value = value.lower()
-            ind &= sarray.apply(str.lower) == value
-        elif operation == 'contains':
-            ind &= sarray.apply(lambda string, v=value: v in string)
-        elif operation == 'icontains':
-            value = value.lower()
-            ind &= sarray.apply(lambda string, v=value: v in string.lower())
-        elif operation == 'in':
-            value = frozenset(value)
-            ind &= sarray.apply(lambda item, v=value: item in v)
-        elif operation == 'gt':
-            ind &= sarray > value
-        elif operation == 'gte':
-            ind &= sarray >= value
-        elif operation == 'lt':
-            ind &= sarray < value
-        elif operation == 'lte':
-            ind &= sarray <= value
-        elif operation == 'range':
-            lower, upper = value
-            ind &= (sarray >= lower) & (sarray <= upper)
-        elif operation == 'apply':
-            ind &= sarray.apply(value)
-        else:
-            raise ValueError('unknown operation <{}>'.format(operation))
-
-    return sframe[ind]
