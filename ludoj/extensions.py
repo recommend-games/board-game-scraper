@@ -3,12 +3,14 @@
 ''' Scrapy extensions '''
 
 import logging
+import os
 import pprint
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import FeedExporter
 from scrapy.extensions.throttle import AutoThrottle
+from scrapy.utils.job import job_dir
 from scrapy.utils.misc import load_object
 from twisted.internet.defer import DeferredList, maybeDeferred
 from twisted.internet.task import LoopingCall
@@ -63,7 +65,7 @@ class MultiFeedExporter:
             # pylint: disable=cell-var-from-loop
             def _uripar(params, spider, *, cls_name=item_cls.__name__):
                 params['class'] = cls_name
-                LOGGER.info('_uripar(%r, %r, %r)', params, spider, cls_name)
+                LOGGER.debug('_uripar(%r, %r, %r)', params, spider, cls_name)
                 return params
 
             export_fields = (
@@ -184,3 +186,40 @@ class DumpStatsExtension(_LoopingExtension):
     def _print_stats(self):
         stats = self.stats.get_stats()
         LOGGER.info('Scrapy stats: %s', pprint.pformat(stats))
+
+
+class StateTag:
+    ''' writes a tag into JOBDIR with the state of the spider '''
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        ''' init from crawler '''
+
+        jobdir = job_dir(crawler.settings)
+
+        if not jobdir:
+            raise NotConfigured
+
+        state_file = crawler.settings.get('STATE_TAG_FILE') or '.state'
+
+        obj = cls(jobdir, state_file)
+
+        crawler.signals.connect(obj._spider_opened, signals.spider_opened)
+        crawler.signals.connect(obj._spider_closed, signals.spider_closed)
+
+        return obj
+
+    def __init__(self, jobdir, state_file):
+        os.makedirs(jobdir, exist_ok=False)
+        self.state_path = os.path.join(jobdir, state_file)
+
+    def _write(self, content):
+        with open(self.state_path, 'w') as file_state:
+            file_state.write(content)
+
+    def _spider_opened(self):
+        self._write('running')
+
+    # pylint: disable=unused-argument
+    def _spider_closed(self, spider, reason):
+        self._write(reason)

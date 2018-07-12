@@ -99,7 +99,8 @@ include/
 share/
 pip-selfcheck.json
 
+crawls/
 feeds/
+jobs/
 recommender/
 .tc/
-

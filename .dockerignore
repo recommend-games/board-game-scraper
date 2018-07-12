@@ -22,6 +22,8 @@
 
 **/feeds
 **/results
+**/crawls
+**/jobs
 **/models
 **/models_old
 **/scripts

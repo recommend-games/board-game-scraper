@@ -73,9 +73,9 @@ MULTI_FEED_EXPORT_FIELDS = {
         'bgg_id',
         'bgg_user_name',
         'bgg_user_rating',
-        # 'published_at',
-        # 'updated_at',
-        # 'scraped_at',
+        'published_at',
+        'updated_at',
+        'scraped_at',
     )
 }
 
@@ -129,6 +129,7 @@ EXTENSIONS = {
     'ludoj.extensions.MultiFeedExporter': 0,
     'scrapy.extensions.throttle.AutoThrottle': None,
     'ludoj.extensions.NicerAutoThrottle': 0,
+    'ludoj.extensions.StateTag': 0,
     'ludoj.extensions.MonitorDownloadsExtension': 500,
     'ludoj.extensions.DumpStatsExtension': 500,
 }

@@ -8,6 +8,7 @@ import statistics
 from itertools import repeat
 from urllib.parse import unquote_plus, urlencode
 
+from scrapy import signals
 from scrapy import Request, Spider
 from scrapy.utils.project import get_project_settings
 
@@ -95,6 +96,7 @@ class BggSpider(Spider):
         'https://boardgamegeek.com/browse/user/numreviews',
         'https://boardgamegeek.com/browse/user/numsessions')
     item_classes = (GameItem, RatingItem)
+    state = None
 
     # https://www.boardgamegeek.com/wiki/page/BGG_XML_API2
     xml_api_url = 'https://www.boardgamegeek.com/xmlapi2'
@@ -120,6 +122,9 @@ class BggSpider(Spider):
         kwargs.pop('settings', None)
         spider = cls(*args, settings=crawler.settings, **kwargs)
         spider._set_crawler(crawler)
+
+        crawler.signals.connect(spider._spider_opened, signal=signals.spider_opened)
+
         return spider
 
     def __init__(self, *args, settings=None, **kwargs):
@@ -130,6 +135,21 @@ class BggSpider(Spider):
 
         self.scrape_ratings = settings.getbool('SCRAPE_BGG_RATINGS')
         self.min_votes = settings.getint('MIN_VOTES', self.min_votes)
+
+    def _spider_opened(self):
+        state = getattr(self, 'state', None)
+
+        if state is None:
+            self.logger.warning('no spider state found')
+            state = {}
+            self.state = state
+
+        ids_seen = state.get('ids_seen') or frozenset()
+        self.logger.info('%d ID(s) seen in previous state', len(ids_seen))
+
+        self._ids_seen |= ids_seen
+
+        self.state['ids_seen'] = self._ids_seen
 
     def _api_url(self, action, **kwargs):
         kwargs['pagesize'] = self.page_size
