@@ -210,7 +210,7 @@ class StateTag:
         return obj
 
     def __init__(self, jobdir, state_file):
-        os.makedirs(jobdir, exist_ok=False)
+        os.makedirs(jobdir, exist_ok=True)
         self.state_path = os.path.join(jobdir, state_file)
 
     def _write(self, content):
