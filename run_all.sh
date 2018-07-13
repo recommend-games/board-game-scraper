@@ -36,7 +36,7 @@ for SCRAPER in $(scrapy list); do
 	fi
 
 	if [[ -n "$(find_state "$JOBDIR" 'running')" ]]; then
-		echo "Found a running job, skipping <$SCRAPER>..."
+		echo -e "Found a running job, skipping <$SCRAPER>...\\n"
 		continue
 	fi
 
@@ -44,7 +44,7 @@ for SCRAPER in $(scrapy list); do
 	SHUT_DOWN="$(find_state "$JOBDIR" 'shutdown')"
 
 	if [[ -n "$SHUT_DOWN" ]]; then
-		JOBTAG="$(echo "$SHUT_DOWN" | tr -d ' \n')"
+		JOBTAG="$(echo "$SHUT_DOWN" | tr -d '[:space:]')"
 		echo "Resuming previous job <$JOBTAG> for spider <$SCRAPER>."
 	else
 		echo "Starting new job for spider <$SCRAPER>."
@@ -55,5 +55,5 @@ for SCRAPER in $(scrapy list); do
 		-s "JOBDIR=jobs/$SCRAPER/$JOBTAG" \
 		>> "logs/$SCRAPER.log" 2>&1 &
 
-	echo "Started! Follow logs from <$(pwd)/logs/$SCRAPER.log>."
+	echo -e "Started! Follow logs from <$(pwd)/logs/$SCRAPER.log>.\\n"
 done
