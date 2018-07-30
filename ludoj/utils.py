@@ -2,23 +2,33 @@
 
 ''' util functions '''
 
-import csv
 import json
 import logging
 import os
-import sys
+import string as string_lib
 
 from collections import OrderedDict
 from datetime import datetime, timezone
 from itertools import groupby
 from types import GeneratorType
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urlunparse
 
 import dateutil.parser
 
-csv.field_size_limit(sys.maxsize)
-
 LOGGER = logging.getLogger(__name__)
+
+NON_PRINTABLE_SET = frozenset(chr(i) for i in range(128)).difference(string_lib.printable)
+NON_PRINTABLE_TANSLATE = {ord(character): None for character in NON_PRINTABLE_SET}
+
+
+def to_str(string):
+    ''' safely returns either string or None '''
+
+    string = (
+        string if isinstance(string, str)
+        else string.decode() if isinstance(string, bytes)
+        else None)
+    return string.translate(NON_PRINTABLE_TANSLATE) if string is not None else None
 
 
 def identity(obj):
@@ -27,20 +37,31 @@ def identity(obj):
     return obj
 
 
+# pylint: disable=unused-argument
+def const_true(*args, **kwargs):
+    ''' returns True '''
+
+    return True
+
+
 def normalize_space(item, preserve_newline=False):
     ''' normalize space in a string '''
 
+    item = to_str(item)
+
+    if not item:
+        return ''
+
     if preserve_newline:
         try:
-            return '\n'.join(normalize_space(line) for line in item.split('\n')).strip()
+            return '\n'.join(normalize_space(line) for line in item.splitlines()).strip()
         except Exception:
             return ''
 
-    else:
-        try:
-            return ' '.join(item.split())
-        except Exception:
-            return ''
+    try:
+        return ' '.join(item.split())
+    except Exception:
+        return ''
 
 
 def clear_list(items):
@@ -191,3 +212,96 @@ def serialize_json(obj, file=None, **kwargs):
         return json.dump(obj, file, **kwargs)
 
     return json.dumps(obj, **kwargs)
+
+
+def smart_walk(path, raise_exc=False, accept_path=const_true, **s3_args):
+    ''' walk a directory '''
+
+    url = urlparse(to_str(path)) if isinstance(path, (bytes, str)) else path
+    path = url.path if url.path.endswith(os.path.sep) else url.path + os.path.sep
+
+    if url.scheme == 's3':
+        try:
+            import boto
+            from smart_open import s3_iter_bucket
+        except ImportError as exc:
+            LOGGER.error('<boto> and <smart_open> libraries must be importable')
+            LOGGER.exception(exc)
+            if raise_exc:
+                raise exc
+            else:
+                return
+
+        path = path[1:]
+        # regex = re.compile('^{}'.format(re.escape(path)))
+
+        try:
+            bucket = boto.connect_s3().get_bucket(url.hostname)
+            for key, content in s3_iter_bucket(
+                    bucket, prefix=path, accept_key=accept_path, **s3_args):
+                yield urlunparse(('s3', bucket.name, key.key, None, None, None)), content
+
+        except Exception as exc:
+            LOGGER.exception(exc)
+            if raise_exc:
+                raise exc
+
+        return
+
+    path = os.path.abspath(path)
+
+    for sub_dir, _, file_paths in os.walk(path):
+        for file_path in file_paths:
+            file_path = os.path.join(sub_dir, file_path)
+
+            if not accept_path(file_path):
+                continue
+
+            try:
+                with open(file_path, 'rb') as file_obj:
+                    yield urlunparse(('file', None, file_path, None, None, None)), file_obj.read()
+
+            except Exception as exc:
+                LOGGER.exception(exc)
+                if raise_exc:
+                    raise exc
+
+
+def smart_walks(*paths, raise_exc=False, **kwargs):
+    ''' walk all paths '''
+
+    for path in paths:
+        url = urlparse(to_str(path)) if isinstance(path, (bytes, str)) else path
+
+        if url.path.endswith('/'):
+            yield from smart_walk(url, raise_exc=raise_exc, **kwargs)
+            continue
+
+        if url.scheme == 's3':
+            try:
+                from smart_open import smart_open
+                with smart_open(url.geturl(), 'rb') as file_obj:
+                    yield url.geturl(), file_obj.read()
+                continue
+
+            except Exception:
+                pass
+
+            yield from smart_walk(url, raise_exc=raise_exc, **kwargs)
+
+            continue
+
+        path = os.path.abspath(url.path)
+
+        if os.path.isdir(path):
+            yield from smart_walk(path, raise_exc=raise_exc, **kwargs)
+            continue
+
+        try:
+            with open(path, 'rb') as file_obj:
+                yield urlunparse(('file', None, path, None, None, None)), file_obj.read()
+
+        except Exception as exc:
+            LOGGER.exception(exc)
+            if raise_exc:
+                raise exc
