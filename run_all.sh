@@ -4,6 +4,7 @@ set -euo pipefail
 
 JOBSDIR='jobs'
 STATE_FILE='.state'
+# PID_FILE='.pid'
 
 function find_state() {
 	DELETE=${3:-''}
@@ -21,7 +22,7 @@ function find_state() {
 	done
 }
 
-mkdir -p logs
+mkdir -p 'logs'
 mkdir -p "$JOBSDIR"
 
 DATE=$(date --utc +'%Y-%m-%dT%H-%M-%S')
@@ -35,8 +36,10 @@ for SCRAPER in $(scrapy list); do
 		echo "Deleted finished jobs in <$JOBDIR>: $DELETED."
 	fi
 
-	if [[ -n "$(find_state "$JOBDIR" 'running')" ]]; then
-		echo -e "Found a running job, skipping <$SCRAPER>...\\n"
+	RUNNING=$(find_state "$JOBDIR" 'running')
+
+	if [[ -n "$RUNNING" ]]; then
+		echo -e "Found a running job <$(echo "$RUNNING" | tr -d '[:space:]')>, skipping <$SCRAPER>...\\n"
 		continue
 	fi
 
@@ -50,10 +53,17 @@ for SCRAPER in $(scrapy list); do
 		echo "Starting new job for spider <$SCRAPER>."
 	fi
 
+	CURR_JOB="jobs/$SCRAPER/$JOBTAG"
+
+	# mkdir -p "$CURR_JOB"
+
 	nohup scrapy crawl "$SCRAPER" \
 		-o 'feeds/%(name)s/%(time)s/%(class)s.csv' \
-		-s "JOBDIR=jobs/$SCRAPER/$JOBTAG" \
+		-s "JOBDIR=$CURR_JOB" \
 		>> "logs/$SCRAPER.log" 2>&1 &
 
-	echo -e "Started! Follow logs from <$(pwd)/logs/$SCRAPER.log>.\\n"
+	# echo $! > "$CURR_JOB/$PID_FILE"
+
+	# echo "Started process <$(tr -d '[:space:]' < "$CURR_JOB/$PID_FILE")>!"
+	echo -e	"Started! Follow logs from <$(pwd)/logs/$SCRAPER.log>.\\n"
 done

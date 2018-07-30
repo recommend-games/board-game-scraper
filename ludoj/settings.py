@@ -182,3 +182,7 @@ DUMP_STATS_INTERVAL = 5 * 60
 
 # Spider settings
 SCRAPE_BGG_RATINGS = True
+
+# State tags
+STATE_TAG_FILE = '.state'
+PID_TAG_FILE = '.pid'

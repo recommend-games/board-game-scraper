@@ -201,25 +201,49 @@ class StateTag:
             raise NotConfigured
 
         state_file = crawler.settings.get('STATE_TAG_FILE') or '.state'
+        pid_file = crawler.settings.get('PID_TAG_FILE') or '.pid'
 
-        obj = cls(jobdir, state_file)
+        obj = cls(jobdir, state_file, pid_file)
 
         crawler.signals.connect(obj._spider_opened, signals.spider_opened)
         crawler.signals.connect(obj._spider_closed, signals.spider_closed)
 
         return obj
 
-    def __init__(self, jobdir, state_file):
+    def __init__(self, jobdir, state_file, pid_file=None):
         os.makedirs(jobdir, exist_ok=True)
         self.state_path = os.path.join(jobdir, state_file)
+        self.pid_file = os.path.join(jobdir, pid_file) if pid_file else None
 
-    def _write(self, content):
-        with open(self.state_path, 'w') as file_state:
-            file_state.write(content)
+    def _write(self, target, content):
+        path = self.pid_file if target == 'pid' else self.state_path
+
+        if not path:
+            return 0
+
+        with open(path, 'w') as out_file:
+            return out_file.write(content)
+
+    def _delete(self, target):
+        path = self.pid_file if target == 'pid' else self.state_path
+
+        if not path:
+            return False
+
+        try:
+            os.remove(path)
+            return True
+
+        except Exception as exc:
+            LOGGER.exception(exc)
+
+        return False
 
     def _spider_opened(self):
-        self._write('running')
+        self._write('state', 'running')
+        self._write('pid', str(os.getpid()))
 
     # pylint: disable=unused-argument
     def _spider_closed(self, spider, reason):
-        self._write(reason)
+        self._write('state', reason)
+        self._delete('pid')
