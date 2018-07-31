@@ -58,7 +58,7 @@ for SCRAPER in $(scrapy list); do
 	# mkdir -p "$CURR_JOB"
 
 	nohup scrapy crawl "$SCRAPER" \
-		-o 'feeds/%(name)s/%(time)s/%(class)s.csv' \
+		-o 'feeds/%(name)s/%(class)s/%(time)s.csv' \
 		-s "JOBDIR=$CURR_JOB" \
 		>> "logs/$SCRAPER.log" 2>&1 &
 
