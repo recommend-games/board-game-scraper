@@ -214,8 +214,54 @@ def serialize_json(obj, file=None, **kwargs):
     return json.dumps(obj, **kwargs)
 
 
-def smart_walk(path, raise_exc=False, accept_path=const_true, **s3_args):
+def smart_url(scheme=None, hostname=None, path=None):
+    ''' S3 URL '''
+
+    return urlunparse((scheme, hostname, path, None, None, None))
+
+
+def smart_exists(path, raise_exc=False):
+    ''' returns True if given path exists '''
+
+    url = urlparse(path)
+
+    if url.scheme == 's3':
+        try:
+            import boto
+        except ImportError as exc:
+            LOGGER.error('<boto> library must be importable: %s', exc)
+            if raise_exc:
+                raise exc
+            else:
+                return False
+
+        try:
+            bucket = boto.connect_s3().get_bucket(url.hostname, validate=True)
+            key = bucket.new_key(url.path[1:])
+            return key.exists()
+
+        except Exception as exc:
+            LOGGER.error(exc)
+            if raise_exc:
+                raise exc
+
+        return False
+
+    try:
+        return os.path.exists(url.path)
+
+    except Exception as exc:
+        LOGGER.error(exc)
+        if raise_exc:
+            raise exc
+
+    return False
+
+
+def smart_walk(path, load=False, raise_exc=False, accept_path=const_true, **s3_args):
     ''' walk a directory '''
+
+    # TODO spaghetti code - disentangle!
 
     url = urlparse(to_str(path)) if isinstance(path, (bytes, str)) else path
     path = url.path if url.path.endswith(os.path.sep) else url.path + os.path.sep
@@ -223,9 +269,8 @@ def smart_walk(path, raise_exc=False, accept_path=const_true, **s3_args):
     if url.scheme == 's3':
         try:
             import boto
-            from smart_open import s3_iter_bucket
-        except ImportError as exc:
-            LOGGER.error('<boto> and <smart_open> libraries must be importable')
+            bucket = boto.connect_s3().get_bucket(url.hostname, validate=True)
+        except Exception as exc:
             LOGGER.exception(exc)
             if raise_exc:
                 raise exc
@@ -233,13 +278,34 @@ def smart_walk(path, raise_exc=False, accept_path=const_true, **s3_args):
                 return
 
         path = path[1:]
-        # regex = re.compile('^{}'.format(re.escape(path)))
+
+        if not load:
+            try:
+                for obj in bucket.list(prefix=path):
+                    if accept_path(obj.key):
+                        yield smart_url(scheme='s3', hostname=url.hostname, path=obj.key), None
+
+            except Exception as exc:
+                LOGGER.exception(exc)
+                if raise_exc:
+                    raise exc
+
+            return
 
         try:
-            bucket = boto.connect_s3().get_bucket(url.hostname)
+            from smart_open import s3_iter_bucket
+        except ImportError as exc:
+            LOGGER.error('<smart_open> library must be importable')
+            LOGGER.exception(exc)
+            if raise_exc:
+                raise exc
+            else:
+                return
+
+        try:
             for key, content in s3_iter_bucket(
                     bucket, prefix=path, accept_key=accept_path, **s3_args):
-                yield urlunparse(('s3', bucket.name, key.key, None, None, None)), content
+                yield smart_url(scheme='s3', hostname=bucket.name, path=key.key), content
 
         except Exception as exc:
             LOGGER.exception(exc)
@@ -257,9 +323,15 @@ def smart_walk(path, raise_exc=False, accept_path=const_true, **s3_args):
             if not accept_path(file_path):
                 continue
 
+            url = smart_url(scheme='file', path=file_path)
+
+            if not load:
+                yield url, None
+                continue
+
             try:
                 with open(file_path, 'rb') as file_obj:
-                    yield urlunparse(('file', None, file_path, None, None, None)), file_obj.read()
+                    yield url, file_obj.read()
 
             except Exception as exc:
                 LOGGER.exception(exc)
@@ -267,17 +339,24 @@ def smart_walk(path, raise_exc=False, accept_path=const_true, **s3_args):
                     raise exc
 
 
-def smart_walks(*paths, raise_exc=False, **kwargs):
+def smart_walks(*paths, load=False, raise_exc=False, **kwargs):
     ''' walk all paths '''
 
     for path in paths:
         url = urlparse(to_str(path)) if isinstance(path, (bytes, str)) else path
 
         if url.path.endswith('/'):
-            yield from smart_walk(url, raise_exc=raise_exc, **kwargs)
+            yield from smart_walk(url, load=load, raise_exc=raise_exc, **kwargs)
             continue
 
         if url.scheme == 's3':
+            if not load:
+                if smart_exists(path):
+                    yield url.geturl(), None
+                else:
+                    yield from smart_walk(url, load=False, raise_exc=raise_exc, **kwargs)
+                continue
+
             try:
                 from smart_open import smart_open
                 with smart_open(url.geturl(), 'rb') as file_obj:
@@ -287,19 +366,25 @@ def smart_walks(*paths, raise_exc=False, **kwargs):
             except Exception:
                 pass
 
-            yield from smart_walk(url, raise_exc=raise_exc, **kwargs)
-
+            yield from smart_walk(url, load=True, raise_exc=raise_exc, **kwargs)
             continue
 
         path = os.path.abspath(url.path)
 
         if os.path.isdir(path):
-            yield from smart_walk(path, raise_exc=raise_exc, **kwargs)
+            yield from smart_walk(path, load=load, raise_exc=raise_exc, **kwargs)
+            continue
+
+        if not smart_exists(path):
+            continue
+
+        if not load:
+            yield smart_url(scheme='file', path=path), None
             continue
 
         try:
             with open(path, 'rb') as file_obj:
-                yield urlunparse(('file', None, path, None, None, None)), file_obj.read()
+                yield smart_url(scheme='file', path=path), file_obj.read()
 
         except Exception as exc:
             LOGGER.exception(exc)

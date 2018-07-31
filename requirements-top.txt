@@ -1,7 +1,7 @@
-# boto
+boto
 jmespath
 python-dateutil
 Scrapy
-# smart-open<1.6.0
+smart-open<1.6.0
 Twisted
 w3lib

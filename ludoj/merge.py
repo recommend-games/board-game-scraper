@@ -5,11 +5,11 @@
 
 import argparse
 import csv
-import io
 import logging
 import sys
 
 from scrapy.utils.misc import arg_to_iter
+from smart_open import smart_open
 
 from .utils import clear_list, identity, parse_date, parse_float, parse_int, smart_walks, to_str
 
@@ -44,39 +44,40 @@ def csv_merge(
     find_fields = fieldnames is None
     fieldnames = [] if find_fields else fieldnames
 
-    for url, content in smart_walks(
-            *paths, accept_path=lambda x: to_str(x).lower().endswith('.csv')):
+    for url, _ in smart_walks(
+            *paths, load=False, accept_path=lambda x: to_str(x).lower().endswith('.csv')):
         LOGGER.info('processing <%s>...', url)
 
-        content = (
-            io.StringIO(content, newline='') if isinstance(content, str)
-            else io.BytesIO(content) if isinstance(content, bytes)
-            else content)
-
-        reader = csv.DictReader(c.decode() if isinstance(c, bytes) else c for c in content)
-        fieldnames = clear_list(
-            fieldnames + reader.fieldnames) if find_fields and reader.fieldnames else fieldnames
         count = -1
 
-        for count, item in enumerate(reader):
-            id_ = tuple(parser(item.get(key)) for key, parser in zip(keys, key_parsers))
+        with smart_open(url, 'r') as file_obj:
+            reader = csv.DictReader(file_obj)
+            fieldnames = clear_list(
+                fieldnames + reader.fieldnames
+            ) if find_fields and reader.fieldnames else fieldnames
 
-            if any(x is None for x in id_):
-                LOGGER.warning('invalid key: %r', id_)
-                continue
+            for count, item in enumerate(reader):
+                if (count + 1) % 10000 == 0:
+                    LOGGER.info('processed %d items so far from <%s>', count + 1, url)
 
-            previous = items.get(id_)
+                id_ = tuple(parser(item.get(key)) for key, parser in zip(keys, key_parsers))
 
-            if previous and latest:
-                latest_prev = previous.get(latest)
-                latest_prev = latest_parser(latest_prev) if latest_prev is not None else None
-                latest_item = item.get(latest)
-                latest_item = latest_parser(latest_item) if latest_item is not None else None
+                if any(x is None for x in id_):
+                    LOGGER.warning('invalid key: %r', id_)
+                    continue
 
-                item = item if latest_prev is None or (
-                    latest_item is not None and latest_item >= latest_prev) else previous
+                previous = items.get(id_)
 
-            items[id_] = item
+                if previous and latest:
+                    latest_prev = previous.get(latest)
+                    latest_prev = latest_parser(latest_prev) if latest_prev is not None else None
+                    latest_item = item.get(latest)
+                    latest_item = latest_parser(latest_item) if latest_item is not None else None
+
+                    item = item if latest_prev is None or (
+                        latest_item is not None and latest_item >= latest_prev) else previous
+
+                items[id_] = item
 
         LOGGER.info(
             'processed %d items from <%s>, %d items in total so far', count + 1, url, len(items))
