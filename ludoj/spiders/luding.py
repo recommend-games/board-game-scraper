@@ -74,8 +74,6 @@ class LudingSpider(Spider):
         age = game.xpath('tr[td = "Age:"]/td[2]/text()').extract_first()
         age = re.match(r'^.*?(\d+).*$', age) if age else None
         ldr.add_value('min_age', age.group(1) if age else None)
-        # ldr.add_xpath('min_time', 'minplaytime/@value')
-        # ldr.add_xpath('max_time', 'maxplaytime/@value')
 
         ldr.add_value('bgg_id', map(extract_bgg_id, links))
         ldr.add_value('luding_id', extract_query_param(response.url, 'gameid'))

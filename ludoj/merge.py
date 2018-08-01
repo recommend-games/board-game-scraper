@@ -25,7 +25,8 @@ def csv_merge(
         key_parsers=None,
         latest=None,
         latest_parser=None,
-        fieldnames=None
+        fieldnames=None,
+        fieldnames_exclude=None
     ):
     ''' merge CSV files into one '''
 
@@ -38,7 +39,8 @@ def csv_merge(
         with open(out_file, 'w') as out_file_obj:
             return csv_merge(
                 out_file_obj, *paths, keys=keys, key_parsers=key_parsers,
-                latest=latest, latest_parser=latest_parser, fieldnames=fieldnames)
+                latest=latest, latest_parser=latest_parser,
+                fieldnames=fieldnames, fieldnames_exclude=fieldnames_exclude)
 
     items = {}
     find_fields = fieldnames is None
@@ -86,6 +88,15 @@ def csv_merge(
         LOGGER.warning('no items found, nothing to write back')
         return 0
 
+    LOGGER.info('writing %d items to %s...', len(items), out_file)
+
+    fieldnames_exclude = frozenset(arg_to_iter(fieldnames_exclude))
+    fieldnames = [
+        field for field in fieldnames if field not in fieldnames_exclude
+    ] if fieldnames_exclude else fieldnames
+
+    LOGGER.info('output columns: %s', fieldnames)
+
     writer = csv.DictWriter(out_file, fieldnames)
     writer.writeheader()
 
@@ -129,6 +140,8 @@ def _parse_args():
     parser.add_argument(
         '--latest-type', '-L', choices=('str', 'string', 'int', 'float', 'date'),
         help='latest column data type')
+    parser.add_argument('--fields', '-f', nargs='+', help='output columns')
+    parser.add_argument('--fields-exclude', '-F', nargs='+', help='ignore these output columns')
     parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
@@ -157,7 +170,9 @@ def _main():
         keys=args.keys,
         key_parsers=key_parsers,
         latest=args.latest,
-        latest_parser=latest_parser
+        latest_parser=latest_parser,
+        fieldnames=args.fields,
+        fieldnames_exclude=args.fields_exclude
     )
 
 
