@@ -2,8 +2,8 @@ asn1crypto==0.24.0
 attrs==18.1.0
 Automat==0.7.0
 boto==2.49.0
-boto3==1.7.66
-botocore==1.10.66
+boto3==1.7.68
+botocore==1.10.68
 bz2file==0.98
 certifi==2018.4.16
 cffi==1.11.5
