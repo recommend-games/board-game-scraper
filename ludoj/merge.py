@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-''' recommend games '''
+''' merge CSV files '''
 
 import argparse
 import csv
