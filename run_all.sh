@@ -65,5 +65,5 @@ for SCRAPER in $(scrapy list); do
 	# echo $! > "$CURR_JOB/$PID_FILE"
 
 	# echo "Started process <$(tr -d '[:space:]' < "$CURR_JOB/$PID_FILE")>!"
-	echo -e	"Started! Follow logs from <$(pwd)/logs/$SCRAPER.log>.\\n"
+	echo -e "Started! Follow logs from <$(pwd)/logs/$SCRAPER.log>.\\n"
 done
