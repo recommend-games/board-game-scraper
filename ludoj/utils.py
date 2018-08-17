@@ -82,7 +82,6 @@ def parse_int(string, base=10):
     except Exception:
         pass
 
-
     try:
         return int(string)
 
