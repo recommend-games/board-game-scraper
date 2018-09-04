@@ -95,7 +95,9 @@ class SpielenSpider(Spider):
         ] + game.css('div.screenshotlist img::attr(data-large-src)').extract()
         ldr.add_value('image_url', (response.urljoin(i) for i in images if i))
 
-        videos = game.css('iframe::attr(src)').extract()
+        videos = (
+            game.css('iframe::attr(src)').extract()
+            + game.css('iframe::attr(data-src)').extract())
         ldr.add_value('video_url', (response.urljoin(v) for v in videos if v))
 
         players = game.xpath(
