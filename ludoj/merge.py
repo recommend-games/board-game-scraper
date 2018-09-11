@@ -18,6 +18,22 @@ csv.field_size_limit(sys.maxsize)
 LOGGER = logging.getLogger(__name__)
 
 
+def _init_tracker():
+    try:
+        from pympler import tracker
+        return tracker.SummaryTracker()
+
+    except ImportError:
+        pass
+
+    return None
+
+
+def _print_memory(tracker=None):
+    if tracker is not None:
+        tracker.print_diff()
+
+
 def csv_merge(
         out_file,
         *paths,
@@ -26,7 +42,8 @@ def csv_merge(
         latest=None,
         latest_parser=None,
         fieldnames=None,
-        fieldnames_exclude=None
+        fieldnames_exclude=None,
+        memory_debug=False
     ):
     ''' merge CSV files into one '''
 
@@ -38,13 +55,22 @@ def csv_merge(
     if isinstance(out_file, (bytes, str)):
         with open(out_file, 'w') as out_file_obj:
             return csv_merge(
-                out_file_obj, *paths, keys=keys, key_parsers=key_parsers,
-                latest=latest, latest_parser=latest_parser,
-                fieldnames=fieldnames, fieldnames_exclude=fieldnames_exclude)
+                out_file_obj,
+                *paths,
+                keys=keys,
+                key_parsers=key_parsers,
+                latest=latest,
+                latest_parser=latest_parser,
+                fieldnames=fieldnames,
+                fieldnames_exclude=fieldnames_exclude,
+                memory_debug=memory_debug
+            )
 
     items = {}
     find_fields = fieldnames is None
     fieldnames = [] if find_fields else fieldnames
+    tracker = _init_tracker() if memory_debug else None
+    total = 0
 
     for url, _ in smart_walks(
             *paths, load=False, accept_path=lambda x: to_str(x).lower().endswith('.csv')):
@@ -59,8 +85,16 @@ def csv_merge(
             ) if find_fields and reader.fieldnames else fieldnames
 
             for count, item in enumerate(reader):
+                # from Py3.6, DictReader returns OrderedDicts which carry a massive memory penalty
+                item = dict(item)
+
                 if (count + 1) % 10000 == 0:
                     LOGGER.info('processed %d items so far from <%s>', count + 1, url)
+
+                total += 1
+
+                if memory_debug and total % 1000000 == 0:
+                    _print_memory(tracker)
 
                 id_ = tuple(parser(item.get(key)) for key, parser in zip(keys, key_parsers))
 
@@ -79,7 +113,13 @@ def csv_merge(
                     item = item if latest_prev is None or (
                         latest_item is not None and latest_item >= latest_prev) else previous
 
+                    del latest_prev, latest_item
+
                 items[id_] = item
+
+                del previous, item
+
+            del reader
 
         LOGGER.info(
             'processed %d items from <%s>, %d items in total so far', count + 1, url, len(items))
@@ -107,6 +147,8 @@ def csv_merge(
         writer.writerow({k: item.get(k) for k in fieldnames})
         if (count + 1) % 10000 == 0:
             LOGGER.info('done writing %d items (~%.1f%%)', count + 1, 100.0 * (count + 1) / total)
+
+    del items
 
     LOGGER.info('done writing %d items, finished', count + 1)
 
@@ -172,7 +214,8 @@ def _main():
         latest=args.latest,
         latest_parser=latest_parser,
         fieldnames=args.fields,
-        fieldnames_exclude=args.fields_exclude
+        fieldnames_exclude=args.fields_exclude,
+        memory_debug=args.verbose > 0
     )
 
 

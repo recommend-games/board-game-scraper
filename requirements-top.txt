@@ -1,5 +1,6 @@
 boto
 jmespath
+pympler
 python-dateutil
 Scrapy
 smart-open<1.6.0
