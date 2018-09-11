@@ -122,13 +122,16 @@ def csv_merge(
             del reader
 
         LOGGER.info(
-            'processed %d items from <%s>, %d items in total so far', count + 1, url, len(items))
+            'processed %d items from <%s>, %d items in total, %d unique items so far',
+            count + 1, url, total, len(items))
 
     if not items:
         LOGGER.warning('no items found, nothing to write back')
         return 0
 
-    LOGGER.info('writing %d items to %s...', len(items), out_file)
+    LOGGER.info(
+        'processed a total of %d items, writing %d unique items to %s...',
+        total, len(items), out_file)
 
     fieldnames_exclude = frozenset(arg_to_iter(fieldnames_exclude))
     fieldnames = [
