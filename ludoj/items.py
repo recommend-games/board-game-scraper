@@ -87,6 +87,7 @@ class TypedItem(Item):
             return
 
         kwargs['load'] = False
+        kwargs.setdefault('accept_path', lambda path: path and path.lower().endswith('.csv'))
 
         for path, _ in smart_walks(*paths, **kwargs):
             LOGGER.info('parsing items from %s...', path)

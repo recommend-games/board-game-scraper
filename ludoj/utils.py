@@ -15,6 +15,8 @@ from urllib.parse import parse_qs, urlparse, urlunparse
 
 import dateutil.parser
 
+from scrapy.item import BaseItem
+
 LOGGER = logging.getLogger(__name__)
 
 NON_PRINTABLE_SET = frozenset(chr(i) for i in range(128)).difference(string_lib.printable)
@@ -201,6 +203,8 @@ def parse_json(file_or_string, **kwargs):
 
 
 def _json_default(obj):
+    if isinstance(obj, BaseItem):
+        return dict(obj)
     if isinstance(obj, (set, frozenset, range, GeneratorType)) or hasattr(obj, '__iter__'):
         return list(obj)
     if isinstance(obj, datetime):
@@ -222,11 +226,16 @@ def serialize_json(obj, file=None, **kwargs):
         path_dir = os.path.abspath(os.path.split(file)[0])
         os.makedirs(path_dir, exist_ok=True)
 
-        with open(file, 'w') as json_file:
+        try:
+            from smart_open import smart_open
+        except ImportError:
+            smart_open = open
+
+        with smart_open(file, 'w') as json_file:
             return json.dump(obj, json_file, **kwargs)
 
     if file is not None:
-        LOGGER.info('writing JSON content to opened file pointer <%s>', file)
+        LOGGER.debug('writing JSON content to opened file pointer <%s>', file)
         return json.dump(obj, file, **kwargs)
 
     return json.dumps(obj, **kwargs)
