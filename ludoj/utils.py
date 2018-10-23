@@ -181,6 +181,25 @@ def serialize_date(date, tzinfo=None):
     return parsed.strftime('%Y-%m-%dT%T%z') if parsed else str(date) if date else None
 
 
+def parse_json(file_or_string, **kwargs):
+    '''safely parse JSON string'''
+
+    if file_or_string is None:
+        return None
+
+    try:
+        return json.load(file_or_string, **kwargs)
+    except Exception:
+        pass
+
+    try:
+        return json.loads(to_str(file_or_string), **kwargs)
+    except Exception:
+        pass
+
+    return None
+
+
 def _json_default(obj):
     if isinstance(obj, (set, frozenset, range, GeneratorType)) or hasattr(obj, '__iter__'):
         return list(obj)
@@ -211,6 +230,22 @@ def serialize_json(obj, file=None, **kwargs):
         return json.dump(obj, file, **kwargs)
 
     return json.dumps(obj, **kwargs)
+
+
+def parse_bool(item):
+    ''' parses an item and converts it to a boolean '''
+
+    if isinstance(item, bool):
+        return item
+
+    if item in ('True', 'true', 'Yes', 'yes'):
+        return True
+
+    integer = parse_int(item)
+    if integer is not None:
+        return bool(integer)
+
+    return False
 
 
 def smart_url(scheme=None, hostname=None, path=None):
