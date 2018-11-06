@@ -9,6 +9,8 @@ import logging
 import os.path
 import sys
 
+from scrapy.loader.processors import TakeFirst
+from scrapy.utils.misc import arg_to_iter
 from smart_open import smart_open
 
 import requests
@@ -52,9 +54,17 @@ FIELDS = frozenset((
     'year',
 ))
 
+_TF = TakeFirst()
+
+def _take_first(items):
+    return _TF(arg_to_iter(items))
+
 FIELDS_MAPPING = {
     'rank': 'bgg_rank',
     # 'implementation': 'implementation_of',
+    'image_url': _take_first,
+    'video_url': _take_first,
+    'external_link': _take_first,
 }
 
 
@@ -66,7 +76,10 @@ def _parse_item(item, fields=FIELDS, fields_mapping=None):
 
     for map_from, map_to in fields_mapping.items():
         if item.get(map_from):
-            result.setdefault(map_to, item[map_from])
+            if callable(map_to):
+                result[map_from] = map_to(item[map_from])
+            else:
+                result.setdefault(map_to, item[map_from])
 
     return result
 
