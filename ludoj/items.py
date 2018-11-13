@@ -5,7 +5,7 @@
 import csv
 import logging
 
-from datetime import datetime
+from datetime import date, datetime
 from functools import partial
 
 from scrapy import Field, Item
@@ -13,11 +13,23 @@ from scrapy.loader.processors import Identity, MapCompose
 from w3lib.html import remove_tags, replace_entities
 
 from .utils import (
-    clear_list, normalize_space, now, parse_bool, parse_date, parse_float,
-    parse_int, parse_json, serialize_date, serialize_json, smart_walks)
+    clear_list, identity, normalize_space, now, parse_bool, parse_date, parse_float,
+    parse_int, parse_json, serialize_date, serialize_json, smart_walks, validate_range)
 
 IDENTITY = Identity()
 LOGGER = logging.getLogger(__name__)
+POS_INT_PROCESSOR = MapCompose(
+    identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+    parse_int, partial(validate_range, lower=1))
+NN_INT_PROCESSOR = MapCompose(
+    identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+    parse_int, partial(validate_range, lower=0))
+POS_FLOAT_PROCESSOR = MapCompose(
+    identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+    parse_float, partial(validate_range, lower=0), lambda v: v or None)
+NN_FLOAT_PROCESSOR = MapCompose(
+    identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+    parse_float, partial(validate_range, lower=0))
 
 
 class TypedItem(Item):
@@ -107,7 +119,15 @@ class GameItem(TypedItem):
         serializer=serialize_json,
         parser=parse_json,
     )
-    year = Field(dtype=int, dtype_convert=parse_int, default=None)
+    year = Field(
+        dtype=int,
+        dtype_convert=parse_int,
+        input_processor=MapCompose(
+            identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+            parse_int, partial(validate_range, lower=-4000, upper=date.today().year + 10),
+            lambda year: year or None),
+        default=None,
+    )
     game_type = Field(dtype=str)
     description = Field(
         dtype=str,
@@ -156,18 +176,32 @@ class GameItem(TypedItem):
     )
     list_price = Field(dtype=str) # currency?
 
-    min_players = Field(dtype=int, dtype_convert=parse_int, default=None)
-    max_players = Field(dtype=int, dtype_convert=parse_int, default=None)
-    min_players_rec = Field(dtype=int, dtype_convert=parse_int, default=None)
-    max_players_rec = Field(dtype=int, dtype_convert=parse_int, default=None)
-    min_players_best = Field(dtype=int, dtype_convert=parse_int, default=None)
-    max_players_best = Field(dtype=int, dtype_convert=parse_int, default=None)
-    min_age = Field(dtype=int, dtype_convert=parse_int, default=None)
-    max_age = Field(dtype=int, dtype_convert=parse_int, default=None)
-    min_age_rec = Field(dtype=float, dtype_convert=parse_float, default=None)
-    max_age_rec = Field(dtype=float, dtype_convert=parse_float, default=None)
-    min_time = Field(dtype=int, dtype_convert=parse_int, default=None)
-    max_time = Field(dtype=int, dtype_convert=parse_int, default=None)
+    min_players = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    max_players = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    min_players_rec = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    max_players_rec = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    min_players_best = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    max_players_best = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    min_age = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    max_age = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    min_age_rec = Field(
+        dtype=float, dtype_convert=parse_float,
+        input_processor=POS_FLOAT_PROCESSOR, default=None)
+    max_age_rec = Field(
+        dtype=float, dtype_convert=parse_float,
+        input_processor=POS_FLOAT_PROCESSOR, default=None)
+    min_time = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    max_time = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
 
     category = Field(
         dtype=list,
@@ -215,27 +249,42 @@ class GameItem(TypedItem):
         parser=parse_json,
     )
 
-    rank = Field(dtype=int, dtype_convert=parse_int, default=None)
-    num_votes = Field(dtype=int, dtype_convert=parse_int, default=0)
-    avg_rating = Field(dtype=float, dtype_convert=parse_float, default=None)
-    stddev_rating = Field(dtype=float, dtype_convert=parse_float, default=None)
-    bayes_rating = Field(dtype=float, dtype_convert=parse_float, default=None)
-    worst_rating = Field(dtype=int, dtype_convert=parse_int, default=None)
-    best_rating = Field(dtype=int, dtype_convert=parse_int, default=None)
+    rank = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    num_votes = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=NN_INT_PROCESSOR, default=0)
+    avg_rating = Field(
+        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR, default=None)
+    stddev_rating = Field(
+        dtype=float, dtype_convert=parse_float, input_processor=NN_FLOAT_PROCESSOR, default=None)
+    bayes_rating = Field(
+        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR, default=None)
+    worst_rating = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    best_rating = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
 
-    complexity = Field(dtype=float, dtype_convert=parse_float, default=None)
-    easiest_complexity = Field(dtype=int, dtype_convert=parse_int, default=None)
-    hardest_complexity = Field(dtype=int, dtype_convert=parse_int, default=None)
-    language_dependency = Field(dtype=float, dtype_convert=parse_float, default=None)
-    lowest_language_dependency = Field(dtype=int, dtype_convert=parse_int, default=None)
-    highest_language_dependency = Field(dtype=int, dtype_convert=parse_int, default=None)
+    complexity = Field(
+        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR, default=None)
+    easiest_complexity = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    hardest_complexity = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    language_dependency = Field(
+        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR, default=None)
+    lowest_language_dependency = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    highest_language_dependency = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
 
-    bgg_id = Field(dtype=int, dtype_convert=parse_int, default=None)
+    bgg_id = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
     freebase_id = Field(dtype=str)
     wikidata_id = Field(dtype=str)
     wikipedia_id = Field(dtype=str)
     dbpedia_id = Field(dtype=str)
-    luding_id = Field(dtype=int, dtype_convert=parse_int, default=None)
+    luding_id = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
 
     published_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)
     updated_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)

@@ -387,6 +387,7 @@ class BggSpider(Spider):
             ldr.add_xpath('min_time', 'playingtime/@value')
             ldr.add_xpath('max_time', 'maxplaytime/@value')
             ldr.add_xpath('max_time', 'playingtime/@value')
+            ldr.add_xpath('max_time', 'minplaytime/@value')
 
             ldr.add_xpath('category', 'link[@type = "boardgamecategory"]/@value')
             ldr.add_xpath('mechanic', 'link[@type = "boardgamemechanic"]/@value')

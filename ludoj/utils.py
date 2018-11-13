@@ -257,6 +257,16 @@ def parse_bool(item):
     return False
 
 
+def validate_range(value, lower=None, upper=None):
+    ''' validate that the given value is between lower and upper '''
+    try:
+        if (lower is None or lower <= value) and (upper is None or value <= upper):
+            return value
+    except TypeError:
+        pass
+    return None
+
+
 def smart_url(scheme=None, hostname=None, path=None):
     ''' S3 URL '''
 
