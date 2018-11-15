@@ -10,6 +10,7 @@ from urllib.parse import unquote_plus, urlencode
 
 from scrapy import signals
 from scrapy import Request, Spider
+from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.project import get_project_settings
 
 from ..items import GameItem, RatingItem
@@ -84,6 +85,13 @@ def _parse_votes(poll, attr='value', enum=False):
 
         if value is not None:
             yield from repeat(value, numvotes)
+
+
+def _value_id(items, sep=':'):
+    for item in arg_to_iter(items):
+        value = item.xpath('@value').extract_first() or ''
+        id_ = item.xpath('@id').extract_first() or ''
+        yield f'{value}{sep}{id_}' if id_ else value
 
 
 class BggSpider(Spider):
@@ -355,9 +363,9 @@ class BggSpider(Spider):
             ldr.add_xpath('year', 'yearpublished/@value')
             ldr.add_xpath('description', 'description')
 
-            ldr.add_xpath('designer', 'link[@type = "boardgamedesigner"]/@value')
-            ldr.add_xpath('artist', 'link[@type = "boardgameartist"]/@value')
-            ldr.add_xpath('publisher', 'link[@type = "boardgamepublisher"]/@value')
+            ldr.add_value('designer', _value_id(game.xpath('link[@type = "boardgamedesigner"]')))
+            ldr.add_value('artist', _value_id(game.xpath('link[@type = "boardgameartist"]')))
+            ldr.add_value('publisher', _value_id(game.xpath('link[@type = "boardgamepublisher"]')))
 
             ldr.add_value('url', profile_url)
             ldr.add_value('url', 'https://boardgamegeek.com/boardgame/{}'.format(bgg_id))
