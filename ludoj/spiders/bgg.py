@@ -400,7 +400,9 @@ class BggSpider(Spider):
                 bool(game.xpath('link[@type = "boardgamecompilation" and @inbound = "true"]')))
             ldr.add_xpath('family', 'link[@type = "boardgamefamily"]/@value')
             ldr.add_xpath('expansion', 'link[@type = "boardgameexpansion"]/@value')
-            ldr.add_xpath('implementation', 'link[@type = "boardgameimplementation"]/@id')
+            ldr.add_xpath(
+                'implementation',
+                'link[@type = "boardgameimplementation" and @inbound = "true"]/@id')
 
             ldr.add_xpath('rank', 'statistics/ratings/ranks/rank[@name = "boardgame"]/@value')
             ldr.add_xpath('num_votes', 'statistics/ratings/usersrated/@value')
