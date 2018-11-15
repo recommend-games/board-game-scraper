@@ -9,6 +9,8 @@ import logging
 import os.path
 import sys
 
+from functools import lru_cache
+
 from scrapy.loader.processors import TakeFirst
 from scrapy.utils.misc import arg_to_iter
 from smart_open import smart_open
@@ -16,7 +18,7 @@ from smart_open import smart_open
 import requests
 
 from .items import GameItem
-from .utils import serialize_json
+from .utils import parse_int, serialize_json
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +70,13 @@ FIELDS_MAPPING = {
 }
 
 
+@lru_cache(maxsize=2**16)
+def _exists(url, item_id):
+    url_item = os.path.join(url, str(item_id), '')
+    response = requests.head(url_item)
+    return bool(response.ok)
+
+
 def _parse_item(item, fields=FIELDS, fields_mapping=None):
     result = {k: v for k, v in item.items() if k in fields}
 
@@ -91,15 +100,14 @@ def _upload(items, url, id_field='bgg_id', fields=FIELDS, fields_mapping=None):
 
     for item in items:
         data = _parse_item(item, fields, fields_mapping)
-        id_ = data.get(id_field)
+        id_ = parse_int(data.get(id_field))
         if id_ is None:
             LOGGER.warning('no ID found in %r', data)
             continue
 
         url_item = os.path.join(url, str(id_), '')
-        response = requests.head(url_item)
         response = (
-            requests.put(url=url_item, data=data) if response.ok
+            requests.put(url=url_item, data=data) if _exists(url, id_)
             else requests.post(url=url, data=data))
 
         if response.ok:
@@ -110,6 +118,53 @@ def _upload(items, url, id_field='bgg_id', fields=FIELDS, fields_mapping=None):
             LOGGER.warning(
                 'there was a problem with the request for %r; reason: %s', data, response.reason)
 
+
+        yield item
+
+
+def _upload_implementations(
+        items,
+        url,
+        impl_from='implementation',
+        impl_to='implements',
+        id_field='bgg_id',
+    ):
+    LOGGER.info('uploading implementations to <%s>', url)
+
+    count = 0
+
+    for item in items:
+        implementations = arg_to_iter(item.get(impl_from))
+        implementations = [impl for impl in map(parse_int, implementations) if impl]
+
+        if not implementations:
+            yield item
+            continue
+
+        id_ = parse_int(item.get(id_field))
+
+        if id_ is None or not _exists(url, id_):
+            LOGGER.warning('no ID found or item does not exist for %r', item)
+            yield item
+            continue
+
+        implementations = [impl for impl in implementations if _exists(url, impl)]
+
+        if not implementations:
+            yield item
+            continue
+
+        url_item = os.path.join(url, str(id_), '')
+        data = {impl_to: implementations}
+        response = requests.patch(url=url_item, data=data)
+
+        if response.ok:
+            count += 1
+            if count % 1000 == 0:
+                LOGGER.info('updated %d items so far', count)
+        else:
+            LOGGER.warning(
+                'there was a problem with the request for %r; reason: %s', item, response.reason)
 
         yield item
 
@@ -197,6 +252,7 @@ def _parse_args():
     parser.add_argument('paths', nargs='+', help='')
     parser.add_argument('--url', '-u', help='')
     parser.add_argument('--id-field', '-i', default='bgg_id', help='')
+    parser.add_argument('--implementation', '-m', help='')
     parser.add_argument('--output', '-o', help='')
     parser.add_argument('--out-format', '-f', choices=('json', 'jsonl', 'jl'), help='')
     parser.add_argument('--indent', '-I', type=int, help='')
@@ -221,7 +277,13 @@ def _main():
     items = _load(*args.paths)
 
     if args.url:
-        items = _upload(
+        items = _upload_implementations(
+            items=items,
+            url=args.url,
+            id_field=args.id_field,
+            impl_from='implementation',
+            impl_to=args.implementation,
+        ) if args.implementation else _upload(
             items=items,
             url=args.url,
             id_field=args.id_field,
