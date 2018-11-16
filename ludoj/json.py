@@ -242,6 +242,8 @@ def _upload_values(
 
         yield item
 
+    del items
+
     LOGGER.info('processed %d items in total', count + 1)
 
     count = 0
@@ -272,6 +274,8 @@ def _upload_values(
             LOGGER.warning(
                 'there was a problem with the request for %r; reason: %s', data, response.reason)
 
+    del model_values
+
     LOGGER.info('uploaded %d items to <%s> in total', count, model_secondary)
 
     count = 0
@@ -294,6 +298,8 @@ def _upload_values(
             LOGGER.warning(
                 'there was a problem with the request %r for %d; reason: %s',
                 data, id_, response.reason)
+
+    del uploads
 
     LOGGER.info('updated %d items in <%s> in total', count, model_primary)
 
