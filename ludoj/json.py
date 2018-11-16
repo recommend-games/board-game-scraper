@@ -7,8 +7,10 @@ import argparse
 import json
 import logging
 import os.path
+import re
 import sys
 
+from collections import defaultdict
 from functools import lru_cache
 
 from scrapy.loader.processors import TakeFirst
@@ -18,7 +20,7 @@ from smart_open import smart_open
 import requests
 
 from .items import GameItem
-from .utils import parse_int, serialize_json
+from .utils import clear_list, parse_int, serialize_json
 
 LOGGER = logging.getLogger(__name__)
 
@@ -69,11 +71,16 @@ FIELDS_MAPPING = {
     'external_link': _take_first,
 }
 
+VALUE_ID_REGEX = re.compile(r'^(.*?)(:(\d+))?$')
+
+
+def _make_url(url, model=None, model_id=None):
+    return os.path.join(url, *map(str, filter(None, (model, model_id))), '')
+
 
 @lru_cache(maxsize=2**16)
-def _exists(url, item_id):
-    url_item = os.path.join(url, str(item_id), '')
-    response = requests.head(url_item)
+def _exists(url, model, model_id):
+    response = requests.head(_make_url(url, model, model_id))
     return bool(response.ok)
 
 
@@ -93,10 +100,32 @@ def _parse_item(item, fields=FIELDS, fields_mapping=None):
     return result
 
 
-def _upload(items, url, id_field='bgg_id', fields=FIELDS, fields_mapping=None):
+def _parse_value_id(string, regex=VALUE_ID_REGEX):
+    if not string:
+        return None
+
+    match = regex.match(string)
+
+    if not match:
+        return None
+
+    value = match.group(1) or None
+    id_ = parse_int(match.group(3))
+    result = {}
+
+    if value:
+        result['value'] = value
+    if id_:
+        result['id'] = id_
+
+    return result or None
+
+
+def _upload(items, url, model='games', id_field='bgg_id', fields=FIELDS, fields_mapping=None):
     LOGGER.info('uploading items to <%s>', url)
 
     count = 0
+    url_model = _make_url(url, model)
 
     for item in items:
         data = _parse_item(item, fields, fields_mapping)
@@ -105,21 +134,22 @@ def _upload(items, url, id_field='bgg_id', fields=FIELDS, fields_mapping=None):
             LOGGER.warning('no ID found in %r', data)
             continue
 
-        url_item = os.path.join(url, str(id_), '')
+        url_item = _make_url(url, model, id_)
         response = (
-            requests.put(url=url_item, data=data) if _exists(url, id_)
-            else requests.post(url=url, data=data))
+            requests.put(url=url_item, data=data) if _exists(url, model, id_)
+            else requests.post(url=url_model, data=data))
 
         if response.ok:
             count += 1
             if count % 1000 == 0:
-                LOGGER.info('uploaded %d items so far', count)
+                LOGGER.info('uploaded %d items to <%s> so far', count, model)
         else:
             LOGGER.warning(
                 'there was a problem with the request for %r; reason: %s', data, response.reason)
 
-
         yield item
+
+    LOGGER.info('uploaded %d items to <%s> in total', count, model)
 
 
 def _upload_implementations(
@@ -127,6 +157,7 @@ def _upload_implementations(
         url,
         impl_from='implementation',
         impl_to='implements',
+        model='games',
         id_field='bgg_id',
     ):
     LOGGER.info('uploading implementations to <%s>', url)
@@ -143,30 +174,128 @@ def _upload_implementations(
 
         id_ = parse_int(item.get(id_field))
 
-        if id_ is None or not _exists(url, id_):
+        if id_ is None or not _exists(url, model, id_):
             LOGGER.warning('no ID found or item does not exist for %r', item)
             yield item
             continue
 
-        implementations = [impl for impl in implementations if _exists(url, impl)]
+        implementations = [impl for impl in implementations if _exists(url, model, impl)]
 
         if not implementations:
             yield item
             continue
 
-        url_item = os.path.join(url, str(id_), '')
+        url_item = _make_url(url, model, id_)
         data = {impl_to: implementations}
         response = requests.patch(url=url_item, data=data)
 
         if response.ok:
             count += 1
             if count % 1000 == 0:
-                LOGGER.info('updated %d items so far', count)
+                LOGGER.info('updated %d items to %s so far', count, model)
         else:
             LOGGER.warning(
                 'there was a problem with the request for %r; reason: %s', item, response.reason)
 
         yield item
+
+    LOGGER.info('updated %d items to %s in total', count, model)
+
+
+def _upload_values(
+        items,
+        url,
+        fields,
+        model_primary='games',
+        model_secondary='persons',
+        id_field='bgg_id',
+    ):
+    fields = tuple(arg_to_iter(fields))
+
+    if not fields:
+        yield from items
+        return
+
+    LOGGER.info('uploading fields %r to <%s>', fields, url)
+
+    count = -1
+    model_values = defaultdict(set)
+    uploads = {}
+
+    for count, item in enumerate(items):
+        data = defaultdict(list)
+
+        for field in fields:
+            for value in filter(None, map(_parse_value_id, arg_to_iter(item.get(field)))):
+                id_ = value.get('id')
+                value = value.get('value')
+                if id_ and value:
+                    model_values[id_].add(value)
+                    data[field].append(id_)
+
+        id_ = parse_int(item.get(id_field))
+        if id_ and any(data.values()):
+            uploads[id_] = data
+
+        if (count + 1) % 1000 == 0:
+            LOGGER.info('processed %d items so far', count + 1)
+
+        yield item
+
+    LOGGER.info('processed %d items in total', count + 1)
+
+    count = 0
+    url_model = _make_url(url, model_secondary)
+
+    LOGGER.info('found %d values to upload to <%s>', len(model_values), model_secondary)
+
+    for id_, values in model_values.items():
+        values = clear_list(values)
+        if len(values) != 1:
+            LOGGER.warning('multiple values for id <%s>: %r', id_, values)
+            continue
+
+        url_item = _make_url(url, model_secondary, id_)
+        data = {
+            id_field: id_,
+            'name': values[0],
+        }
+        response = (
+            requests.put(url=url_item, data=data) if _exists(url, model_secondary, id_)
+            else requests.post(url=url_model, data=data))
+
+        if response.ok:
+            count += 1
+            if count % 1000 == 0:
+                LOGGER.info('uploaded %d items to <%s> so far', count, model_secondary)
+        else:
+            LOGGER.warning(
+                'there was a problem with the request for %r; reason: %s', data, response.reason)
+
+    LOGGER.info('uploaded %d items to <%s> in total', count, model_secondary)
+
+    count = 0
+
+    LOGGER.info('found %d values to update in <%s>', len(uploads), model_primary)
+
+    for id_, data in uploads.items():
+        if not _exists(url, model_primary, id_):
+            LOGGER.warning('could not find item <%s>', id_)
+            continue
+
+        url_item = _make_url(url, model_primary, id_)
+        response = requests.patch(url=url_item, data=data)
+
+        if response.ok:
+            count += 1
+            if count % 1000 == 0:
+                LOGGER.info('updated %d items in <%s> so far', count, model_primary)
+        else:
+            LOGGER.warning(
+                'there was a problem with the request %r for %d; reason: %s',
+                data, id_, response.reason)
+
+    LOGGER.info('updated %d items in <%s> in total', count, model_primary)
 
 
 def _format_from_path(path):
@@ -253,8 +382,9 @@ def _parse_args():
     parser.add_argument('--url', '-u', help='')
     parser.add_argument('--id-field', '-i', default='bgg_id', help='')
     parser.add_argument('--implementation', '-m', help='')
+    parser.add_argument('--fields', '-f', nargs='+', help='')
     parser.add_argument('--output', '-o', help='')
-    parser.add_argument('--out-format', '-f', choices=('json', 'jsonl', 'jl'), help='')
+    parser.add_argument('--out-format', '-F', choices=('json', 'jsonl', 'jl'), help='')
     parser.add_argument('--indent', '-I', type=int, help='')
     parser.add_argument('--sort-keys', '-S', action='store_true', help='')
     parser.add_argument(
@@ -283,7 +413,12 @@ def _main():
             id_field=args.id_field,
             impl_from='implementation',
             impl_to=args.implementation,
-        ) if args.implementation else _upload(
+        ) if args.implementation else _upload_values(
+            items=items,
+            url=args.url,
+            id_field=args.id_field,
+            fields=args.fields,
+        ) if args.fields else _upload(
             items=items,
             url=args.url,
             id_field=args.id_field,
