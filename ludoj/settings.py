@@ -2,12 +2,16 @@
 
 ''' Scrapy settings '''
 
+import os
+
 BOT_NAME = 'ludoj'
 
 SPIDER_MODULES = ['ludoj.spiders']
 NEWSPIDER_MODULE = 'ludoj.spiders'
 
 LOG_LEVEL = 'INFO'
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 FEED_EXPORT_FIELDS = (
     'name',
@@ -20,6 +24,7 @@ FEED_EXPORT_FIELDS = (
     'publisher',
     'url',
     'image_url',
+    'image_file',
     'video_url',
     'external_link',
     'list_price',
@@ -148,6 +153,7 @@ EXTENSIONS = {
 ITEM_PIPELINES = {
     'ludoj.pipelines.DataTypePipeline': 100,
     'ludoj.pipelines.ValidatePipeline': 200,
+    'scrapy.pipelines.images.ImagesPipeline': 500,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -195,3 +201,13 @@ SCRAPE_BGG_RATINGS = True
 # State tags
 STATE_TAG_FILE = '.state'
 PID_TAG_FILE = '.pid'
+
+# Image processing
+IMAGES_STORE = os.path.join(BASE_DIR, 'images')
+IMAGES_URLS_FIELD = 'image_url'
+IMAGES_RESULT_FIELD = 'image_file'
+IMAGES_EXPIRES = 180
+IMAGES_THUMBS = {
+    'thumb': (1024, 1024),
+}
+MEDIA_ALLOW_REDIRECTS = True

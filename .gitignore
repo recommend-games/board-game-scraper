@@ -101,6 +101,7 @@ pip-selfcheck.json
 
 crawls/
 feeds/
+images/
 jobs/
 recommender/
 .tc/
