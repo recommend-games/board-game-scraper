@@ -211,7 +211,7 @@ class BggSpider(Spider):
     def _collection_request(self, user_name, *, priority=0, **kwargs):
         url = self._api_url(
             action='collection', username=user_name, subtype='boardgame',
-            excludesubtype='boardgameexpansion', rated=1, brief=1, stats=1, version=0)
+            excludesubtype='boardgameexpansion', stats=1, version=0)
 
         request = Request(url, callback=self.parse_collection, priority=priority)
         request.meta['bgg_user_name'] = user_name
@@ -429,10 +429,10 @@ class BggSpider(Spider):
     def parse_collection(self, response):
         # pylint: disable=line-too-long
         '''
-        @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&rated=1&brief=1&stats=1&version=0
+        @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&stats=1&version=0
         @returns items 130
         @returns requests 12
-        @scrapes bgg_id bgg_user_name bgg_user_rating scraped_at
+        @scrapes bgg_id bgg_user_name scraped_at
         '''
 
         user_name = response.meta.get('bgg_user_name') or extract_user_name(response.url)
@@ -458,5 +458,16 @@ class BggSpider(Spider):
                 selector=game,
                 response=response,
             )
+
             ldr.add_xpath('bgg_user_rating', 'stats/rating/@value')
+            ldr.add_xpath('bgg_user_owned', 'status/@own')
+            ldr.add_xpath('bgg_user_prev_owned', 'status/@prevowned')
+            ldr.add_xpath('bgg_user_for_trade', 'status/@fortrade')
+            ldr.add_xpath('bgg_user_want_in_trade', 'status/@want')
+            ldr.add_xpath('bgg_user_want_to_play', 'status/@wanttoplay')
+            ldr.add_xpath('bgg_user_want_to_buy', 'status/@wanttobuy')
+            ldr.add_xpath('bgg_user_preordered', 'status/@preordered')
+            ldr.add_xpath('bgg_user_wishlist', 'status[@wishlist = "1"]/@wishlistpriority')
+            ldr.add_xpath('bgg_user_play_count', 'numplays/text()')
+
             yield ldr.load_item()

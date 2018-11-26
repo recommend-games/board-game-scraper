@@ -32,6 +32,10 @@ NN_FLOAT_PROCESSOR = MapCompose(
     parse_float, partial(validate_range, lower=0))
 
 
+def _serialize_bool(item):
+    return int(item) if isinstance(item, bool) else None
+
+
 class TypedItem(Item):
     ''' Item with typed fields '''
 
@@ -219,14 +223,14 @@ class GameItem(TypedItem):
         dtype=bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=lambda x: int(x) if isinstance(x, bool) else None,
+        serializer=_serialize_bool,
         parser=parse_bool,
     )
     compilation = Field(
         dtype=bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=lambda x: int(x) if isinstance(x, bool) else None,
+        serializer=_serialize_bool,
         parser=parse_bool,
     )
     family = Field(
@@ -302,7 +306,69 @@ class RatingItem(TypedItem):
 
     bgg_id = Field(dtype=int, dtype_convert=parse_int, required=True)
     bgg_user_name = Field(dtype=str, required=True)
-    bgg_user_rating = Field(dtype=float, dtype_convert=parse_float, required=True)
+
+    bgg_user_rating = Field(
+        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR, default=None)
+    bgg_user_owned = Field(
+        dtype=bool,
+        dtype_convert=parse_bool,
+        default=None,
+        input_processor=IDENTITY,
+        serializer=_serialize_bool,
+        parser=parse_bool,
+    )
+    bgg_user_prev_owned = Field(
+        dtype=bool,
+        dtype_convert=parse_bool,
+        default=None,
+        input_processor=IDENTITY,
+        serializer=_serialize_bool,
+        parser=parse_bool,
+    )
+    bgg_user_for_trade = Field(
+        dtype=bool,
+        dtype_convert=parse_bool,
+        default=None,
+        input_processor=IDENTITY,
+        serializer=_serialize_bool,
+        parser=parse_bool,
+    )
+    bgg_user_want_in_trade = Field(
+        dtype=bool,
+        dtype_convert=parse_bool,
+        default=None,
+        input_processor=IDENTITY,
+        serializer=_serialize_bool,
+        parser=parse_bool,
+    )
+    bgg_user_want_to_play = Field(
+        dtype=bool,
+        dtype_convert=parse_bool,
+        default=None,
+        input_processor=IDENTITY,
+        serializer=_serialize_bool,
+        parser=parse_bool,
+    )
+    bgg_user_want_to_buy = Field(
+        dtype=bool,
+        dtype_convert=parse_bool,
+        default=None,
+        input_processor=IDENTITY,
+        serializer=_serialize_bool,
+        parser=parse_bool,
+    )
+    bgg_user_preordered = Field(
+        dtype=bool,
+        dtype_convert=parse_bool,
+        default=None,
+        input_processor=IDENTITY,
+        serializer=_serialize_bool,
+        parser=parse_bool,
+    )
+    bgg_user_wishlist = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    bgg_user_play_count = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=NN_INT_PROCESSOR, default=0)
 
     published_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)
     updated_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)
