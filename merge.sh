@@ -13,7 +13,7 @@ nohup python3 -m ludoj.merge \
     --key-types int \
     --latest scraped_at \
     --latest-type date \
-    --fields-exclude game_type list_price \
+    --fields-exclude game_type list_price image_file \
         freebase_id wikidata_id wikipedia_id dbpedia_id luding_id \
         published_at updated_at scraped_at \
     >> 'logs/bgg_merge.log' 2>&1 &
@@ -93,6 +93,6 @@ nohup python3 -m ludoj.merge \
     --key-types int string \
     --latest scraped_at \
     --latest-type date \
-    --fields bgg_id bgg_user_name bgg_user_rating \
+    --fields-exclude published_at updated_at scraped_at \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
