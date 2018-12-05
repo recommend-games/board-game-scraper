@@ -104,6 +104,9 @@ def csv_merge(
 
                 previous = items.get(id_)
 
+                if previous:
+                    del items[id_]
+
                 if previous and latest:
                     latest_prev = previous.get(latest)
                     latest_prev = latest_parser(latest_prev) if latest_prev is not None else None
@@ -119,7 +122,7 @@ def csv_merge(
 
                 del previous, item
 
-            del reader
+            del reader, file_obj
 
         LOGGER.info(
             'processed %d items from <%s>, %d items in total, %d unique items so far',
