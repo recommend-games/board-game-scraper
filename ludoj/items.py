@@ -166,6 +166,7 @@ class GameItem(TypedItem):
         serializer=serialize_json,
         parser=parse_json,
     )
+    image_file = Field(serializer=serialize_json, parser=parse_json)
     video_url = Field(
         dtype=list,
         output_processor=clear_list,
