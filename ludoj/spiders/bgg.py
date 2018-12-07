@@ -121,6 +121,7 @@ class BggSpider(Spider):
     }
 
     scrape_ratings = False
+    scrape_collections = False
     min_votes = 20
 
     @classmethod
@@ -142,6 +143,8 @@ class BggSpider(Spider):
         settings = settings or get_project_settings()
 
         self.scrape_ratings = settings.getbool('SCRAPE_BGG_RATINGS')
+        self.scrape_collections = (
+            self.scrape_ratings and settings.getbool('SCRAPE_BGG_COLLECTIONS'))
         self.min_votes = settings.getint('MIN_VOTES', self.min_votes)
 
     def _spider_opened(self):
@@ -286,7 +289,7 @@ class BggSpider(Spider):
         bgg_ids = filter(None, map(extract_bgg_id, urls))
         yield from self._game_requests(*bgg_ids)
 
-        if not self.scrape_ratings:
+        if not self.scrape_collections:
             return
 
         user_names = filter(None, map(extract_user_name, urls))
@@ -297,9 +300,20 @@ class BggSpider(Spider):
         # pylint: disable=line-too-long
         '''
         @url https://www.boardgamegeek.com/xmlapi2/thing?id=13,822,36218&stats=1&versions=1&videos=1&ratingcomments=1&page=1&pagesize=100
-        @returns items 303 303
+        @returns items 3 3
         @returns requests 303 303
-        @scrapes bgg_id scraped_at
+        @scrapes name alt_name year description \
+            designer artist publisher \
+            url image_url video_url \
+            min_players max_players min_players_rec max_players_rec \
+            min_players_best max_players_best \
+            min_age min_age_rec min_time max_time \
+            category mechanic cooperative compilation family expansion \
+            rank num_votes avg_rating stddev_rating \
+            bayes_rating worst_rating best_rating \
+            complexity easiest_complexity hardest_complexity \
+            language_dependency lowest_language_dependency highest_language_dependency \
+            bgg_id scraped_at
         '''
 
         profile_url = response.meta.get('profile_url')
@@ -330,15 +344,17 @@ class BggSpider(Spider):
                     self.logger.warning('no user name found, cannot process rating')
                     continue
 
-                yield self._collection_request(user_name)
+                if self.scrape_collections:
+                    yield self._collection_request(user_name)
 
-                ldr = RatingLoader(
-                    item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
-                    selector=comment,
-                    response=response,
-                )
-                ldr.add_xpath('bgg_user_rating', '@rating')
-                yield ldr.load_item()
+                else:
+                    ldr = RatingLoader(
+                        item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
+                        selector=comment,
+                        response=response,
+                    )
+                    ldr.add_xpath('bgg_user_rating', '@rating')
+                    yield ldr.load_item()
 
             if response.meta.get('skip_game_item'):
                 continue

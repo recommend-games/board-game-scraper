@@ -197,6 +197,7 @@ DUMP_STATS_INTERVAL = 5 * 60
 
 # Spider settings
 SCRAPE_BGG_RATINGS = True
+SCRAPE_BGG_COLLECTIONS = True
 
 # State tags
 STATE_TAG_FILE = '.state'
