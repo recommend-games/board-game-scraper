@@ -21,6 +21,7 @@ function find_state() {
 mkdir --parents 'logs' "${JOBSDIR}"
 
 DATE=$(date --utc +'%Y-%m-%dT%H-%M-%S')
+COLLECTIONS=${1:-0}
 
 for SCRAPER in $(scrapy list); do
     JOBDIR="${JOBSDIR}/${SCRAPER}"
@@ -53,6 +54,7 @@ for SCRAPER in $(scrapy list); do
     nohup scrapy crawl "${SCRAPER}" \
         --output 'feeds/%(name)s/%(class)s/%(time)s.csv' \
         --set "JOBDIR=${CURR_JOB}" \
+        --set "SCRAPE_BGG_COLLECTIONS=${COLLECTIONS}" \
         >> "logs/${SCRAPER}.log" 2>&1 &
 
     echo -e "Started! Follow logs from <$(pwd)/logs/${SCRAPER}.log>.\\n"

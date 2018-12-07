@@ -147,6 +147,9 @@ class BggSpider(Spider):
             self.scrape_ratings and settings.getbool('SCRAPE_BGG_COLLECTIONS'))
         self.min_votes = settings.getint('MIN_VOTES', self.min_votes)
 
+        self.logger.info('scrape ratings: %r', self.scrape_ratings)
+        self.logger.info('scrape collections: %r', self.scrape_collections)
+
     def _spider_opened(self):
         state = getattr(self, 'state', None)
 
