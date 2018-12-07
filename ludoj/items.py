@@ -10,25 +10,26 @@ from functools import partial
 
 from scrapy import Field, Item
 from scrapy.loader.processors import Identity, MapCompose
-from w3lib.html import remove_tags, replace_entities
+from w3lib.html import remove_tags
 
 from .utils import (
     clear_list, identity, normalize_space, now, parse_bool, parse_date, parse_float,
-    parse_int, parse_json, serialize_date, serialize_json, smart_walks, validate_range)
+    parse_int, parse_json, replace_all_entities, serialize_date, serialize_json,
+    smart_walks, validate_range)
 
 IDENTITY = Identity()
 LOGGER = logging.getLogger(__name__)
 POS_INT_PROCESSOR = MapCompose(
-    identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+    identity, str, remove_tags, replace_all_entities, normalize_space,
     parse_int, partial(validate_range, lower=1))
 NN_INT_PROCESSOR = MapCompose(
-    identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+    identity, str, remove_tags, replace_all_entities, normalize_space,
     parse_int, partial(validate_range, lower=0))
 POS_FLOAT_PROCESSOR = MapCompose(
-    identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+    identity, str, remove_tags, replace_all_entities, normalize_space,
     parse_float, partial(validate_range, lower=0), lambda v: v or None)
 NN_FLOAT_PROCESSOR = MapCompose(
-    identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+    identity, str, remove_tags, replace_all_entities, normalize_space,
     parse_float, partial(validate_range, lower=0))
 
 
@@ -127,7 +128,7 @@ class GameItem(TypedItem):
         dtype=int,
         dtype_convert=parse_int,
         input_processor=MapCompose(
-            identity, str, remove_tags, replace_entities, replace_entities, normalize_space,
+            identity, str, remove_tags, replace_all_entities, normalize_space,
             parse_int, partial(validate_range, lower=-4000, upper=date.today().year + 10),
             lambda year: year or None),
         default=None,
@@ -136,7 +137,7 @@ class GameItem(TypedItem):
     description = Field(
         dtype=str,
         input_processor=MapCompose(
-            remove_tags, replace_entities, replace_entities,
+            remove_tags, replace_all_entities,
             partial(normalize_space, preserve_newline=True)),
     )
 

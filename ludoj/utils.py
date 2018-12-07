@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import re
 import string as string_lib
 
 from collections import OrderedDict
@@ -16,19 +17,24 @@ from urllib.parse import parse_qs, urlparse, urlunparse
 import dateutil.parser
 
 from scrapy.item import BaseItem
+from w3lib.html import replace_entities
 
 LOGGER = logging.getLogger(__name__)
 
-NON_PRINTABLE_SET = frozenset(chr(i) for i in range(128)).difference(string_lib.printable)
+PRINTABLE_SET = frozenset(string_lib.printable)
+NON_PRINTABLE_SET = frozenset(chr(i) for i in range(128)) - PRINTABLE_SET
 NON_PRINTABLE_TANSLATE = {ord(character): None for character in NON_PRINTABLE_SET}
 
+REGEX_ENTITIES = re.compile(r'(&#(\d+);)+')
+REGEX_SINGLE_ENT = re.compile(r'&#(\d+);')
 
-def to_str(string):
+
+def to_str(string, encoding='utf-8'):
     ''' safely returns either string or None '''
 
     string = (
         string if isinstance(string, str)
-        else string.decode() if isinstance(string, bytes)
+        else string.decode(encoding) if isinstance(string, bytes)
         else None)
     return string.translate(NON_PRINTABLE_TANSLATE) if string is not None else None
 
@@ -110,6 +116,29 @@ def batchify(iterable, size, skip=None):
     iterable = (x for x in iterable if x not in skip) if skip is not None else iterable
     for _, group in groupby(enumerate(iterable), key=lambda x: x[0] // size):
         yield (x[1] for x in group)
+
+
+def _replace_utf_entities(match):
+    try:
+        values = tuple(map(parse_int, REGEX_SINGLE_ENT.findall(match.group(0))))
+        bytes_ = bytes(values) if all(values) else None
+        return bytes_.decode() if bytes_ else match.group(0)
+    except Exception:
+        pass
+    return match.group(0)
+
+
+def replace_utf_entities(string):
+    ''' replace XML entities weirdly encoded '''
+    return REGEX_ENTITIES.sub(_replace_utf_entities, string)
+
+
+def replace_all_entities(string):
+    ''' replace all XML entities, even poorly encoded '''
+    # hack because BGG encodes 'Ü' as '&amp;#195;&amp;#156;' (d'oh!)
+    # note that this may corrupt text that's actually encoded correctly!
+    return replace_entities(replace_utf_entities(
+        string.replace('&amp;', '&').replace('&amp;', '&').replace('&amp;', '&')))
 
 
 def extract_query_param(url, field):

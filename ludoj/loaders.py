@@ -10,9 +10,9 @@ from scrapy.loader import ItemLoader
 from scrapy.loader.processors import TakeFirst, MapCompose
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import flatten
-from w3lib.html import remove_tags, replace_entities
+from w3lib.html import remove_tags
 
-from .utils import identity, normalize_space
+from .utils import identity, normalize_space, replace_all_entities
 
 
 class JsonLoader(ItemLoader):
@@ -60,7 +60,7 @@ class GameLoader(ItemLoader):
     ''' loader for GameItem '''
 
     default_input_processor = MapCompose(
-        identity, str, remove_tags, replace_entities, replace_entities, normalize_space)
+        identity, str, remove_tags, replace_all_entities, normalize_space)
     default_output_processor = TakeFirst()
 
 
@@ -73,5 +73,5 @@ class RatingLoader(ItemLoader):
     ''' loader for RatingItem '''
 
     default_input_processor = MapCompose(
-        identity, str, remove_tags, replace_entities, replace_entities, normalize_space)
+        identity, str, remove_tags, replace_all_entities, normalize_space)
     default_output_processor = TakeFirst()
