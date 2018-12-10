@@ -61,8 +61,8 @@ echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 nohup python3 -m ludoj.merge \
     'feeds/bgg/RatingItem/' \
     --out-file "feeds/bgg/RatingItem/${DATE}.csv" \
-    --keys bgg_id bgg_user_name \
-    --key-types int string \
+    --keys bgg_user_name bgg_id \
+    --key-types string int \
     --latest scraped_at \
     --latest-type date \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
