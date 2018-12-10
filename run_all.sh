@@ -52,7 +52,7 @@ for SCRAPER in $(scrapy list); do
     CURR_JOB="jobs/${SCRAPER}/${JOBTAG}"
 
     nohup scrapy crawl "${SCRAPER}" \
-        --output 'feeds/%(name)s/%(class)s/%(time)s.csv' \
+        --output 'feeds/%(name)s/%(class)s/%(time)s.jl' \
         --set "JOBDIR=${CURR_JOB}" \
         --set "SCRAPE_BGG_COLLECTIONS=${COLLECTIONS}" \
         >> "logs/${SCRAPER}.log" 2>&1 &

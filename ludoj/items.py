@@ -10,6 +10,7 @@ from functools import partial
 
 from scrapy import Field, Item
 from scrapy.loader.processors import Identity, MapCompose
+from scrapy.utils.project import get_project_settings
 from w3lib.html import remove_tags
 
 from .utils import (
@@ -19,6 +20,7 @@ from .utils import (
 
 IDENTITY = Identity()
 LOGGER = logging.getLogger(__name__)
+SETTINGS = get_project_settings()
 POS_INT_PROCESSOR = MapCompose(
     identity, str, remove_tags, replace_all_entities, normalize_space,
     parse_int, partial(validate_range, lower=1))
@@ -31,6 +33,10 @@ POS_FLOAT_PROCESSOR = MapCompose(
 NN_FLOAT_PROCESSOR = MapCompose(
     identity, str, remove_tags, replace_all_entities, normalize_space,
     parse_float, partial(validate_range, lower=0))
+
+
+def _json_output():
+    return SETTINGS.get('FEED_FORMAT') in ('jl', 'json', 'jsonl', 'jsonlines')
 
 
 def _serialize_bool(item):
@@ -121,7 +127,7 @@ class GameItem(TypedItem):
     alt_name = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     year = Field(
@@ -144,19 +150,19 @@ class GameItem(TypedItem):
     designer = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     artist = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     publisher = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
 
@@ -164,20 +170,23 @@ class GameItem(TypedItem):
     image_url = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
-    image_file = Field(serializer=serialize_json, parser=parse_json)
+    image_file = Field(
+        serializer=identity if _json_output() else serialize_json,
+        parser=parse_json,
+    )
     video_url = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     external_link = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     list_price = Field(dtype=str) # currency?
@@ -212,13 +221,13 @@ class GameItem(TypedItem):
     category = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     mechanic = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     cooperative = Field(
@@ -238,20 +247,20 @@ class GameItem(TypedItem):
     family = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     expansion = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
     implementation = Field(
         dtype=list,
         input_processor=MapCompose(parse_int),
         output_processor=clear_list,
-        serializer=serialize_json,
+        serializer=identity if _json_output() else serialize_json,
         parser=parse_json,
     )
 
