@@ -17,6 +17,7 @@ Scrapy = "*"
 smart_open = "<1.6.0"
 Twisted = "*"
 pillow = "*"
+pyspark = "*"
 
 [dev-packages]
 pylint = "*"
