@@ -18,6 +18,15 @@ csv.field_size_limit(sys.maxsize)
 LOGGER = logging.getLogger(__name__)
 
 
+def _spark_context(**kwargs):
+    try:
+        import pyspark
+        return pyspark.SparkContext(**kwargs)
+    except Exception:
+        LOGGER.exception('unable to create Spark context')
+    return None
+
+
 def _init_tracker():
     try:
         from pympler import tracker
@@ -34,16 +43,122 @@ def _print_memory(tracker=None):
         tracker.print_diff()
 
 
+def _compare(first, second):
+    latest_first, item_first = first
+    latest_second, item_second = second
+    return item_second if latest_first is None or (
+        latest_second is not None and latest_second >= latest_first) else item_first
+
+
+def _load_items(paths, fieldnames=None):
+    for url, _ in smart_walks(
+            *arg_to_iter(paths),
+            load=False,
+            accept_path=lambda x: to_str(x).lower().endswith('.csv')):
+        LOGGER.info('processing <%s>...', url)
+
+        with smart_open(url, 'r') as file_obj:
+            reader = csv.DictReader(file_obj)
+            if fieldnames is not None and reader.fieldnames:
+                fieldnames += reader.fieldnames
+            yield from reader
+
+
+def _merge_spark(
+        context,
+        items,
+        keys=('id',),
+        key_parsers=None,
+        latest=None,
+        latest_parser=None,
+        sort_output=False,
+    ):
+    LOGGER.info('merging items with Spark %r', context)
+
+    def _parse_keys(item):
+        id_ = tuple(parser(item.get(key)) for key, parser in zip(keys, key_parsers))
+        return None if any(x is None for x in id_) else id_
+
+    def _parse_latest(item):
+        latest_item = item.get(latest)
+        return latest_parser(latest_item) if latest_item is not None else None
+
+    rdd = context.parallelize(items) \
+        .map(lambda item: (_parse_keys(item), (_parse_latest(item), item))) \
+        .filter(lambda item: item[0] is not None) \
+        .reduceByKey(_compare)
+
+    if sort_output:
+        rdd = rdd.sortByKey()
+
+    return  rdd.collect()
+
+
+def _merge_python(
+        items,
+        keys=('id',),
+        key_parsers=None,
+        latest=None,
+        latest_parser=None,
+        sort_output=False,
+        memory_debug=False,
+    ):
+    LOGGER.info('merging items with Python')
+
+    result = {}
+    tracker = _init_tracker() if memory_debug else None
+    count = -1
+
+    for count, item in enumerate(items):
+        if (count + 1) % 10000 == 0:
+            LOGGER.info('processed %d items so far', count + 1)
+
+        if memory_debug and (count + 1) % 1000000 == 0:
+            _print_memory(tracker)
+
+        id_ = tuple(parser(item.get(key)) for key, parser in zip(keys, key_parsers))
+
+        if any(x is None for x in id_):
+            LOGGER.warning('invalid key: %r', id_)
+            continue
+
+        previous = result.get(id_)
+
+        if previous:
+            del result[id_]
+
+        if previous and latest:
+            latest_prev = previous.get(latest)
+            latest_prev = latest_parser(latest_prev) if latest_prev is not None else None
+            latest_item = item.get(latest)
+            latest_item = latest_parser(latest_item) if latest_item is not None else None
+
+            item = item if latest_prev is None or (
+                latest_item is not None and latest_item >= latest_prev) else previous
+
+            del latest_prev, latest_item
+
+        result[id_] = item
+
+        del previous, item
+
+    LOGGER.info('processed %d items in total', count + 1)
+
+    return sorted(result.items(), key=lambda item: item[0]) if sort_output else result.items()
+
+
 def csv_merge(
         out_file,
-        *paths,
+        paths,
         keys=('id',),
         key_parsers=None,
         latest=None,
         latest_parser=None,
         fieldnames=None,
         fieldnames_exclude=None,
-        memory_debug=False
+        sort_output=False,
+        memory_debug=False,
+        **spark,
     ):
     ''' merge CSV files into one '''
 
@@ -55,8 +170,8 @@ def csv_merge(
     if isinstance(out_file, (bytes, str)):
         with open(out_file, 'w') as out_file_obj:
             return csv_merge(
-                out_file_obj,
-                *paths,
+                out_file=out_file_obj,
+                paths=paths,
                 keys=keys,
                 key_parsers=key_parsers,
                 latest=latest,
@@ -66,75 +181,33 @@ def csv_merge(
                 memory_debug=memory_debug
             )
 
-    items = {}
-    find_fields = fieldnames is None
-    fieldnames = [] if find_fields else fieldnames
-    tracker = _init_tracker() if memory_debug else None
-    total = 0
-
-    for url, _ in smart_walks(
-            *paths, load=False, accept_path=lambda x: to_str(x).lower().endswith('.csv')):
-        LOGGER.info('processing <%s>...', url)
-
-        count = -1
-
-        with smart_open(url, 'r') as file_obj:
-            reader = csv.DictReader(file_obj)
-            fieldnames = clear_list(
-                fieldnames + reader.fieldnames
-            ) if find_fields and reader.fieldnames else fieldnames
-
-            for count, item in enumerate(reader):
-                # from Py3.6, DictReader returns OrderedDicts which carry a massive memory penalty
-                item = dict(item)
-
-                if (count + 1) % 10000 == 0:
-                    LOGGER.info('processed %d items so far from <%s>', count + 1, url)
-
-                total += 1
-
-                if memory_debug and total % 1000000 == 0:
-                    _print_memory(tracker)
-
-                id_ = tuple(parser(item.get(key)) for key, parser in zip(keys, key_parsers))
-
-                if any(x is None for x in id_):
-                    LOGGER.warning('invalid key: %r', id_)
-                    continue
-
-                previous = items.get(id_)
-
-                if previous:
-                    del items[id_]
-
-                if previous and latest:
-                    latest_prev = previous.get(latest)
-                    latest_prev = latest_parser(latest_prev) if latest_prev is not None else None
-                    latest_item = item.get(latest)
-                    latest_item = latest_parser(latest_item) if latest_item is not None else None
-
-                    item = item if latest_prev is None or (
-                        latest_item is not None and latest_item >= latest_prev) else previous
-
-                    del latest_prev, latest_item
-
-                items[id_] = item
-
-                del previous, item
-
-            del reader, file_obj
-
-        LOGGER.info(
-            'processed %d items from <%s>, %d items in total, %d unique items so far',
-            count + 1, url, total, len(items))
+    find_fields = [] if fieldnames is None else None
+    items = _load_items(paths, find_fields)
+    context = _spark_context(**spark)
+    items = _merge_spark(
+        context=context,
+        items=items,
+        keys=keys,
+        key_parsers=key_parsers,
+        latest=latest,
+        latest_parser=latest_parser,
+        sort_output=sort_output,
+    ) if context is not None else _merge_python(
+        items=items,
+        keys=keys,
+        key_parsers=key_parsers,
+        latest=latest,
+        latest_parser=latest_parser,
+        sort_output=sort_output,
+        memory_debug=memory_debug,
+    )
+    fieldnames = clear_list(find_fields) if find_fields else fieldnames
 
     if not items:
         LOGGER.warning('no items found, nothing to write back')
         return 0
 
-    LOGGER.info(
-        'processed a total of %d items, writing %d unique items to %s...',
-        total, len(items), out_file)
+    LOGGER.info('writing %d unique items to %s...', len(items), out_file)
 
     fieldnames_exclude = frozenset(arg_to_iter(fieldnames_exclude))
     fieldnames = [
@@ -149,12 +222,12 @@ def csv_merge(
     count = -1
     total = len(items)
 
-    for count, (_, item) in enumerate(sorted(items.items(), key=lambda x: x[0])):
+    for count, (_, item) in enumerate(items):
         writer.writerow({k: item.get(k) for k in fieldnames})
         if (count + 1) % 10000 == 0:
             LOGGER.info('done writing %d items (~%.1f%%)', count + 1, 100.0 * (count + 1) / total)
 
-    del items
+    del items, writer
 
     LOGGER.info('done writing %d items, finished', count + 1)
 
@@ -190,6 +263,7 @@ def _parse_args():
         help='latest column data type')
     parser.add_argument('--fields', '-f', nargs='+', help='output columns')
     parser.add_argument('--fields-exclude', '-F', nargs='+', help='ignore these output columns')
+    parser.add_argument('--sort-output', '-s', action='store_true', help='sort output by keys')
     parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
@@ -213,14 +287,15 @@ def _main():
     latest_parser = _str_to_parser(args.latest_type)
 
     csv_merge(
-        out_file,
-        *args.paths,
+        out_file=out_file,
+        paths=args.paths,
         keys=args.keys,
         key_parsers=key_parsers,
         latest=args.latest,
         latest_parser=latest_parser,
         fieldnames=args.fields,
         fieldnames_exclude=args.fields_exclude,
+        sort_output=args.sort_output,
         memory_debug=args.verbose > 0
     )
 
