@@ -6,11 +6,11 @@ set -euo pipefail
 
 mkdir --parents 'logs'
 
-DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')_merged"
+DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
 nohup python3 -m ludoj.merge \
     'feeds/bgg/GameItem/' \
-    --out-file "feeds/bgg/GameItem/${DATE}.csv" \
+    --out-path "feeds/bgg/GameItem/${DATE}" \
     --keys bgg_id \
     --key-types int \
     --latest scraped_at \
@@ -20,7 +20,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/bgg_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
     'feeds/dbpedia/GameItem/' \
-    --out-file "feeds/dbpedia/GameItem/${DATE}.csv" \
+    --out-path "feeds/dbpedia/GameItem/${DATE}" \
     --keys dbpedia_id \
     --key-types string \
     --latest scraped_at \
@@ -30,7 +30,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/dbpedia_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
     'feeds/luding/GameItem/' \
-    --out-file "feeds/luding/GameItem/${DATE}.csv" \
+    --out-path "feeds/luding/GameItem/${DATE}" \
     --keys luding_id \
     --key-types int \
     --latest scraped_at \
@@ -40,7 +40,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
     'feeds/spielen/GameItem/' \
-    --out-file "feeds/spielen/GameItem/${DATE}.csv" \
+    --out-path "feeds/spielen/GameItem/${DATE}" \
     --keys url \
     --key-types string \
     --latest scraped_at \
@@ -50,7 +50,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/spielen_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
     'feeds/wikidata/GameItem/' \
-    --out-file "feeds/wikidata/GameItem/${DATE}.csv" \
+    --out-path "feeds/wikidata/GameItem/${DATE}" \
     --keys wikidata_id \
     --key-types string \
     --latest scraped_at \
@@ -60,7 +60,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
     'feeds/bgg/RatingItem/' \
-    --out-file "feeds/bgg/RatingItem/${DATE}.csv" \
+    --out-path "feeds/bgg/RatingItem/${DATE}" \
     --keys bgg_user_name bgg_id \
     --key-types string int \
     --latest scraped_at \
