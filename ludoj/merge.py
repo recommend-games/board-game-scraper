@@ -5,7 +5,6 @@
 
 import argparse
 import csv
-import json
 import logging
 import os
 import sys
@@ -14,7 +13,7 @@ from functools import partial
 
 from scrapy.utils.misc import arg_to_iter
 
-from .utils import identity, parse_date, parse_float, parse_int, parse_json, to_str
+from .utils import identity, parse_date, parse_float, parse_int, parse_json, serialize_json, to_str
 
 csv.field_size_limit(sys.maxsize)
 
@@ -32,10 +31,10 @@ def _spark_context(**kwargs):
 
 
 def _compare(first, second):
-    latest_first, item_first = first
-    latest_second, item_second = second
-    return item_second if latest_first is None or (
-        latest_second is not None and latest_second >= latest_first) else item_first
+    latest_first, _ = first
+    latest_second, _ = second
+    return second if latest_first is None or (
+        latest_second is not None and latest_second >= latest_first) else first
 
 
 def _filter_fields(item, fieldnames=None, fieldnames_exclude=None):
@@ -100,13 +99,14 @@ def csv_merge(
     if sort_output:
         rdd = rdd.sortByKey()
 
-    rdd = rdd.values()
+    rdd = rdd.values() \
+        .values()
 
     if fieldnames or fieldnames_exclude:
         rdd = rdd.map(
             partial(_filter_fields, fieldnames=fieldnames, fieldnames_exclude=fieldnames_exclude))
 
-    rdd.map(partial(json.dumps, sort_keys=True)) \
+    rdd.map(partial(serialize_json, sort_keys=True)) \
         .saveAsTextFile(out_path)
 
     LOGGER.info('done merging')
@@ -174,6 +174,8 @@ def _main():
         sort_output=args.sort_output,
         # TODO Spark config
     )
+
+    # TODO give option to concatenate output files
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ rm --recursive --force results
 mkdir --parents 'logs' 'results'
 
 nohup python3 -m ludoj.merge \
-    'feeds/bgg/GameItem/' \
+    'feeds/bgg/GameItem/*' \
     --out-path 'results/bgg' \
     --keys bgg_id \
     --key-types int \
@@ -22,7 +22,7 @@ nohup python3 -m ludoj.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
-    'feeds/dbpedia/GameItem/' \
+    'feeds/dbpedia/GameItem/*' \
     --out-path 'results/dbpedia' \
     --keys dbpedia_id \
     --key-types string \
@@ -39,7 +39,7 @@ nohup python3 -m ludoj.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/dbpedia_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
-    'feeds/luding/GameItem/' \
+    'feeds/luding/GameItem/*' \
     --out-path 'results/luding' \
     --keys luding_id \
     --key-types int \
@@ -56,7 +56,7 @@ nohup python3 -m ludoj.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
-    'feeds/spielen/GameItem/' \
+    'feeds/spielen/GameItem/*' \
     --out-path 'results/spielen' \
     --keys url \
     --key-types string \
@@ -75,7 +75,7 @@ nohup python3 -m ludoj.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/spielen_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
-    'feeds/wikidata/GameItem/' \
+    'feeds/wikidata/GameItem/*' \
     --out-path 'results/wikidata' \
     --keys wikidata_id \
     --key-types string \
@@ -93,7 +93,7 @@ nohup python3 -m ludoj.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 
 nohup python3 -m ludoj.merge \
-    'feeds/bgg/RatingItem/' \
+    'feeds/bgg/RatingItem/*' \
     --out-path 'results/bgg_ratings' \
     --keys bgg_user_name bgg_id \
     --key-types string int \
