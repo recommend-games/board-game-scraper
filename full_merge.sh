@@ -15,6 +15,7 @@ nohup python3 -m ludoj.merge \
     --key-types int \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     >> 'logs/bgg_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_merge.log>.\\n"
 
@@ -25,6 +26,7 @@ nohup python3 -m ludoj.merge \
     --key-types string \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     >> 'logs/dbpedia_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/dbpedia_merge.log>.\\n"
 
@@ -35,6 +37,7 @@ nohup python3 -m ludoj.merge \
     --key-types int \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     >> 'logs/luding_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 
@@ -45,6 +48,7 @@ nohup python3 -m ludoj.merge \
     --key-types string \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     >> 'logs/spielen_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/spielen_merge.log>.\\n"
 
@@ -55,6 +59,7 @@ nohup python3 -m ludoj.merge \
     --key-types string \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     >> 'logs/wikidata_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 
@@ -65,5 +70,6 @@ nohup python3 -m ludoj.merge \
     --key-types string int \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"

@@ -10,13 +10,14 @@ import os
 import sys
 import tempfile
 
+from datetime import timedelta, timezone
 from functools import partial
 from pathlib import Path
 
 from scrapy.utils.misc import arg_to_iter
 
 from .utils import (
-    concat, identity, parse_date, parse_float, parse_int, parse_json, serialize_json, to_str)
+    concat, identity, now, parse_date, parse_float, parse_int, parse_json, serialize_json, to_str)
 
 csv.field_size_limit(sys.maxsize)
 
@@ -56,6 +57,7 @@ def csv_merge(
         key_parsers=None,
         latest=None,
         latest_parser=None,
+        latest_min=None,
         fieldnames=None,
         fieldnames_exclude=None,
         sort_output=False,
@@ -83,6 +85,7 @@ def csv_merge(
     key_parsers = tuple(arg_to_iter(key_parsers))
     key_parsers += (identity,) * (len(keys) - len(key_parsers))
     latest_parser = identity if latest_parser is None else latest_parser
+    latest_min = latest_parser(latest_min)
 
     def _parse_keys(item):
         id_ = tuple(parser(item.get(key)) for key, parser in zip(keys, key_parsers))
@@ -92,11 +95,16 @@ def csv_merge(
         latest_item = item.get(latest)
         return latest_parser(latest_item) if latest_item is not None else None
 
-    # TODO filter out very old dates
     rdd = context.textFile(','.join(arg_to_iter(in_paths))) \
         .map(parse_json) \
         .filter(lambda item: item is not None) \
-        .map(lambda item: (_parse_keys(item), (_parse_latest(item), item))) \
+        .keyBy(_parse_latest)
+
+    if latest_min is not None:
+        LOGGER.info('filter out items before %r', latest_min)
+        rdd = rdd.filter(lambda item: item[0] and item[0] >= latest_min)
+
+    rdd = rdd.map(lambda item: (_parse_keys(item[1]), item)) \
         .filter(lambda item: item[0] is not None) \
         .reduceByKey(_compare)
 
@@ -130,17 +138,20 @@ def csv_merge(
     LOGGER.info('done merging')
 
 
-def _str_to_parser(string):
+def _canonical_str(string):
     string = to_str(string)
+    return string.lower() if string else None
+
+
+def _str_to_parser(string):
+    string = _canonical_str(string)
 
     if not string:
         return to_str
 
-    string = string.lower()
-
     return (parse_int if string == 'int'
             else parse_float if string == 'float'
-            else parse_date if string == 'date'
+            else partial(parse_date, tzinfo=timezone.utc) if string == 'date'
             else to_str)
 
 
@@ -157,6 +168,9 @@ def _parse_args():
     parser.add_argument(
         '--latest-type', '-L', choices=('str', 'string', 'int', 'float', 'date'),
         help='latest column data type')
+    parser.add_argument(
+        '--latest-min', '-m',
+        help='minimum value for latest column, all other values will be ignored (days for dates)')
     parser.add_argument('--fields', '-f', nargs='+', help='output columns')
     parser.add_argument('--fields-exclude', '-F', nargs='+', help='ignore these output columns')
     parser.add_argument('--sort-output', '-s', action='store_true', help='sort output by keys')
@@ -181,6 +195,10 @@ def _main():
 
     key_parsers = map(_str_to_parser, arg_to_iter(args.key_types))
     latest_parser = _str_to_parser(args.latest_type)
+    latest_min = (
+        now() - timedelta(days=parse_int(args.latest_min))
+        if args.latest_min and _canonical_str(args.latest_type) == 'date'
+        else args.latest_min)
 
     csv_merge(
         in_paths=args.paths,
@@ -189,6 +207,7 @@ def _main():
         key_parsers=key_parsers,
         latest=args.latest,
         latest_parser=latest_parser,
+        latest_min=latest_min,
         fieldnames=args.fields,
         fieldnames_exclude=args.fields_exclude,
         sort_output=args.sort_output,

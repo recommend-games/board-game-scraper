@@ -14,6 +14,7 @@ nohup python3 -m ludoj.merge \
     --key-types int \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     --fields-exclude game_type list_price image_file \
         freebase_id wikidata_id wikipedia_id dbpedia_id luding_id \
         published_at updated_at scraped_at \
@@ -29,6 +30,7 @@ nohup python3 -m ludoj.merge \
     --key-types string \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     --fields name alt_name year \
         description designer publisher \
         url image_url external_link \
@@ -47,6 +49,7 @@ nohup python3 -m ludoj.merge \
     --key-types int \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     --fields name year game_type \
         description designer artist publisher \
         url image_url external_link \
@@ -65,6 +68,7 @@ nohup python3 -m ludoj.merge \
     --key-types string \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     --fields name year description \
         designer artist publisher \
         url image_url video_url \
@@ -85,6 +89,7 @@ nohup python3 -m ludoj.merge \
     --key-types string \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     --fields name alt_name year \
         designer publisher \
         url image_url external_link \
@@ -104,6 +109,7 @@ nohup python3 -m ludoj.merge \
     --key-types string int \
     --latest scraped_at \
     --latest-type date \
+    --latest-min 30 \
     --fields-exclude published_at updated_at scraped_at \
     --sort-output \
     --concat \
