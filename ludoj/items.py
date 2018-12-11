@@ -234,14 +234,14 @@ class GameItem(TypedItem):
         dtype=bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     compilation = Field(
         dtype=bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     family = Field(
@@ -325,7 +325,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     bgg_user_prev_owned = Field(
@@ -333,7 +333,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     bgg_user_for_trade = Field(
@@ -341,7 +341,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     bgg_user_want_in_trade = Field(
@@ -349,7 +349,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     bgg_user_want_to_play = Field(
@@ -357,7 +357,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     bgg_user_want_to_buy = Field(
@@ -365,7 +365,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     bgg_user_preordered = Field(
@@ -373,7 +373,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=_serialize_bool,
+        serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
     bgg_user_wishlist = Field(

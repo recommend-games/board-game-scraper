@@ -40,12 +40,13 @@ def _compare(first, second):
         latest_second is not None and latest_second >= latest_first) else first
 
 
-def _filter_fields(item, fieldnames=None, fieldnames_exclude=None):
-    if fieldnames:
-        return {k: v for k, v in item.items() if k in fieldnames}
-    if fieldnames_exclude:
-        return {k: v for k, v in item.items() if k not in fieldnames_exclude}
-    return item
+def _filter_fields(item, remove_empty=True, fieldnames=None, fieldnames_exclude=None):
+    item = (
+        (k, v) for k, v in item.items() if v is not None and v != ''
+    ) if remove_empty else item.items()
+    item = ((k, v) for k, v in item if k in fieldnames) if fieldnames else item
+    item = ((k, v) for k, v in item if k not in fieldnames_exclude) if fieldnames_exclude else item
+    return dict(item)
 
 
 def csv_merge(
@@ -76,8 +77,7 @@ def csv_merge(
 
     if fieldnames and fieldnames_exclude:
         LOGGER.warning(
-            'both <fieldnames> and <fieldnames_exclude> were specified, '
-            'but only <fieldnames> will be considered')
+            'both <fieldnames> and <fieldnames_exclude> were specified, please choose one')
 
     keys = tuple(arg_to_iter(keys))
     key_parsers = tuple(arg_to_iter(key_parsers))
@@ -104,13 +104,14 @@ def csv_merge(
         rdd = rdd.sortByKey()
 
     rdd = rdd.values() \
-        .values()
-
-    if fieldnames or fieldnames_exclude:
-        rdd = rdd.map(
-            partial(_filter_fields, fieldnames=fieldnames, fieldnames_exclude=fieldnames_exclude))
-
-    rdd = rdd.map(partial(serialize_json, sort_keys=True))
+        .values() \
+        .map(partial(
+            _filter_fields,
+            remove_empty=True,
+            fieldnames=fieldnames,
+            fieldnames_exclude=fieldnames_exclude,
+        )) \
+        .map(partial(serialize_json, sort_keys=True))
 
     if concat_output:
         with tempfile.TemporaryDirectory() as temp_path:
