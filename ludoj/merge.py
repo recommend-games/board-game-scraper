@@ -24,13 +24,25 @@ csv.field_size_limit(sys.maxsize)
 LOGGER = logging.getLogger(__name__)
 
 
-def _spark_context(**kwargs):
+def _spark_context(log_level=None, **kwargs):
     os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
+
     try:
         import pyspark
-        return pyspark.SparkContext(**kwargs)
+
+        conf = pyspark.SparkConf()
+        conf.set('spark.ui.showConsoleProgress', False)
+        kwargs['conf'] = conf
+        context = pyspark.SparkContext(**kwargs)
+
+        if log_level:
+            context.setLogLevel(log_level)
+
+        return context
+
     except Exception:
         LOGGER.exception('unable to create Spark context')
+
     return None
 
 
@@ -188,7 +200,7 @@ def _main():
     logging.basicConfig(
         stream=sys.stderr,
         level=logging.DEBUG if args.verbose > 0 else logging.INFO,
-        format='%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s'
+        format='%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s',
     )
 
     LOGGER.info(args)
@@ -212,6 +224,7 @@ def _main():
         fieldnames_exclude=args.fields_exclude,
         sort_output=args.sort_output,
         concat_output=args.concat,
+        log_level='DEBUG' if args.verbose > 0 else 'INFO',
         # TODO Spark config
     )
 
