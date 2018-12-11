@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import string as string_lib
 
 from collections import OrderedDict
@@ -17,6 +18,7 @@ from urllib.parse import parse_qs, urlparse, urlunparse
 import dateutil.parser
 
 from scrapy.item import BaseItem
+from scrapy.utils.misc import arg_to_iter
 from w3lib.html import replace_entities
 
 LOGGER = logging.getLogger(__name__)
@@ -472,3 +474,17 @@ def smart_walks(*paths, load=False, raise_exc=False, **kwargs):
             LOGGER.exception(exc)
             if raise_exc:
                 raise exc
+
+
+def concat(dst, srcs):
+    ''' concatenate files '''
+    LOGGER.info('concatenating files into <%s>', dst)
+    with open(dst, 'w') as out_file:
+        for src in arg_to_iter(srcs):
+            LOGGER.info('copy data from <%s>', src)
+            with open(src, 'r') as in_file:
+                shutil.copyfileobj(in_file, out_file)
+                in_file.seek(in_file.tell() - 1)
+                if in_file.read(1) != '\n':
+                    out_file.write('\n')
+    LOGGER.info('done concatenating')

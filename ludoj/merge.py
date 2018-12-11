@@ -8,12 +8,15 @@ import csv
 import logging
 import os
 import sys
+import tempfile
 
 from functools import partial
+from pathlib import Path
 
 from scrapy.utils.misc import arg_to_iter
 
-from .utils import identity, parse_date, parse_float, parse_int, parse_json, serialize_json, to_str
+from .utils import (
+    concat, identity, parse_date, parse_float, parse_int, parse_json, serialize_json, to_str)
 
 csv.field_size_limit(sys.maxsize)
 
@@ -55,6 +58,7 @@ def csv_merge(
         fieldnames=None,
         fieldnames_exclude=None,
         sort_output=False,
+        concat_output=False,
         **spark,
     ):
     ''' merge CSV files into one '''
@@ -106,8 +110,21 @@ def csv_merge(
         rdd = rdd.map(
             partial(_filter_fields, fieldnames=fieldnames, fieldnames_exclude=fieldnames_exclude))
 
-    rdd.map(partial(serialize_json, sort_keys=True)) \
-        .saveAsTextFile(out_path)
+    rdd = rdd.map(partial(serialize_json, sort_keys=True))
+
+    if concat_output:
+        with tempfile.TemporaryDirectory() as temp_path:
+            path = Path(temp_path) / 'out'
+            LOGGER.info('saving temporary output to <%s>', path)
+            rdd.saveAsTextFile(str(path))
+
+            LOGGER.info('concatenate temporary files to <%s>', out_path)
+            files = path.glob('part-*')
+            concat(out_path, sorted(files))
+
+    else:
+        LOGGER.info('saving output to <%s>', out_path)
+        rdd.saveAsTextFile(out_path)
 
     LOGGER.info('done merging')
 
@@ -143,6 +160,8 @@ def _parse_args():
     parser.add_argument('--fields-exclude', '-F', nargs='+', help='ignore these output columns')
     parser.add_argument('--sort-output', '-s', action='store_true', help='sort output by keys')
     parser.add_argument(
+        '--concat', '-c', action='store_true', help='concatenate output into one file')
+    parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
     return parser.parse_args()
@@ -172,10 +191,9 @@ def _main():
         fieldnames=args.fields,
         fieldnames_exclude=args.fields_exclude,
         sort_output=args.sort_output,
+        concat_output=args.concat,
         # TODO Spark config
     )
-
-    # TODO give option to concatenate output files
 
 
 if __name__ == '__main__':
