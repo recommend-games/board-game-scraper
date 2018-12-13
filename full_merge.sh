@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-# rsync -av -e 'ssh -p 2222' monkeybear:~/Workspace/ludoj-scraper/feeds/ feeds/
+# rsync -avhe 'ssh -p 2222' --progress monkeybear:~/Workspace/ludoj-scraper/feeds/ feeds/
+# rsync -avh --progress gauss.local:~/Workspace/ludoj-scraper/feeds/ feeds/
 
 mkdir --parents 'logs'
 
