@@ -66,7 +66,6 @@ class GameLoader(ItemLoader):
 
 class GameJsonLoader(JsonLoader, GameLoader):
     ''' loader for GameItem plus JMESPath capabilities '''
-    pass
 
 
 class RatingLoader(ItemLoader):

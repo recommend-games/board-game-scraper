@@ -416,8 +416,8 @@ class BggSpider(Spider):
             ldr.add_xpath('max_time', 'playingtime/@value')
             ldr.add_xpath('max_time', 'minplaytime/@value')
 
-            ldr.add_xpath('category', 'link[@type = "boardgamecategory"]/@value')
-            ldr.add_xpath('mechanic', 'link[@type = "boardgamemechanic"]/@value')
+            ldr.add_value('category', _value_id(game.xpath('link[@type = "boardgamecategory"]')))
+            ldr.add_value('mechanic', _value_id(game.xpath('link[@type = "boardgamemechanic"]')))
             # look for <link type="boardgamemechanic" id="2023" value="Co-operative Play" />
             ldr.add_value(
                 'cooperative',
@@ -425,11 +425,15 @@ class BggSpider(Spider):
             ldr.add_value(
                 'compilation',
                 bool(game.xpath('link[@type = "boardgamecompilation" and @inbound = "true"]')))
-            ldr.add_xpath('family', 'link[@type = "boardgamefamily"]/@value')
-            ldr.add_xpath('expansion', 'link[@type = "boardgameexpansion"]/@value')
+            ldr.add_xpath(
+                'compilation_of',
+                'link[@type = "boardgamecompilation" and @inbound = "true"]/@id')
+            ldr.add_value('family', _value_id(game.xpath('link[@type = "boardgamefamily"]')))
+            ldr.add_value('expansion', _value_id(game.xpath('link[@type = "boardgameexpansion"]')))
             ldr.add_xpath(
                 'implementation',
                 'link[@type = "boardgameimplementation" and @inbound = "true"]/@id')
+            ldr.add_xpath('integration', 'link[@type = "boardgameintegration"]/@id')
 
             ldr.add_xpath('rank', 'statistics/ratings/ranks/rank[@name = "boardgame"]/@value')
             ldr.add_xpath('num_votes', 'statistics/ratings/usersrated/@value')

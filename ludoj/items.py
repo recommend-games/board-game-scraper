@@ -244,6 +244,13 @@ class GameItem(TypedItem):
         serializer=identity if _json_output() else _serialize_bool,
         parser=parse_bool,
     )
+    compilation_of = Field(
+        dtype=list,
+        input_processor=MapCompose(parse_int),
+        output_processor=clear_list,
+        serializer=identity if _json_output() else serialize_json,
+        parser=parse_json,
+    )
     family = Field(
         dtype=list,
         output_processor=clear_list,
@@ -257,6 +264,13 @@ class GameItem(TypedItem):
         parser=parse_json,
     )
     implementation = Field(
+        dtype=list,
+        input_processor=MapCompose(parse_int),
+        output_processor=clear_list,
+        serializer=identity if _json_output() else serialize_json,
+        parser=parse_json,
+    )
+    integration = Field(
         dtype=list,
         input_processor=MapCompose(parse_int),
         output_processor=clear_list,
