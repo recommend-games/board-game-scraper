@@ -484,7 +484,8 @@ def concat(dst, srcs):
             LOGGER.info('copy data from <%s>', src)
             with open(src, 'r') as in_file:
                 shutil.copyfileobj(in_file, out_file)
-                in_file.seek(in_file.tell() - 1)
-                if in_file.read(1) != '\n':
-                    out_file.write('\n')
+                if in_file.tell():
+                    in_file.seek(in_file.tell() - 1)
+                    if in_file.read(1) != '\n':
+                        out_file.write('\n')
     LOGGER.info('done concatenating')

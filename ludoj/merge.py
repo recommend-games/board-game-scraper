@@ -46,6 +46,11 @@ def _spark_context(log_level=None, **kwargs):
     return None
 
 
+def _parse(item, keys, parsers):
+    values = tuple(parser(item.get(key)) for key, parser in zip(keys, parsers))
+    return None if any(x is None for x in values) else values
+
+
 def _compare(first, second):
     latest_first, _ = first
     latest_second, _ = second
@@ -68,11 +73,14 @@ def csv_merge(
         keys=('id',),
         key_parsers=None,
         latest=None,
-        latest_parser=None,
+        latest_parsers=None,
         latest_min=None,
         fieldnames=None,
         fieldnames_exclude=None,
         sort_output=False,
+        sort_latest=False,
+        sort_field=None,
+        sort_descending=False,
         concat_output=False,
         **spark,
     ):
@@ -96,42 +104,43 @@ def csv_merge(
     keys = tuple(arg_to_iter(keys))
     key_parsers = tuple(arg_to_iter(key_parsers))
     key_parsers += (identity,) * (len(keys) - len(key_parsers))
-    latest_parser = identity if latest_parser is None else latest_parser
-    latest_min = latest_parser(latest_min)
-
-    def _parse_keys(item):
-        id_ = tuple(parser(item.get(key)) for key, parser in zip(keys, key_parsers))
-        return None if any(x is None for x in id_) else id_
-
-    def _parse_latest(item):
-        latest_item = item.get(latest)
-        return latest_parser(latest_item) if latest_item is not None else None
+    latest = tuple(arg_to_iter(latest))
+    latest_parsers = tuple(arg_to_iter(latest_parsers))
+    latest_parsers += (identity,) * (len(latest) - len(latest_parsers))
+    latest_min = latest_parsers[0](latest_min)
 
     rdd = context.textFile(','.join(arg_to_iter(in_paths))) \
         .map(parse_json) \
         .filter(lambda item: item is not None) \
-        .keyBy(_parse_latest)
+        .keyBy(partial(_parse, keys=latest, parsers=latest_parsers))
 
     if latest_min is not None:
         LOGGER.info('filter out items before %r', latest_min)
-        rdd = rdd.filter(lambda item: item[0] and item[0] >= latest_min)
+        rdd = rdd.filter(lambda item: item[0][0] and item[0][0] >= latest_min)
 
-    rdd = rdd.map(lambda item: (_parse_keys(item[1]), item)) \
+    rdd = rdd.map(lambda item: (_parse(item=item[1], keys=keys, parsers=key_parsers), item)) \
         .filter(lambda item: item[0] is not None) \
         .reduceByKey(_compare)
 
     if sort_output:
         rdd = rdd.sortByKey()
 
-    rdd = rdd.values() \
-        .values() \
-        .map(partial(
-            _filter_fields,
-            remove_empty=True,
-            fieldnames=fieldnames,
-            fieldnames_exclude=fieldnames_exclude,
-        )) \
-        .map(partial(serialize_json, sort_keys=True))
+    rdd = rdd.values()
+
+    if sort_latest:
+        rdd = rdd.sortByKey(ascending=sort_latest == 'asc')
+
+    rdd = rdd.values()
+
+    if sort_field:
+        rdd = rdd.sortBy(lambda item: item.get(sort_field), ascending=not sort_descending)
+
+    rdd = rdd.map(partial(
+        _filter_fields,
+        remove_empty=True,
+        fieldnames=fieldnames,
+        fieldnames_exclude=fieldnames_exclude,
+    )).map(partial(serialize_json, sort_keys=True))
 
     if concat_output:
         with tempfile.TemporaryDirectory() as temp_path:
@@ -176,16 +185,22 @@ def _parse_args():
     parser.add_argument(
         '--key-types', '-K', nargs='+', choices=('str', 'string', 'int', 'float', 'date'),
         help='target column data type')
-    parser.add_argument('--latest', '-l', help='target column for latest item')
+    parser.add_argument('--latest', '-l', nargs='+', help='target column for latest item')
     parser.add_argument(
-        '--latest-type', '-L', choices=('str', 'string', 'int', 'float', 'date'),
+        '--latest-types', '-L', nargs='+', choices=('str', 'string', 'int', 'float', 'date'),
         help='latest column data type')
     parser.add_argument(
         '--latest-min', '-m',
         help='minimum value for latest column, all other values will be ignored (days for dates)')
     parser.add_argument('--fields', '-f', nargs='+', help='output columns')
     parser.add_argument('--fields-exclude', '-F', nargs='+', help='ignore these output columns')
-    parser.add_argument('--sort-output', '-s', action='store_true', help='sort output by keys')
+    parser.add_argument('--sort-output', '-O', action='store_true', help='sort output by keys')
+    parser.add_argument(
+        '--sort-latest', '-s', choices=('asc', 'desc'), help='sort output by "latest" column')
+    parser.add_argument('--sort-field', '-S', help='sort output by a column')
+    parser.add_argument(
+        '--sort-desc', '-D', action='store_true',
+        help='sort descending (only in connection with --sort-field)')
     parser.add_argument(
         '--concat', '-c', action='store_true', help='concatenate output into one file')
     parser.add_argument(
@@ -206,10 +221,10 @@ def _main():
     LOGGER.info(args)
 
     key_parsers = map(_str_to_parser, arg_to_iter(args.key_types))
-    latest_parser = _str_to_parser(args.latest_type)
+    latest_parsers = map(_str_to_parser, arg_to_iter(args.latest_types))
     latest_min = (
         now() - timedelta(days=parse_int(args.latest_min))
-        if args.latest_min and _canonical_str(args.latest_type) == 'date'
+        if args.latest_min and args.latest_types and _canonical_str(args.latest_types[0]) == 'date'
         else args.latest_min)
 
     csv_merge(
@@ -218,11 +233,14 @@ def _main():
         keys=args.keys,
         key_parsers=key_parsers,
         latest=args.latest,
-        latest_parser=latest_parser,
+        latest_parsers=latest_parsers,
         latest_min=latest_min,
         fieldnames=args.fields,
         fieldnames_exclude=args.fields_exclude,
         sort_output=args.sort_output,
+        sort_latest=args.sort_latest,
+        sort_field=args.sort_field,
+        sort_descending=args.sort_desc,
         concat_output=args.concat,
         log_level='DEBUG' if args.verbose > 0 else 'INFO',
         # TODO Spark config

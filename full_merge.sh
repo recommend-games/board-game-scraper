@@ -3,7 +3,9 @@
 set -euo pipefail
 
 # rsync -avhe 'ssh -p 2222' --progress monkeybear:~/Workspace/ludoj-scraper/feeds/ feeds/
+# rsync -avhe 'ssh -p 2222' --progress monkeybear:~/Workspace/hdm-news-cache/output/ feeds/news/
 # rsync -avh --progress gauss.local:~/Workspace/ludoj-scraper/feeds/ feeds/
+# rsync -avh --progress gauss.local:~/Workspace/hdm-news-cache/output/ feeds/news/
 
 mkdir --parents 'logs'
 
@@ -15,7 +17,7 @@ nohup python3 -m ludoj.merge \
     --keys bgg_id \
     --key-types int \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --concat \
     >> 'logs/bgg_merge.log' 2>&1 &
@@ -27,7 +29,7 @@ nohup python3 -m ludoj.merge \
     --keys dbpedia_id \
     --key-types string \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --concat \
     >> 'logs/dbpedia_merge.log' 2>&1 &
@@ -39,7 +41,7 @@ nohup python3 -m ludoj.merge \
     --keys luding_id \
     --key-types int \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --concat \
     >> 'logs/luding_merge.log' 2>&1 &
@@ -51,7 +53,7 @@ nohup python3 -m ludoj.merge \
     --keys url \
     --key-types string \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --concat \
     >> 'logs/spielen_merge.log' 2>&1 &
@@ -63,7 +65,7 @@ nohup python3 -m ludoj.merge \
     --keys wikidata_id \
     --key-types string \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --concat \
     >> 'logs/wikidata_merge.log' 2>&1 &
@@ -75,8 +77,19 @@ nohup python3 -m ludoj.merge \
     --keys bgg_user_name bgg_id \
     --key-types string int \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --concat \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
+
+nohup python3 -m ludoj.merge \
+    'feeds/news/*.jl,feeds/news/*/*/*.jl' \
+    --out-path "feeds/news/${DATE}_merged.jl" \
+    --keys article_id \
+    --key-types string \
+    --latest published_at scraped_at \
+    --latest-types date date \
+    --concat \
+    >> 'logs/news_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/news_merge.log>.\\n"

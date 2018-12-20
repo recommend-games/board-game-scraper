@@ -3,7 +3,9 @@
 set -euo pipefail
 
 # rsync -avhe 'ssh -p 2222' --progress monkeybear:~/Workspace/ludoj-scraper/feeds/ feeds/
+# rsync -avhe 'ssh -p 2222' --progress monkeybear:~/Workspace/hdm-news-cache/output/ feeds/news/
 # rsync -avh --progress gauss.local:~/Workspace/ludoj-scraper/feeds/ feeds/
+# rsync -avh --progress gauss.local:~/Workspace/hdm-news-cache/output/ feeds/news/
 
 rm --recursive --force results
 mkdir --parents 'logs' 'results'
@@ -14,7 +16,7 @@ nohup python3 -m ludoj.merge \
     --keys bgg_id \
     --key-types int \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --fields-exclude game_type list_price image_file \
         freebase_id wikidata_id wikipedia_id dbpedia_id luding_id \
@@ -30,7 +32,7 @@ nohup python3 -m ludoj.merge \
     --keys dbpedia_id \
     --key-types string \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --fields name alt_name year \
         description designer publisher \
@@ -49,7 +51,7 @@ nohup python3 -m ludoj.merge \
     --keys luding_id \
     --key-types int \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --fields name year game_type \
         description designer artist publisher \
@@ -68,7 +70,7 @@ nohup python3 -m ludoj.merge \
     --keys url \
     --key-types string \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --fields name year description \
         designer artist publisher \
@@ -89,7 +91,7 @@ nohup python3 -m ludoj.merge \
     --keys wikidata_id \
     --key-types string \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --fields name alt_name year \
         designer publisher \
@@ -109,10 +111,25 @@ nohup python3 -m ludoj.merge \
     --keys bgg_user_name bgg_id \
     --key-types string int \
     --latest scraped_at \
-    --latest-type date \
+    --latest-types date \
     --latest-min 30 \
     --fields-exclude published_at updated_at scraped_at \
     --sort-output \
     --concat \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
+
+nohup python3 -m ludoj.merge \
+    'feeds/news/*.jl,feeds/news/*/*/*.jl' \
+    --out-path 'results/news.jl' \
+    --keys article_id \
+    --key-types string \
+    --latest published_at scraped_at \
+    --latest-types date date \
+    --fields article_id url_canonical url_mobile url_amp url_thumbnail \
+        published_at title_full title_short author description summary \
+        category keyword section_inferred country language source_name \
+    --sort-latest desc \
+    --concat \
+    >> 'logs/news_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/news_merge.log>.\\n"
