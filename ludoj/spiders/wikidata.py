@@ -7,10 +7,11 @@ import json
 from urllib.parse import urlencode
 
 from scrapy import Request, Spider
+from scrapy.loader.processors import MapCompose
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
-from ..utils import batchify, normalize_space
+from ..utils import batchify, identity, normalize_space
 
 
 class WikidataSpider(Spider):
@@ -173,8 +174,12 @@ class WikidataSpider(Spider):
             ldr.add_jmes('publisher', 'claims.P123[].mainsnak.datavalue.value.id')
 
             ldr.add_value('url', response.url)
-            # TODO only file name, expand to URL
-            ldr.add_jmes('image_url', 'claims.P18[].mainsnak.datavalue.value')
+            # TODO it appears 'Deskohraní 08s4 235 - Bohnanza.jpg' links to
+            # https://commons.wikimedia.org/wiki/File:Deskohran%C3%AD_08s4_235_-_Bohnanza.jpg or
+            # https://upload.wikimedia.org/wikipedia/commons/6/65/Deskohran%C3%AD_08s4_235_-_Bohnanza.jpg
+            ldr.add_jmes(
+                'image_url', 'claims.P18[].mainsnak.datavalue.value',
+                MapCompose(identity, response.urljoin))
             # official website
             ldr.add_jmes('external_link', 'claims.P856[].mainsnak.datavalue.value')
             # Wikipedia pages
