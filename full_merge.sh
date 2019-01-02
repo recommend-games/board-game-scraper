@@ -8,7 +8,7 @@ set -euo pipefail
 # rsync -avh --progress gauss.local:~/Workspace/hdm-news-cache/output/ feeds/news/
 
 SAVEDIR="$(pwd)"
-cd "$( dirname "${BASH_SOURCE[0]}" )"
+cd "$(dirname $(readlink --canonicalize "${BASH_SOURCE[0]}"))"
 
 mkdir --parents 'logs'
 
