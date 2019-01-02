@@ -7,6 +7,9 @@ set -euo pipefail
 # rsync -avh --progress gauss.local:~/Workspace/ludoj-scraper/feeds/ feeds/
 # rsync -avh --progress gauss.local:~/Workspace/hdm-news-cache/output/ feeds/news/
 
+SAVEDIR="$(pwd)"
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+
 mkdir --parents 'logs'
 
 DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
@@ -93,3 +96,5 @@ nohup python3 -m ludoj.merge \
     --concat \
     >> 'logs/news_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/news_merge.log>.\\n"
+
+cd "${SAVEDIR}"

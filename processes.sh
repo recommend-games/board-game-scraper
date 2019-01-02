@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+SAVEDIR="$(pwd)"
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+
 JOBSDIR='jobs'
 STATE_FILE='.state'
 PID_FILE='.pid'
@@ -25,3 +28,5 @@ for PID in $(find_pids "${JOBSDIR}"); do
 		echo "${PID}"
 	fi
 done
+
+cd "${SAVEDIR}"
