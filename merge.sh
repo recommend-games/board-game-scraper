@@ -4,6 +4,7 @@ set -euo pipefail
 
 # rsync -avhe 'ssh -p 2222' --progress monkeybear:~/Workspace/ludoj-scraper/feeds/ feeds/
 # rsync -avhe 'ssh -p 2222' --progress monkeybear:~/Workspace/hdm-news-cache/output/ feeds/news/
+# aws s3 sync 's3://scrape.news.recommend.games/' feeds/news/
 # rsync -avh --progress gauss.local:~/Workspace/ludoj-scraper/feeds/ feeds/
 # rsync -avh --progress gauss.local:~/Workspace/hdm-news-cache/output/ feeds/news/
 
