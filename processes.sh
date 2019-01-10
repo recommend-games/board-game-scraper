@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SAVEDIR="$(pwd)"
-cd "$(dirname $(readlink --canonicalize "${BASH_SOURCE[0]}"))"
+cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 
 JOBSDIR='jobs'
 STATE_FILE='.state'
