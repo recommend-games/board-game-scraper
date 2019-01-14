@@ -4,6 +4,8 @@
 
 # import argparse
 import logging
+import math
+import os
 import re
 import sqlite3
 import sys
@@ -12,35 +14,47 @@ import sys
 from itertools import chain
 
 # import dedupe
+import yaml
 
-from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.misc import arg_to_iter, load_object
+from scrapy.utils.project import get_project_settings
 from smart_open import smart_open
 
 from .items import GameItem
-from .utils import clear_list, parse_json, serialize_json
+from .utils import clear_list, parse_float, parse_json, serialize_json
 
 LOGGER = logging.getLogger(__name__)
+SETTINGS = get_project_settings()
+
+
+def abs_comp(field_1, field_2):
+    ''' returns absolute value of difference if both arguments are valid, else inf '''
+    field_1 = parse_float(field_1)
+    field_2 = parse_float(field_2)
+    return math.inf if field_1 is None or field_2 is None else abs(field_1 - field_2)
+
+
+def _fields(file=os.path.join(SETTINGS.get('BASE_DIR'), 'fields.yaml')):
+    LOGGER.info('loading dedupe fields from <%s>', file)
+    with smart_open(file) as file_obj:
+        fields = yaml.safe_load(file_obj)
+
+    for field in fields:
+        if field.get('comparator'):
+            field['comparator'] = load_object(field['comparator'])
+
+    return fields
+
+
+DEDUPE_FIELDS = tuple(_fields())
+ALL_FIELDS = tuple(field['field'] for field in DEDUPE_FIELDS)
+LIST_FIELDS = tuple(field['field'] for field in DEDUPE_FIELDS if field['type'] == 'Set')
+
 VALUE_ID_REGEX = re.compile(r'^(.*?)(:(\d+))?$')
 VALUE_ID_FIELDS = (
     'designer',
     'artist',
     'publisher',
-)
-LIST_FIELDS = frozenset(('names',) + VALUE_ID_FIELDS)
-ALL_FIELDS = (
-    'names',
-    'year',
-    'designer',
-    'artist',
-    'publisher',
-    'min_players',
-    'max_players',
-    'bgg_id',
-    'freebase_id',
-    'wikidata_id',
-    'wikipedia_id',
-    'dbpedia_id',
-    'luding_id',
 )
 
 
