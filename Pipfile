@@ -19,6 +19,7 @@ Twisted = "*"
 pillow = "*"
 pyspark = "*"
 dedupe = "*"
+awscli = "*"
 
 [dev-packages]
 pylint = "*"
