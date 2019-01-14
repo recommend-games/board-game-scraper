@@ -2,7 +2,7 @@
 
 ''' merge different sources '''
 
-# import argparse
+import argparse
 import logging
 import math
 import os
@@ -13,7 +13,7 @@ import sys
 # from functools import partial
 from itertools import chain
 
-# import dedupe
+import dedupe
 import yaml
 
 from scrapy.utils.misc import arg_to_iter, load_object
@@ -21,10 +21,11 @@ from scrapy.utils.project import get_project_settings
 from smart_open import smart_open
 
 from .items import GameItem
-from .utils import clear_list, parse_float, parse_json, serialize_json
+from .utils import clear_list, parse_float, parse_json, serialize_json, smart_exists
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS = get_project_settings()
+BASE_DIR = SETTINGS.get('BASE_DIR')
 
 
 def abs_comp(field_1, field_2):
@@ -34,7 +35,7 @@ def abs_comp(field_1, field_2):
     return math.inf if field_1 is None or field_2 is None else abs(field_1 - field_2)
 
 
-def _fields(file=os.path.join(SETTINGS.get('BASE_DIR'), 'fields.yaml')):
+def _fields(file=os.path.join(BASE_DIR, 'fields.yaml')):
     LOGGER.info('loading dedupe fields from <%s>', file)
     with smart_open(file) as file_obj:
         fields = yaml.safe_load(file_obj)
@@ -68,6 +69,7 @@ class _Row(sqlite3.Row):
 
 def _parse_value_id(string, regex=VALUE_ID_REGEX):
     match = regex.match(string) if string else None
+    # TODO filter out '(Uncredited):3'
     return match.group(1) or None if match else None
 
 
@@ -109,7 +111,15 @@ def _serialize_fields(game, fields=ALL_FIELDS, list_fields=LIST_FIELDS):
 
 
 def _fill_db(games, db_file=':memory:'):
+    if db_file != ':memory:':
+        try:
+            os.remove(db_file)
+        except Exception:
+            pass
+
+    LOGGER.info('connecting to SQLite database <%s>', db_file)
     conn = sqlite3.connect(db_file)
+
     with conn:
         sql = '''CREATE TABLE games (
             id INTEGER PRIMARY KEY,
@@ -141,25 +151,116 @@ def _fill_db(games, db_file=':memory:'):
 
     LOGGER.info("Let's test the database, shall we?")
     conn.row_factory = _Row
-    for row in conn.execute('SELECT * FROM games;'):
+    for row in conn.execute('SELECT * FROM games LIMIT 1;'):
         LOGGER.info(dict(row))
-        break
 
     conn.close()
+    del conn
+
+
+def _process_row(row):
+    row = dict(row)
+    return {
+        key: tuple(value) if isinstance(value, list) else value
+        for key, value in row.items()
+    }
+
+
+def _load_data(db_file):
+    LOGGER.info('connecting to SQLite database <%s>', db_file)
+    conn = sqlite3.connect(db_file)
+    conn.row_factory = _Row
+
+    sql = 'SELECT * FROM games;'
+    LOGGER.info('executing query <%s>', sql)
+    data = {row['id']: _process_row(row) for row in conn.execute(sql)}
+    conn.close()
+    del conn
+    LOGGER.info('loaded %d games from the database', len(data))
+
+    return data
+
+
+def _train_deduper(data, fields=DEDUPE_FIELDS, training_file=None):
+    LOGGER.info('training deduper with fields: %r', fields)
+
+    deduper = dedupe.Dedupe(fields)
+    deduper.sample(data, 25_000)
+
+    if training_file and smart_exists(training_file):
+        LOGGER.info('reading existing training from <%s>', training_file)
+        with smart_open(training_file, 'r') as file_obj:
+            deduper.readTraining(file_obj)
+
+    LOGGER.info('start interactive labelling')
+    dedupe.convenience.consoleLabel(deduper)
+
+    if training_file:
+        LOGGER.info('write training data back to <%s>', training_file)
+        with smart_open(training_file, 'w') as file_obj:
+            deduper.writeTraining(file_obj)
+
+    LOGGER.info('done labelling, begin training')
+    deduper.train(recall=0.95, index_predicates=True)
+
+    deduper.cleanupTraining()
+
+    return deduper
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('paths', nargs='*', help='input JSON Lines files')
+    parser.add_argument(
+        '--database', '-d', default=os.path.join(BASE_DIR, 'games.sqlite3'),
+        help='SQLite databse path')
+    parser.add_argument(
+        '--train', '-t', action='store_true', help='train deduper')
+    parser.add_argument(
+        '--training-file', '-T', default=os.path.join(BASE_DIR, 'training.json'),
+        help='training JSON file')
+    parser.add_argument(
+        '--deduper-file', '-D', default=os.path.join(BASE_DIR, 'deduper.pickle'),
+        help='deduper model file')
+    parser.add_argument(
+        '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
+
+    return parser.parse_args()
 
 
 def _main():
+    args = _parse_args()
+
     logging.basicConfig(
         stream=sys.stderr,
-        level=logging.INFO,
+        level=logging.DEBUG if args.verbose > 0 else logging.INFO,
         format='%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s',
     )
 
-    LOGGER.info(sys.argv)
+    LOGGER.info(args)
 
-    games = _load_games(sys.argv[1:])
-    _fill_db(db_file='games.sqlite3', games=games)
-    LOGGER.info('Done.')
+    if args.paths:
+        games = _load_games(args.paths)
+        _fill_db(db_file=args.database, games=games)
+        del games
+
+    data = _load_data(args.database)
+
+    if args.train:
+        deduper = _train_deduper(data=data, training_file=args.training_file)
+
+        if args.deduper_file:
+            LOGGER.info('saving deduper model to <%s>', args.deduper_file)
+            with smart_open(args.deduper_file, 'wb') as file_obj:
+                deduper.writeSettings(file_obj)
+
+    else:
+        LOGGER.info('reading deduper model from <%s>', args.deduper_file)
+        with smart_open(args.deduper_file, 'wb') as file_obj:
+            deduper = dedupe.StaticDedupe(file_obj)
+
+    LOGGER.info('using deduper model %r', deduper)
+
 
 
 if __name__ == '__main__':

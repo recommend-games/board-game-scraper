@@ -3,12 +3,16 @@
 - field: year
   type: Custom
   comparator: ludoj.dedupe.abs_comp
+  has missing: yes
 - field: designer
   type: Set
+  has missing: yes
 - field: artist
   type: Set
+  has missing: yes
 - field: publisher
   type: Set
+  has missing: yes
 - field: min_players
   type: Exact
 - field: max_players
