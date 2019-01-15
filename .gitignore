@@ -100,9 +100,10 @@ include/
 share/
 pip-selfcheck.json
 
+.tc/
 crawls/
+dedupe/
 feeds/
 images/
 jobs/
 recommender/
-.tc/

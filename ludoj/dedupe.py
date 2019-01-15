@@ -66,6 +66,10 @@ class _Row(sqlite3.Row):
             for key, value in zip(cursor.description, row))
         return super().__new__(cls, cursor, row)
 
+    def items(self):
+        ''' items iterator '''
+        return zip(self.keys(), self)
+
 
 def _parse_value_id(string, regex=VALUE_ID_REGEX):
     match = regex.match(string) if string else None
@@ -159,7 +163,6 @@ def _fill_db(games, db_file=':memory:'):
 
 
 def _process_row(row):
-    row = dict(row)
     return {
         key: tuple(value) if isinstance(value, list) else value
         for key, value in row.items()
@@ -212,15 +215,15 @@ def _parse_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('paths', nargs='*', help='input JSON Lines files')
     parser.add_argument(
-        '--database', '-d', default=os.path.join(BASE_DIR, 'games.sqlite3'),
+        '--database', '-d', default=os.path.join(BASE_DIR, 'dedupe', 'games.sqlite3'),
         help='SQLite databse path')
     parser.add_argument(
         '--train', '-t', action='store_true', help='train deduper')
     parser.add_argument(
-        '--training-file', '-T', default=os.path.join(BASE_DIR, 'training.json'),
+        '--training-file', '-T', default=os.path.join(BASE_DIR, 'dedupe', 'training.json'),
         help='training JSON file')
     parser.add_argument(
-        '--deduper-file', '-D', default=os.path.join(BASE_DIR, 'deduper.pickle'),
+        '--deduper-file', '-D', default=os.path.join(BASE_DIR, 'dedupe', 'deduper.pickle'),
         help='deduper model file')
     parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
