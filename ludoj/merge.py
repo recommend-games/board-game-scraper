@@ -241,7 +241,7 @@ def _main():
         sort_field=args.sort_field,
         sort_descending=args.sort_desc,
         concat_output=args.concat,
-        log_level='DEBUG' if args.verbose > 0 else 'INFO',
+        log_level='DEBUG' if args.verbose > 1 else 'INFO' if args.verbose > 0 else 'WARN',
         # TODO Spark config
     )
 
