@@ -39,11 +39,11 @@
         },
         "awscli": {
             "hashes": [
-                "sha256:8f0127dde09451dff90779b1dab651abc67b4bde0dacd96a1950538e79578abd",
-                "sha256:c1f9e6b795d246c5d906a22fd28ddbf980bfecb76c4810597e669952cf613f8f"
+                "sha256:51dfb25e657767bf7a4077a548b2c94f59d714398f834dd27f69940a9028c79d",
+                "sha256:adcf6f610c9f9d2914a8626f9f3037b96804f715e32ca0b90425188eba454ec4"
             ],
             "index": "pypi",
-            "version": "==1.16.86"
+            "version": "==1.16.89"
         },
         "boto": {
             "hashes": [
@@ -55,17 +55,17 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:9d2e79eb36486c8ea1979b966c1993a948765466237bf8b8035e1a191d2fbdc4",
-                "sha256:adce72a70bddcd98dba094e8d485678a3c16b0c6e8949a8d2ef7593c2c251154"
+                "sha256:2aae5d59a1e463056c1db531c9a26605176a5dbb8c0134c7dfdd288d9d7d2267",
+                "sha256:a75462a89808130b0e74dffffe8d9f851f8c5f6f68c016938addc84397ba6953"
             ],
-            "version": "==1.9.76"
+            "version": "==1.9.79"
         },
         "botocore": {
             "hashes": [
-                "sha256:33c3318eb4532b450cfe0ffab3b2a70e9a62c0aba301cadc9f8ce4a28a3982eb",
-                "sha256:3dea3109b7b9c6aaed1f0c6dcb718f41e8b95c1137fbf01644c789fedcfd19cb"
+                "sha256:8d87d5ff0c3ce5515d00579168c61544b735705121d4fdf94291e0b4e9a0339a",
+                "sha256:ba2f8c353a3e34cc5c750fef7716d31068c866d4b3b29142b891ce7a55ba7804"
             ],
-            "version": "==1.12.76"
+            "version": "==1.12.79"
         },
         "bz2file": {
             "hashes": [
@@ -441,11 +441,11 @@
         },
         "w3lib": {
             "hashes": [
-                "sha256:55994787e93b411c2d659068b51b9998d9d0c05e0df188e6daf8f45836e1ea38",
-                "sha256:aaf7362464532b1036ab0092e2eee78e8fd7b56787baa9ed4967457b083d011b"
+                "sha256:67eacd24f4f233a80bc472835ad6aad99616e49aa1d795f3dbb7b8b028fec6cf",
+                "sha256:e54db912ae1c79d3e246b16d3645bdf701f70ac4f8a2fc46eeb284cc02a31cd7"
             ],
             "index": "pypi",
-            "version": "==1.19.0"
+            "version": "==1.20.0"
         },
         "zope.interface": {
             "hashes": [
@@ -688,11 +688,11 @@
         },
         "pytest": {
             "hashes": [
-                "sha256:3e65a22eb0d4f1bdbc1eacccf4a3198bf8d4049dea5112d70a0c61b00e748d02",
-                "sha256:5924060b374f62608a078494b909d341720a050b5224ff87e17e12377486a71d"
+                "sha256:41568ea7ecb4a68d7f63837cf65b92ce8d0105e43196ff2b26622995bb3dc4b2",
+                "sha256:c3c573a29d7c9547fb90217ece8a8843aa0c1328a797e200290dc3d0b4b823be"
             ],
             "index": "pypi",
-            "version": "==4.1.0"
+            "version": "==4.1.1"
         },
         "six": {
             "hashes": [
