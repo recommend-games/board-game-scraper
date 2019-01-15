@@ -204,27 +204,39 @@ def _train_deduper(data, fields=DEDUPE_FIELDS, training_file=None):
             deduper.writeTraining(file_obj)
 
     LOGGER.info('done labelling, begin training')
-    deduper.train(recall=0.95, index_predicates=True)
+    deduper.train(recall=0.9, index_predicates=True)
 
     deduper.cleanupTraining()
 
     return deduper
 
 
+def _print_games(connection, *game_ids):
+    sql = f'''SELECT * FROM games WHERE id IN ({', '.join(map(str, game_ids))});'''
+    for game in connection.execute(sql):
+        print(serialize_json(dict(game), indent=4))
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('paths', nargs='*', help='input JSON Lines files')
     parser.add_argument(
-        '--database', '-d', default=os.path.join(BASE_DIR, 'dedupe', 'games.sqlite3'),
+        '--database', '-d', default=os.path.join(BASE_DIR, 'cluster', 'games.sqlite3'),
         help='SQLite databse path')
     parser.add_argument(
         '--train', '-t', action='store_true', help='train deduper')
     parser.add_argument(
-        '--training-file', '-T', default=os.path.join(BASE_DIR, 'dedupe', 'training.json'),
+        '--training-file', '-T', default=os.path.join(BASE_DIR, 'cluster', 'training.json'),
         help='training JSON file')
     parser.add_argument(
-        '--deduper-file', '-D', default=os.path.join(BASE_DIR, 'dedupe', 'deduper.pickle'),
+        '--deduper-file', '-D', default=os.path.join(BASE_DIR, 'cluster', 'deduper.pickle'),
         help='deduper model file')
+    parser.add_argument('--threshold', '-r', type=float, help='clustering threshold')
+    parser.add_argument(
+        '--recall', '-R', type=float, default=1, help='threshold estimation recall weight')
+    parser.add_argument(
+        '--info', '-i', action='store_true',
+        help='display detailed information for each game in a cluster')
     parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
@@ -259,11 +271,33 @@ def _main():
 
     else:
         LOGGER.info('reading deduper model from <%s>', args.deduper_file)
-        with smart_open(args.deduper_file, 'wb') as file_obj:
+        with smart_open(args.deduper_file, 'rb') as file_obj:
             deduper = dedupe.StaticDedupe(file_obj)
 
     LOGGER.info('using deduper model %r', deduper)
 
+    threshold = args.threshold or deduper.threshold(data, recall_weight=args.recall)
+
+    LOGGER.info('using threshold %.3f', threshold)
+
+    clusters = deduper.match(data=data, threshold=threshold, generator=True)
+
+    if args.info:
+        connection = sqlite3.connect(args.database)
+        connection.row_factory = _Row
+        LOGGER.info('displaying games information using %r', connection)
+    else:
+        connection = None
+
+    for ids, scores in clusters:
+        info = (f'<{id_}> ({score:.3f})' for id_, score in zip(ids, scores))
+        print('cluster:', ', '.join(info))
+        if connection:
+            _print_games(connection, *ids)
+
+    if connection:
+        connection.close()
+        del connection
 
 
 if __name__ == '__main__':

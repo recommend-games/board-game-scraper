@@ -2,7 +2,7 @@
   type: Set
 - field: year
   type: Custom
-  comparator: ludoj.dedupe.abs_comp
+  comparator: ludoj.cluster.abs_comp
   has missing: yes
 - field: designer
   type: Set
