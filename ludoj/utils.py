@@ -13,7 +13,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from itertools import groupby
 from types import GeneratorType
-from typing import Container, Optional, Union
+from typing import Iterable, Optional, Pattern, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
 import dateutil.parser
@@ -34,6 +34,8 @@ REGEX_SINGLE_ENT = re.compile(r'&#(\d+);')
 REGEX_BGG_ID = re.compile(r'^/boardgame/(\d+).*$')
 REGEX_BGG_USER = re.compile(r'^/user/([^/]+).*$')
 REGEX_WIKIDATA_ID = re.compile(r'^/(wiki|entity|resource)/Q(\d+).*$')
+REGEX_DBPEDIA_DOMAIN = re.compile(r'^[a-z]{2}\.dbpedia\.org$')
+REGEX_DBPEDIA_ID = re.compile(r'^/(resource|page)/(.+)$')
 
 
 def to_str(string, encoding='utf-8'):
@@ -496,10 +498,18 @@ def concat(dst, srcs):
     LOGGER.info('done concatenating')
 
 
-def _parse_url(url: Optional[str], hostnames: Optional[Container] = None) -> Optional[ParseResult]:
+def _match(string: str, comparison: Union[str, Pattern]):
+    return string == comparison if isinstance(comparison, str) else bool(comparison.match(string))
+
+
+def _parse_url(
+        url: Optional[str],
+        hostnames: Optional[Iterable[Union[str, Pattern]]] = None
+    ) -> Optional[ParseResult]:
     url = urlparse(url)
     return (
-        url if url.hostname and url.path and (not hostnames or url.hostname in hostnames)
+        url if url.hostname and url.path and (
+            not hostnames or any(_match(url.hostname, hostname) for hostname in hostnames))
         else None)
 
 
@@ -535,3 +545,12 @@ def extract_wikipedia_id(url: Optional[str]) -> Optional[str]:
     ''' extract Wikipedia ID from URL '''
     url = _parse_url(url, ('en.wikipedia.org', 'en.m.wikipedia.org'))
     return unquote_plus(url.path[6:]) or None if url and url.path.startswith('/wiki/') else None
+
+
+def extract_dbpedia_id(url: Optional[str]) -> Optional[str]:
+    ''' extract DBpedia ID from URL '''
+    url = _parse_url(url, ('dbpedia.org', 'www.dbpedia.org', REGEX_DBPEDIA_DOMAIN))
+    if not url:
+        return None
+    match = REGEX_DBPEDIA_ID.match(url.path)
+    return unquote_plus(match.group(2)) if match else extract_query_param(url, 'id')
