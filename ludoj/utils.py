@@ -13,7 +13,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from itertools import groupby
 from types import GeneratorType
-from typing import Optional, Union
+from typing import Container, Optional, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
 import dateutil.parser
@@ -33,6 +33,7 @@ REGEX_SINGLE_ENT = re.compile(r'&#(\d+);')
 
 REGEX_BGG_ID = re.compile(r'^/boardgame/(\d+).*$')
 REGEX_BGG_USER = re.compile(r'^/user/([^/]+).*$')
+REGEX_WIKIDATA_ID = re.compile(r'^/(wiki|entity|resource)/Q(\d+).*$')
 
 
 def to_str(string, encoding='utf-8'):
@@ -495,21 +496,18 @@ def concat(dst, srcs):
     LOGGER.info('done concatenating')
 
 
-def _parse_bgg_url(url: Optional[str]) -> Optional[ParseResult]:
+def _parse_url(url: Optional[str], hostnames: Optional[Container] = None) -> Optional[ParseResult]:
     url = urlparse(url)
     return (
-        None if url.hostname not in ('boardgamegeek.com', 'www.boardgamegeek.com') or not url.path
-        else url)
+        url if url.hostname and url.path and (not hostnames or url.hostname in hostnames)
+        else None)
 
 
 def extract_bgg_id(url: Optional[str]) -> Optional[int]:
     ''' extract BGG ID from URL '''
-
-    url = _parse_bgg_url(url)
-
+    url = _parse_url(url, ('boardgamegeek.com', 'www.boardgamegeek.com'))
     if not url:
         return None
-
     match = REGEX_BGG_ID.match(url.path)
     bgg_id = parse_int(match.group(1)) if match else None
     return bgg_id if bgg_id is not None else parse_int(extract_query_param(url, 'id'))
@@ -517,11 +515,23 @@ def extract_bgg_id(url: Optional[str]) -> Optional[int]:
 
 def extract_bgg_user_name(url: Optional[str]) -> Optional[str]:
     ''' extract BGG user name from url '''
-
-    url = _parse_bgg_url(url)
-
+    url = _parse_url(url, ('boardgamegeek.com', 'www.boardgamegeek.com'))
     if not url:
         return None
-
     match = REGEX_BGG_USER.match(url.path)
     return unquote_plus(match.group(1)) if match else extract_query_param(url, 'username')
+
+
+def extract_wikidata_id(url: Optional[str]) -> Optional[str]:
+    ''' extract Wikidata ID from URL '''
+    url = _parse_url(url, ('wikidata.org', 'www.wikidata.org', 'wikidata.dbpedia.org'))
+    if not url:
+        return None
+    match = REGEX_WIKIDATA_ID.match(url.path)
+    return f'Q{match.group(2)}' if match else extract_query_param(url, 'id')
+
+
+def extract_wikipedia_id(url: Optional[str]) -> Optional[str]:
+    ''' extract Wikipedia ID from URL '''
+    url = _parse_url(url, ('en.wikipedia.org', 'en.m.wikipedia.org'))
+    return unquote_plus(url.path[6:]) or None if url and url.path.startswith('/wiki/') else None
