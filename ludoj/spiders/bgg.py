@@ -6,7 +6,7 @@ import re
 import statistics
 
 from itertools import repeat
-from urllib.parse import unquote_plus, urlencode
+from urllib.parse import urlencode
 
 from scrapy import signals
 from scrapy import Request, Spider
@@ -15,27 +15,11 @@ from scrapy.utils.project import get_project_settings
 
 from ..items import GameItem, RatingItem
 from ..loaders import GameLoader, RatingLoader
-from ..utils import batchify, clear_list, extract_query_param, normalize_space, now, parse_int
+from ..utils import (
+    batchify, clear_list, extract_bgg_id, extract_bgg_user_name,
+    normalize_space, now, parse_int)
 
-
-URL_REGEX_BOARD_GAME = re.compile(r'^.*/boardgame/(\d+).*$')
-URL_REGEX_USER = re.compile(r'^.*/user/([^/]+).*$')
 DIGITS_REGEX = re.compile(r'^\D*(\d+).*$')
-
-
-def extract_bgg_id(url):
-    ''' extract BGG ID from URL '''
-
-    match = URL_REGEX_BOARD_GAME.match(url)
-    bgg_id = parse_int(match.group(1)) if match else None
-    return bgg_id if bgg_id is not None else parse_int(extract_query_param(url, 'id'))
-
-
-def extract_user_name(url):
-    ''' extract user name from BGG url '''
-
-    match = URL_REGEX_USER.match(url)
-    return unquote_plus(match.group(1)) if match else extract_query_param(url, 'username')
 
 
 def _parse_int(element, xpath, default=None, lenient=False):
@@ -289,13 +273,13 @@ class BggSpider(Spider):
                 meta={'max_retry_times': 10})
 
         urls = response.xpath('//@href').extract()
-        bgg_ids = filter(None, map(extract_bgg_id, urls))
+        bgg_ids = filter(None, map(extract_bgg_id, map(response.urljoin, urls)))
         yield from self._game_requests(*bgg_ids)
 
         if not self.scrape_collections:
             return
 
-        user_names = filter(None, map(extract_user_name, urls))
+        user_names = filter(None, map(extract_bgg_user_name, urls))
         for user_name in clear_list(user_names):
             yield self._collection_request(user_name)
 
@@ -458,7 +442,7 @@ class BggSpider(Spider):
         @scrapes bgg_id bgg_user_name scraped_at
         '''
 
-        user_name = response.meta.get('bgg_user_name') or extract_user_name(response.url)
+        user_name = response.meta.get('bgg_user_name') or extract_bgg_user_name(response.url)
         scraped_at = now()
 
         if not user_name:

@@ -7,10 +7,9 @@ import string
 
 from scrapy import Spider, Request
 
-from .bgg import extract_bgg_id
 from ..items import GameItem
 from ..loaders import GameLoader
-from ..utils import extract_query_param
+from ..utils import extract_bgg_id, extract_query_param
 
 
 class LudingSpider(Spider):
