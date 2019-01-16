@@ -137,7 +137,6 @@ class WikidataSpider(Spider):
         self.logger.info('received %d games', len(games))
 
         for game in games:
-            # TODO make more robust (regex)
             wikidata_id = extract_wikidata_id(game)
             if wikidata_id:
                 yield Request(self._entity_url(wikidata_id), callback=self.parse_game)
