@@ -327,7 +327,11 @@ class DBpediaSpider(Spider):
 
         self.logger.info('received %d games', len(games))
 
-        query_tmpl = 'SELECT ?property ?value WHERE {{ <{game}> ?property ?value . }}'
+        query_tmpl = normalize_space('''
+            SELECT ?property ?value ?label WHERE {{
+                <{game}> ?property ?value .
+                OPTIONAL {{ ?value <http://www.w3.org/2000/01/rdf-schema#label> ?label . }}
+            }}''')
 
         for game in games:
             # dbpedia_id = game.split('/')[-1]
