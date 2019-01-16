@@ -13,7 +13,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from itertools import groupby
 from types import GeneratorType
-from typing import Iterable, Optional, Pattern, Union
+from typing import Any, Iterable, List, Optional, Pattern, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
 import dateutil.parser
@@ -37,10 +37,10 @@ REGEX_WIKIDATA_ID = re.compile(r'^/(wiki|entity|resource)/Q(\d+).*$')
 REGEX_DBPEDIA_DOMAIN = re.compile(r'^[a-z]{2}\.dbpedia\.org$')
 REGEX_DBPEDIA_ID = re.compile(r'^/(resource|page)/(.+)$')
 REGEX_LUDING_ID = re.compile(r'^.*/GameData\.py/[A-Z]{2}gameid/(\d+).*$')
+REGEX_FREEBASE_ID = re.compile(r'^/ns/(g|n)\.([^/]+).*$')
 
-def to_str(string, encoding='utf-8'):
+def to_str(string: Any, encoding: str = 'utf-8') -> Optional[str]:
     ''' safely returns either string or None '''
-
     string = (
         string if isinstance(string, str)
         else string.decode(encoding) if isinstance(string, bytes)
@@ -48,20 +48,18 @@ def to_str(string, encoding='utf-8'):
     return string.translate(NON_PRINTABLE_TANSLATE) if string is not None else None
 
 
-def identity(obj):
+def identity(obj: Any) -> Any:
     ''' do nothing '''
-
     return obj
 
 
 # pylint: disable=unused-argument
-def const_true(*args, **kwargs):
+def const_true(*args, **kwargs) -> bool:
     ''' returns True '''
-
     return True
 
 
-def normalize_space(item, preserve_newline=False):
+def normalize_space(item: Any, preserve_newline: bool = False) -> str:
     ''' normalize space in a string '''
 
     item = to_str(item)
@@ -81,13 +79,12 @@ def normalize_space(item, preserve_newline=False):
         return ''
 
 
-def clear_list(items):
+def clear_list(items: Iterable) -> List:
     ''' return unique items in order of first ocurrence '''
-
     return list(OrderedDict.fromkeys(filter(None, items)))
 
 
-def parse_int(string, base=10):
+def parse_int(string: Any, base: int = 10) -> Optional[int]:
     ''' safely convert an object to int if possible, else return None '''
 
     if isinstance(string, int):
@@ -108,14 +105,12 @@ def parse_int(string, base=10):
     return None
 
 
-def parse_float(number):
+def parse_float(number: Any) -> Optional[float]:
     ''' safely convert an object to float if possible, else return None '''
-
     try:
         return float(number)
     except Exception:
         pass
-
     return None
 
 
@@ -563,3 +558,12 @@ def extract_luding_id(url: Optional[str]) -> Optional[int]:
         return None
     match = REGEX_LUDING_ID.match(url.path)
     return parse_int(match.group(1)) if match else parse_int(extract_query_param(url, 'gameid'))
+
+
+def extract_freebase_id(url: Optional[str]) -> Optional[str]:
+    ''' extract Freebase ID from URL '''
+    url = _parse_url(url, ('rdf.freebase.com', 'freebase.com'))
+    if not url:
+        return None
+    match = REGEX_LUDING_ID.match(url.path)
+    return f'/{match.group(1)}/{match.group(2)}' if match else extract_query_param(url, 'id')
