@@ -13,7 +13,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from itertools import groupby
 from types import GeneratorType
-from typing import Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
 import dateutil.parser
@@ -23,6 +23,7 @@ from scrapy.utils.misc import arg_to_iter
 from w3lib.html import replace_entities
 
 LOGGER = logging.getLogger(__name__)
+TYPE = TypeVar('T')
 
 PRINTABLE_SET = frozenset(string_lib.printable)
 NON_PRINTABLE_SET = frozenset(chr(i) for i in range(128)) - PRINTABLE_SET
@@ -33,11 +34,14 @@ REGEX_SINGLE_ENT = re.compile(r'&#(\d+);')
 
 REGEX_BGG_ID = re.compile(r'^/boardgame/(\d+).*$')
 REGEX_BGG_USER = re.compile(r'^/user/([^/]+).*$')
+REGEX_WIKIDATA_ID = re.compile(r'^/(wiki|entity|resource)/Q(\d+).*$')
+REGEX_DBPEDIA_DOMAIN = re.compile(r'^[a-z]{2}\.dbpedia\.org$')
+REGEX_DBPEDIA_ID = re.compile(r'^/(resource|page)/(.+)$')
+REGEX_LUDING_ID = re.compile(r'^.*gameid/(\d+).*$')
+REGEX_FREEBASE_ID = re.compile(r'^/ns/(g|m)\.([^/]+).*$')
 
-
-def to_str(string, encoding='utf-8'):
+def to_str(string: Any, encoding: str = 'utf-8') -> Optional[str]:
     ''' safely returns either string or None '''
-
     string = (
         string if isinstance(string, str)
         else string.decode(encoding) if isinstance(string, bytes)
@@ -45,20 +49,18 @@ def to_str(string, encoding='utf-8'):
     return string.translate(NON_PRINTABLE_TANSLATE) if string is not None else None
 
 
-def identity(obj):
+def identity(obj: Any) -> Any:
     ''' do nothing '''
-
     return obj
 
 
 # pylint: disable=unused-argument
-def const_true(*args, **kwargs):
+def const_true(*args, **kwargs) -> bool:
     ''' returns True '''
-
     return True
 
 
-def normalize_space(item, preserve_newline=False):
+def normalize_space(item: Any, preserve_newline: bool = False) -> str:
     ''' normalize space in a string '''
 
     item = to_str(item)
@@ -78,13 +80,12 @@ def normalize_space(item, preserve_newline=False):
         return ''
 
 
-def clear_list(items):
+def clear_list(items: Iterable[Optional[TYPE]]) -> List[TYPE]:
     ''' return unique items in order of first ocurrence '''
-
     return list(OrderedDict.fromkeys(filter(None, items)))
 
 
-def parse_int(string, base=10):
+def parse_int(string: Any, base: int = 10) -> Optional[int]:
     ''' safely convert an object to int if possible, else return None '''
 
     if isinstance(string, int):
@@ -105,14 +106,12 @@ def parse_int(string, base=10):
     return None
 
 
-def parse_float(number):
+def parse_float(number: Any) -> Optional[float]:
     ''' safely convert an object to float if possible, else return None '''
-
     try:
         return float(number)
     except Exception:
         pass
-
     return None
 
 
@@ -495,33 +494,90 @@ def concat(dst, srcs):
     LOGGER.info('done concatenating')
 
 
-def _parse_bgg_url(url: Optional[str]) -> Optional[ParseResult]:
-    url = urlparse(url)
+def _match(string: str, comparison: Union[str, Pattern]):
+    return string == comparison if isinstance(comparison, str) else bool(comparison.match(string))
+
+
+def _parse_url(
+        url: Union[str, ParseResult, None],
+        hostnames: Optional[Iterable[Union[str, Pattern]]] = None
+    ) -> Optional[ParseResult]:
+    url = urlparse(url) if isinstance(url, str) else url
     return (
-        None if url.hostname not in ('boardgamegeek.com', 'www.boardgamegeek.com') or not url.path
-        else url)
+        url if url and url.hostname and url.path and (
+            not hostnames or any(_match(url.hostname, hostname) for hostname in hostnames))
+        else None)
 
 
-def extract_bgg_id(url: Optional[str]) -> Optional[int]:
+def extract_bgg_id(url: Union[str, ParseResult, None]) -> Optional[int]:
     ''' extract BGG ID from URL '''
-
-    url = _parse_bgg_url(url)
-
+    url = _parse_url(url, ('boardgamegeek.com', 'www.boardgamegeek.com'))
     if not url:
         return None
-
     match = REGEX_BGG_ID.match(url.path)
     bgg_id = parse_int(match.group(1)) if match else None
     return bgg_id if bgg_id is not None else parse_int(extract_query_param(url, 'id'))
 
 
-def extract_bgg_user_name(url: Optional[str]) -> Optional[str]:
+def extract_bgg_user_name(url: Union[str, ParseResult, None]) -> Optional[str]:
     ''' extract BGG user name from url '''
-
-    url = _parse_bgg_url(url)
-
+    url = _parse_url(url, ('boardgamegeek.com', 'www.boardgamegeek.com'))
     if not url:
         return None
-
     match = REGEX_BGG_USER.match(url.path)
     return unquote_plus(match.group(1)) if match else extract_query_param(url, 'username')
+
+
+def extract_wikidata_id(url: Union[str, ParseResult, None]) -> Optional[str]:
+    ''' extract Wikidata ID from URL '''
+    url = _parse_url(url, ('wikidata.org', 'www.wikidata.org', 'wikidata.dbpedia.org'))
+    if not url:
+        return None
+    match = REGEX_WIKIDATA_ID.match(url.path)
+    return f'Q{match.group(2)}' if match else extract_query_param(url, 'id')
+
+
+def extract_wikipedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
+    ''' extract Wikipedia ID from URL '''
+    url = _parse_url(url, ('en.wikipedia.org', 'en.m.wikipedia.org'))
+    return unquote_plus(url.path[6:]) or None if url and url.path.startswith('/wiki/') else None
+
+
+def extract_dbpedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
+    ''' extract DBpedia ID from URL '''
+    url = _parse_url(url, ('dbpedia.org', 'www.dbpedia.org', REGEX_DBPEDIA_DOMAIN))
+    if not url:
+        return None
+    match = REGEX_DBPEDIA_ID.match(url.path)
+    return unquote_plus(match.group(2)) if match else extract_query_param(url, 'id')
+
+
+def extract_luding_id(url: Union[str, ParseResult, None]) -> Optional[int]:
+    ''' extract Luding ID from URL '''
+    url = _parse_url(url, ('luding.org', 'www.luding.org'))
+    if not url:
+        return None
+    match = REGEX_LUDING_ID.match(url.path)
+    return parse_int(match.group(1)) if match else parse_int(extract_query_param(url, 'gameid'))
+
+
+def extract_freebase_id(url: Union[str, ParseResult, None]) -> Optional[str]:
+    ''' extract Freebase ID from URL '''
+    url = _parse_url(url, ('rdf.freebase.com', 'freebase.com'))
+    if not url:
+        return None
+    match = REGEX_FREEBASE_ID.match(url.path)
+    return f'/{match.group(1)}/{match.group(2)}' if match else extract_query_param(url, 'id')
+
+
+def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
+    ''' extract all possible IDs from all the URLs '''
+    urls = tuple(map(urlparse, urls))
+    return {
+        'bgg_id': clear_list(map(extract_bgg_id, urls)),
+        'freebase_id': clear_list(map(extract_freebase_id, urls)),
+        'wikidata_id': clear_list(map(extract_wikidata_id, urls)),
+        'wikipedia_id': clear_list(map(extract_wikipedia_id, urls)),
+        'dbpedia_id': clear_list(map(extract_dbpedia_id, urls)),
+        'luding_id': clear_list(map(extract_luding_id, urls)),
+    }
