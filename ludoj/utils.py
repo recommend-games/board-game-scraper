@@ -36,7 +36,7 @@ REGEX_BGG_USER = re.compile(r'^/user/([^/]+).*$')
 REGEX_WIKIDATA_ID = re.compile(r'^/(wiki|entity|resource)/Q(\d+).*$')
 REGEX_DBPEDIA_DOMAIN = re.compile(r'^[a-z]{2}\.dbpedia\.org$')
 REGEX_DBPEDIA_ID = re.compile(r'^/(resource|page)/(.+)$')
-
+REGEX_LUDING_ID = re.compile(r'^.*/GameData\.py/[A-Z]{2}gameid/(\d+).*$')
 
 def to_str(string, encoding='utf-8'):
     ''' safely returns either string or None '''
@@ -554,3 +554,12 @@ def extract_dbpedia_id(url: Optional[str]) -> Optional[str]:
         return None
     match = REGEX_DBPEDIA_ID.match(url.path)
     return unquote_plus(match.group(2)) if match else extract_query_param(url, 'id')
+
+
+def extract_luding_id(url: Optional[str]) -> Optional[int]:
+    ''' extract Luding ID from URL '''
+    url = _parse_url(url, ('luding.org', 'www.luding.org'))
+    if not url:
+        return None
+    match = REGEX_LUDING_ID.match(url.path)
+    return parse_int(match.group(1)) if match else parse_int(extract_query_param(url, 'gameid'))
