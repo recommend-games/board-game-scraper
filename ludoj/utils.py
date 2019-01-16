@@ -36,7 +36,7 @@ REGEX_BGG_USER = re.compile(r'^/user/([^/]+).*$')
 REGEX_WIKIDATA_ID = re.compile(r'^/(wiki|entity|resource)/Q(\d+).*$')
 REGEX_DBPEDIA_DOMAIN = re.compile(r'^[a-z]{2}\.dbpedia\.org$')
 REGEX_DBPEDIA_ID = re.compile(r'^/(resource|page)/(.+)$')
-REGEX_LUDING_ID = re.compile(r'^.*/GameData\.py/[A-Z]{2}gameid/(\d+).*$')
+REGEX_LUDING_ID = re.compile(r'^.*gameid/(\d+).*$')
 REGEX_FREEBASE_ID = re.compile(r'^/ns/(g|n)\.([^/]+).*$')
 
 def to_str(string: Any, encoding: str = 'utf-8') -> Optional[str]:
@@ -565,5 +565,5 @@ def extract_freebase_id(url: Optional[str]) -> Optional[str]:
     url = _parse_url(url, ('rdf.freebase.com', 'freebase.com'))
     if not url:
         return None
-    match = REGEX_LUDING_ID.match(url.path)
+    match = REGEX_FREEBASE_ID.match(url.path)
     return f'/{match.group(1)}/{match.group(2)}' if match else extract_query_param(url, 'id')
