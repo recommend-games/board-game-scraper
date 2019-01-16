@@ -13,7 +13,8 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from itertools import groupby
 from types import GeneratorType
-from urllib.parse import parse_qs, urlparse, urlunparse
+from typing import Optional, Union
+from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
 import dateutil.parser
 
@@ -29,6 +30,9 @@ NON_PRINTABLE_TANSLATE = {ord(character): None for character in NON_PRINTABLE_SE
 
 REGEX_ENTITIES = re.compile(r'(&#(\d+);)+')
 REGEX_SINGLE_ENT = re.compile(r'&#(\d+);')
+
+REGEX_BGG_ID = re.compile(r'^/boardgame/(\d+).*$')
+REGEX_BGG_USER = re.compile(r'^/user/([^/]+).*$')
 
 
 def to_str(string, encoding='utf-8'):
@@ -143,10 +147,10 @@ def replace_all_entities(string):
         string.replace('&amp;', '&').replace('&amp;', '&').replace('&amp;', '&')))
 
 
-def extract_query_param(url, field):
+def extract_query_param(url: Union[str, ParseResult], field: str) -> Optional[str]:
     ''' extract a specific field from URL query parameters '''
 
-    url = urlparse(url)
+    url = urlparse(url) if isinstance(url, str) else url
     query = parse_qs(url.query)
     values = query.get(field)
 
@@ -489,3 +493,35 @@ def concat(dst, srcs):
                     if in_file.read(1) != '\n':
                         out_file.write('\n')
     LOGGER.info('done concatenating')
+
+
+def _parse_bgg_url(url: Optional[str]) -> Optional[ParseResult]:
+    url = urlparse(url)
+    return (
+        None if url.hostname not in ('boardgamegeek.com', 'www.boardgamegeek.com') or not url.path
+        else url)
+
+
+def extract_bgg_id(url: Optional[str]) -> Optional[int]:
+    ''' extract BGG ID from URL '''
+
+    url = _parse_bgg_url(url)
+
+    if not url:
+        return None
+
+    match = REGEX_BGG_ID.match(url.path)
+    bgg_id = parse_int(match.group(1)) if match else None
+    return bgg_id if bgg_id is not None else parse_int(extract_query_param(url, 'id'))
+
+
+def extract_bgg_user_name(url: Optional[str]) -> Optional[str]:
+    ''' extract BGG user name from url '''
+
+    url = _parse_bgg_url(url)
+
+    if not url:
+        return None
+
+    match = REGEX_BGG_USER.match(url.path)
+    return unquote_plus(match.group(1)) if match else extract_query_param(url, 'username')
