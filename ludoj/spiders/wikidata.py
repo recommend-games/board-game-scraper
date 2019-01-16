@@ -11,7 +11,7 @@ from scrapy.loader.processors import MapCompose
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
-from ..utils import batchify, identity, normalize_space
+from ..utils import batchify, extract_ids, extract_wikidata_id, identity, normalize_space
 
 
 class WikidataSpider(Spider):
@@ -138,16 +138,17 @@ class WikidataSpider(Spider):
 
         for game in games:
             # TODO make more robust (regex)
-            wikidata_id = game.split('/')[-1]
-            yield Request(self._entity_url(wikidata_id), callback=self.parse_game)
+            wikidata_id = extract_wikidata_id(game)
+            if wikidata_id:
+                yield Request(self._entity_url(wikidata_id), callback=self.parse_game)
 
     def parse_game(self, response):
         '''
         @url https://www.wikidata.org/wiki/Special:EntityData/Q17271.json
         @returns items 1 1
         @returns requests 0 0
-        @scrapes name alt_name designer publisher url image_url external_link year \
-            min_players max_players bgg_id wikidata_id freebase_id
+        @scrapes name alt_name designer publisher url image_url external_link \
+            min_players max_players bgg_id wikidata_id wikipedia_id freebase_id luding_id
         '''
 
         try:
@@ -196,5 +197,6 @@ class WikidataSpider(Spider):
             ldr.add_jmes('wikidata_id', 'id')
             ldr.add_jmes('wikidata_id', 'title')
             ldr.add_jmes('luding_id', 'claims.P3528[].mainsnak.datavalue.value')
+            ldr.add_value(None, extract_ids(response.url, *ldr.get_output_value('external_link')))
 
             yield ldr.load_item()

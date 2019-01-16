@@ -9,7 +9,7 @@ from scrapy import Request, Spider
 from .wikidata import WikidataSpider
 from ..items import GameItem
 from ..loaders import GameLoader
-from ..utils import batchify, normalize_space
+from ..utils import batchify, extract_ids, normalize_space
 
 
 def _sparql_xpath(
@@ -280,7 +280,7 @@ class DBpediaSpider(Spider):
 
         for batch in batchify(types, batch_size):
             query = query_tmpl.format(' '.join(batch))
-            # self.logger.debug(query)
+            self.logger.debug(query)
             yield Request(self._api_url(query), callback=self.parse_games)
 
     def start_requests(self):
@@ -300,7 +300,7 @@ class DBpediaSpider(Spider):
                 ?game <http://dbpedia.org/property/bggid> ?bgg;
                       a ?type .
             }''')
-        # self.logger.debug(query)
+        self.logger.debug(query)
         yield Request(self._api_url(query), callback=self.parse)
 
     def parse(self, response):
@@ -337,7 +337,7 @@ class DBpediaSpider(Spider):
             # dbpedia_id = game.split('/')[-1]
             # http://dbpedia.org/resource/{dbpedia_id}
             query = query_tmpl.format(game=game)
-            # self.logger.info(query)
+            self.logger.debug(query)
             yield Request(
                 self._api_url(query),
                 callback=self.parse_game,
@@ -349,7 +349,8 @@ class DBpediaSpider(Spider):
         @url http://dbpedia.org/sparql?query=SELECT+%3Fproperty+%3Fvalue+WHERE+%7B+%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCatan%3E+%3Fproperty+%3Fvalue+.+%7D&format=text%2Fxml
         @returns items 1 1
         @returns requests 0 0
-        @scrapes name
+        @scrapes name alt_name year description designer publisher image_url external_link \
+            min_players min_age bgg_id freebase_id wikidata_id wikipedia_id dbpedia_id
         '''
 
         response.selector.register_namespace('xml', 'http://www.w3.org/XML/1998/namespace')
@@ -423,11 +424,6 @@ class DBpediaSpider(Spider):
         ldr.add_xpath('min_age', _sparql_xpath('http://dbpedia.org/property/ages'))
 
         ldr.add_xpath('bgg_id', _sparql_xpath('http://dbpedia.org/property/bggid'))
-        # TODO extract more IDs from sameAs
-        # ldr.add_xpath('freebase_id', _sparql_xpath('http://www.w3.org/2002/07/owl#sameAs'))
-        # ldr.add_xpath('wikidata_id', _sparql_xpath('http://www.w3.org/2002/07/owl#sameAs'))
-        if uri:
-            # TODO make more robust
-            ldr.add_value('dbpedia_id', uri.split('/')[-1])
+        ldr.add_value(None, extract_ids(uri, *ldr.get_output_value('external_link')))
 
         return ldr.load_item()
