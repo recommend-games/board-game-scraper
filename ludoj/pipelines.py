@@ -89,43 +89,50 @@ class ResolveLabelPipeline:
         self.logger = LOGGER
 
     def _extract_labels(self, response, value):
-        self.logger.info('_extract_labels(%r, %r)', response, value)
         json_obj = parse_json(response.text) if hasattr(response, 'text') else {}
 
-        labels = first(jmespath.search(f'entities.{value}.labels[0]', json_obj)) or {}
+        labels = first(jmespath.search(f'entities.{value}.labels', json_obj)) or {}
         labels = labels.values()
         labels = sorted(
             labels, key=lambda label: self.lang_priorities.get(label.get('language'), math.inf))
         labels = clear_list(label.get('value') for label in labels)
 
         self.labels[value] = labels
-        self.logger.info('labels: %s', labels)
+        self.logger.debug('resolved labels for %s: %s', value, labels)
 
         return labels
 
     def _deferred_value(self, value, spider):
         labels = self.labels.get(value)
         if labels is not None:
+            self.logger.debug('found labels in cache for %s: %s', value, labels)
             return defer_result(labels)
 
-        request = Request(self.url.format(value))
+        request = Request(self.url.format(value), priority=1)
         deferred = spider.crawler.engine.download(request, spider)
         deferred.addBoth(self._extract_labels, value)
         return deferred
 
     def _add_value(self, result, field, item):
-        self.logger.info('_add_value(%r, %r, %r)', result, field, item)
-        item[field] = clear_list(flatten(arg_to_iter(result)))
+        labels = clear_list(flatten(r[1] for r in arg_to_iter(result))) or None
+        self.logger.debug('resolved labels for %s: %s', item.get(field), labels)
+        item[field] = labels
         return item
 
     def _deferred_field(self, field, item, spider):
-        deferred = DeferredList(
-            [self._deferred_value(value, spider) for value in arg_to_iter(item.get(field))],
-            consumeErrors=True)
+        deferreds = [self._deferred_value(value, spider) for value in arg_to_iter(item.get(field))]
+        if not deferreds:
+            item[field] = None
+            return defer_result(item)
+        deferred = DeferredList(deferreds, consumeErrors=True)
         deferred.addBoth(self._add_value, field, item)
+        return deferred
 
     def process_item(self, item, spider):
         ''' resolve IDs to labels in specified fields '''
+
+        if not any(item.get(field) for field in self.fields):
+            return item
 
         deferred = DeferredList(
             [self._deferred_field(field, item, spider) for field in self.fields],

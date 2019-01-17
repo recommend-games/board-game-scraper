@@ -57,6 +57,9 @@ class WikidataSpider(Spider):
 
     custom_settings = {
         'ROBOTSTXT_OBEY': False,
+        'RESOLVE_LABEL_URL': entity_data_url.format(wikidata_id='{}', fformat='json'),
+        'RESOLVE_LABEL_FIELDS': ('designer', 'publisher'),
+        'RESOLVE_LABEL_LANGUAGE_PRIORITIES': ('en',),
     }
 
     def _api_url(self, query):
@@ -169,7 +172,6 @@ class WikidataSpider(Spider):
             ldr.add_jmes('year', 'claims.P577[].mainsnak.datavalue.value.time')
             # TODO P571 inception
 
-            # TODO only ID, need to fetch label
             ldr.add_jmes('designer', 'claims.P178[].mainsnak.datavalue.value.id')
             ldr.add_jmes('publisher', 'claims.P123[].mainsnak.datavalue.value.id')
 
