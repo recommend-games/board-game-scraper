@@ -7,10 +7,9 @@ import string
 
 from scrapy import Spider, Request
 
-from .bgg import extract_bgg_id
 from ..items import GameItem
 from ..loaders import GameLoader
-from ..utils import extract_query_param
+from ..utils import extract_ids, extract_query_param
 
 
 class LudingSpider(Spider):
@@ -75,7 +74,6 @@ class LudingSpider(Spider):
         age = re.match(r'^.*?(\d+).*$', age) if age else None
         ldr.add_value('min_age', age.group(1) if age else None)
 
-        ldr.add_value('bgg_id', map(extract_bgg_id, links))
-        ldr.add_value('luding_id', extract_query_param(response.url, 'gameid'))
+        ldr.add_value(None, extract_ids(response.url, *links))
 
         return ldr.load_item()

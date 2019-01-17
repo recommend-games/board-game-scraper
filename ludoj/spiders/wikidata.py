@@ -11,7 +11,7 @@ from scrapy.loader.processors import MapCompose
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
-from ..utils import batchify, identity, normalize_space
+from ..utils import batchify, extract_ids, extract_wikidata_id, identity, normalize_space
 
 
 class WikidataSpider(Spider):
@@ -57,6 +57,9 @@ class WikidataSpider(Spider):
 
     custom_settings = {
         'ROBOTSTXT_OBEY': False,
+        'RESOLVE_LABEL_URL': entity_data_url.format(wikidata_id='{}', fformat='json'),
+        'RESOLVE_LABEL_FIELDS': ('designer', 'artist', 'publisher'),
+        'RESOLVE_LABEL_LANGUAGE_PRIORITIES': ('en',),
     }
 
     def _api_url(self, query):
@@ -137,17 +140,17 @@ class WikidataSpider(Spider):
         self.logger.info('received %d games', len(games))
 
         for game in games:
-            # TODO make more robust (regex)
-            wikidata_id = game.split('/')[-1]
-            yield Request(self._entity_url(wikidata_id), callback=self.parse_game)
+            wikidata_id = extract_wikidata_id(game)
+            if wikidata_id:
+                yield Request(self._entity_url(wikidata_id), callback=self.parse_game)
 
     def parse_game(self, response):
         '''
         @url https://www.wikidata.org/wiki/Special:EntityData/Q17271.json
         @returns items 1 1
         @returns requests 0 0
-        @scrapes name alt_name designer publisher url image_url external_link year \
-            min_players max_players bgg_id wikidata_id freebase_id
+        @scrapes name alt_name designer publisher url image_url external_link \
+            min_players max_players bgg_id wikidata_id wikipedia_id freebase_id luding_id
         '''
 
         try:
@@ -169,14 +172,14 @@ class WikidataSpider(Spider):
             ldr.add_jmes('year', 'claims.P577[].mainsnak.datavalue.value.time')
             # TODO P571 inception
 
-            # TODO only ID, need to fetch label
-            ldr.add_jmes('designer', 'claims.P178[].mainsnak.datavalue.value.id')
+            ldr.add_jmes('designer', 'claims.P178[].mainsnak.datavalue.value.id') # developer
+            ldr.add_jmes('designer', 'claims.P50[].mainsnak.datavalue.value.id') # author
+            ldr.add_jmes('designer', 'claims.P170[].mainsnak.datavalue.value.id') # creator
+            ldr.add_jmes('designer', 'claims.P287[].mainsnak.datavalue.value.id') # designed by
+            ldr.add_jmes('artist', 'claims.P110[].mainsnak.datavalue.value.id') # illustrator
             ldr.add_jmes('publisher', 'claims.P123[].mainsnak.datavalue.value.id')
 
             ldr.add_value('url', response.url)
-            # TODO it appears 'Deskohraní 08s4 235 - Bohnanza.jpg' links to
-            # https://commons.wikimedia.org/wiki/File:Deskohran%C3%AD_08s4_235_-_Bohnanza.jpg or
-            # https://upload.wikimedia.org/wikipedia/commons/6/65/Deskohran%C3%AD_08s4_235_-_Bohnanza.jpg
             ldr.add_jmes(
                 'image_url', 'claims.P18[].mainsnak.datavalue.value',
                 MapCompose(identity, response.urljoin))
@@ -196,5 +199,6 @@ class WikidataSpider(Spider):
             ldr.add_jmes('wikidata_id', 'id')
             ldr.add_jmes('wikidata_id', 'title')
             ldr.add_jmes('luding_id', 'claims.P3528[].mainsnak.datavalue.value')
+            ldr.add_value(None, extract_ids(response.url, *ldr.get_output_value('external_link')))
 
             yield ldr.load_item()

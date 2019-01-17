@@ -9,7 +9,7 @@ from scrapy import Request, Spider
 from .wikidata import WikidataSpider
 from ..items import GameItem
 from ..loaders import GameLoader
-from ..utils import batchify, normalize_space
+from ..utils import batchify, extract_ids, normalize_space
 
 
 def _sparql_xpath(
@@ -280,7 +280,7 @@ class DBpediaSpider(Spider):
 
         for batch in batchify(types, batch_size):
             query = query_tmpl.format(' '.join(batch))
-            # self.logger.debug(query)
+            self.logger.debug(query)
             yield Request(self._api_url(query), callback=self.parse_games)
 
     def start_requests(self):
@@ -300,18 +300,21 @@ class DBpediaSpider(Spider):
                 ?game <http://dbpedia.org/property/bggid> ?bgg;
                       a ?type .
             }''')
-        # self.logger.debug(query)
+        self.logger.debug(query)
         yield Request(self._api_url(query), callback=self.parse)
 
     def parse(self, response):
-        ''' TODO contract '''
+        # pylint: disable=line-too-long
+        '''
+        @url http://dbpedia.org/sparql?query=SELECT%20DISTINCT%20%3Ftype%20WHERE%20%7B%20%3Fgame%20%3Chttp%3A//dbpedia.org/property/bggid%3E%20%3Fbgg%3B%20a%20%3Ftype%20.%20%7D&format=text%2Fxml
+        @returns items 0 0
+        @returns requests 40
+        '''
 
         response.selector.register_namespace('s', 'http://www.w3.org/2005/sparql-results#')
         types = response.xpath('//s:binding[@name = "type"]/s:uri/text()').extract()
-
         self.logger.info('received %d types', len(types))
-
-        yield from self._type_requests(' '.join('<{}>'.format(t) for t in types))
+        yield from self._type_requests(f'<{t}>' for t in types)
 
     def parse_games(self, response):
         # pylint: disable=line-too-long
@@ -327,13 +330,17 @@ class DBpediaSpider(Spider):
 
         self.logger.info('received %d games', len(games))
 
-        query_tmpl = 'SELECT ?property ?value WHERE {{ <{game}> ?property ?value . }}'
+        query_tmpl = normalize_space('''
+            SELECT ?property ?value ?label WHERE {{
+                <{game}> ?property ?value .
+                OPTIONAL {{ ?value <http://www.w3.org/2000/01/rdf-schema#label> ?label . }}
+            }}''')
 
         for game in games:
             # dbpedia_id = game.split('/')[-1]
             # http://dbpedia.org/resource/{dbpedia_id}
             query = query_tmpl.format(game=game)
-            # self.logger.info(query)
+            self.logger.debug(query)
             yield Request(
                 self._api_url(query),
                 callback=self.parse_game,
@@ -342,10 +349,11 @@ class DBpediaSpider(Spider):
     def parse_game(self, response):
         # pylint: disable=line-too-long
         '''
-        @url http://dbpedia.org/sparql?query=SELECT+%3Fproperty+%3Fvalue+WHERE+%7B+%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCatan%3E+%3Fproperty+%3Fvalue+.+%7D&format=text%2Fxml
+        @url http://dbpedia.org/sparql?query=SELECT+%3Fproperty+%3Fvalue+%3Flabel+WHERE+%7B+%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCatan%3E+%3Fproperty+%3Fvalue+.+OPTIONAL+%7B+%3Fvalue+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23label%3E+%3Flabel+.+%7D+%7D&format=text%2Fxml
         @returns items 1 1
         @returns requests 0 0
-        @scrapes name
+        @scrapes name alt_name year description designer publisher image_url external_link \
+            min_players min_age bgg_id freebase_id wikidata_id wikipedia_id dbpedia_id
         '''
 
         response.selector.register_namespace('xml', 'http://www.w3.org/XML/1998/namespace')
@@ -388,11 +396,16 @@ class DBpediaSpider(Spider):
         ldr.add_xpath('description', _sparql_xpath('http://dbpedia.org/ontology/abstract'))
         ldr.add_xpath('description', _sparql_xpath('http://www.w3.org/2000/01/rdf-schema#comment'))
 
-        # TODO URI - need to be resolved to label
         ldr.add_xpath(
-            'designer', _sparql_xpath('http://dbpedia.org/ontology/designer', value_type='uri'))
+            'designer',
+            _sparql_xpath('http://dbpedia.org/ontology/designer', value_var='label', lang='en'))
         ldr.add_xpath(
-            'publisher', _sparql_xpath('http://dbpedia.org/ontology/publisher', value_type='uri'))
+            'designer', _sparql_xpath('http://dbpedia.org/ontology/designer', value_var='label'))
+        ldr.add_xpath(
+            'publisher',
+            _sparql_xpath('http://dbpedia.org/ontology/publisher', value_var='label', lang='en'))
+        ldr.add_xpath(
+            'publisher', _sparql_xpath('http://dbpedia.org/ontology/publisher', value_var='label'))
 
         ldr.add_value('url', uri)
         ldr.add_xpath(
@@ -419,11 +432,6 @@ class DBpediaSpider(Spider):
         ldr.add_xpath('min_age', _sparql_xpath('http://dbpedia.org/property/ages'))
 
         ldr.add_xpath('bgg_id', _sparql_xpath('http://dbpedia.org/property/bggid'))
-        # TODO extract more IDs from sameAs
-        # ldr.add_xpath('freebase_id', _sparql_xpath('http://www.w3.org/2002/07/owl#sameAs'))
-        # ldr.add_xpath('wikidata_id', _sparql_xpath('http://www.w3.org/2002/07/owl#sameAs'))
-        if uri:
-            # TODO make more robust
-            ldr.add_value('dbpedia_id', uri.split('/')[-1])
+        ldr.add_value(None, extract_ids(uri, *ldr.get_output_value('external_link')))
 
         return ldr.load_item()

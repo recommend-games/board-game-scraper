@@ -155,6 +155,8 @@ EXTENSIONS = {
 ITEM_PIPELINES = {
     'ludoj.pipelines.DataTypePipeline': 100,
     'ludoj.pipelines.ValidatePipeline': 200,
+    'ludoj.pipelines.ResolveLabelPipeline': 300,
+    'ludoj.pipelines.ResolveImagePipeline': 400,
     'scrapy.pipelines.images.ImagesPipeline': 500,
 }
 
