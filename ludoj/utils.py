@@ -32,7 +32,7 @@ NON_PRINTABLE_TANSLATE = {ord(character): None for character in NON_PRINTABLE_SE
 REGEX_ENTITIES = re.compile(r'(&#(\d+);)+')
 REGEX_SINGLE_ENT = re.compile(r'&#(\d+);')
 
-REGEX_BGG_ID = re.compile(r'^/boardgame/(\d+).*$')
+REGEX_BGG_ID = re.compile(r'^/(board)?game/(\d+).*$')
 REGEX_BGG_USER = re.compile(r'^/user/([^/]+).*$')
 REGEX_WIKIDATA_ID = re.compile(r'^/(wiki|entity|resource)/Q(\d+).*$')
 REGEX_DBPEDIA_DOMAIN = re.compile(r'^[a-z]{2}\.dbpedia\.org$')
@@ -523,7 +523,7 @@ def extract_bgg_id(url: Union[str, ParseResult, None]) -> Optional[int]:
     if not url:
         return None
     match = REGEX_BGG_ID.match(url.path)
-    bgg_id = parse_int(match.group(1)) if match else None
+    bgg_id = parse_int(match.group(2)) if match else None
     return bgg_id if bgg_id is not None else parse_int(extract_query_param(url, 'id'))
 
 
