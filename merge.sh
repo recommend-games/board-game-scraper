@@ -43,7 +43,8 @@ nohup python3 -m ludoj.merge \
         url image_url external_link \
         min_players max_players \
         min_age max_age \
-        bgg_id dbpedia_id \
+        bgg_id freebase_id wikidata_id \
+        wikipedia_id dbpedia_id luding_id \
     --sort-output \
     --concat \
     >> 'logs/dbpedia_merge.log' 2>&1 &
@@ -62,7 +63,8 @@ nohup python3 -m ludoj.merge \
         url image_url external_link \
         min_players max_players \
         min_age max_age \
-        bgg_id luding_id \
+        bgg_id freebase_id wikidata_id \
+        wikipedia_id dbpedia_id luding_id \
     --sort-output \
     --concat \
     >> 'logs/luding_merge.log' 2>&1 &
@@ -98,12 +100,13 @@ nohup python3 -m ludoj.merge \
     --latest-types date \
     --latest-min 30 \
     --fields name alt_name year \
-        designer publisher \
+        designer artist publisher \
         url image_url external_link \
         min_players max_players \
         min_age max_age \
         min_time max_time family \
-        bgg_id freebase_id wikidata_id luding_id \
+        bgg_id freebase_id wikidata_id \
+        wikipedia_id dbpedia_id luding_id \
     --sort-output \
     --concat \
     >> 'logs/wikidata_merge.log' 2>&1 &
