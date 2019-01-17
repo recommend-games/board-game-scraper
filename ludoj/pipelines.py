@@ -4,6 +4,9 @@
 
 import logging
 import math
+import re
+
+from urllib.parse import quote, unquote_plus
 
 import jmespath
 
@@ -14,7 +17,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import flatten
 from twisted.internet.defer import DeferredList
 
-from .utils import clear_list, first, parse_json
+from .utils import REGEX_DBPEDIA_DOMAIN, clear_list, first, parse_json, parse_url
 
 LOGGER = logging.getLogger(__name__)
 
@@ -139,3 +142,43 @@ class ResolveLabelPipeline:
             consumeErrors=True)
         deferred.addBoth(lambda _: item)
         return deferred
+
+
+class ResolveImagePipeline:
+    ''' resolve image URLs '''
+
+    fields = ('image_url',)
+    hostnames = (
+        'dbpedia.org',
+        'www.dbpedia.org',
+        'wikidata.org',
+        'www.wikidata.org',
+        REGEX_DBPEDIA_DOMAIN,
+    )
+    regex_path = re.compile(r'^/(resource/File:|wiki/Special:EntityData/)(.+)$')
+    url = 'https://commons.wikimedia.org/wiki/Special:Redirect/file/{}'
+    logger = LOGGER
+
+    def _parse_url(self, url):
+        parsed = parse_url(url, self.hostnames)
+        if not parsed:
+            return url
+
+        match = self.regex_path.match(parsed.path)
+        if not match:
+            return url
+
+        commons_id = unquote_plus(match.group(2))
+        commons_id = commons_id.replace(' ', '_')
+        commons_id = quote(commons_id)
+
+        result = self.url.format(commons_id)
+        self.logger.debug('converted URL <%s> to <%s>', url, result)
+        return result
+
+    # pylint: disable=unused-argument
+    def process_item(self, item, spider):
+        ''' resolve resource image URLs to actual file locations '''
+        for field in self.fields:
+            item[field] = clear_list(map(self._parse_url, arg_to_iter(item.get(field))))
+        return item

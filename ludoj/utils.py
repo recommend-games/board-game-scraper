@@ -506,10 +506,11 @@ def _match(string: str, comparison: Union[str, Pattern]):
     return string == comparison if isinstance(comparison, str) else bool(comparison.match(string))
 
 
-def _parse_url(
+def parse_url(
         url: Union[str, ParseResult, None],
         hostnames: Optional[Iterable[Union[str, Pattern]]] = None
     ) -> Optional[ParseResult]:
+    ''' parse URL and optionally filter for hosts '''
     url = urlparse(url) if isinstance(url, str) else url
     return (
         url if url and url.hostname and url.path and (
@@ -519,7 +520,7 @@ def _parse_url(
 
 def extract_bgg_id(url: Union[str, ParseResult, None]) -> Optional[int]:
     ''' extract BGG ID from URL '''
-    url = _parse_url(url, ('boardgamegeek.com', 'www.boardgamegeek.com'))
+    url = parse_url(url, ('boardgamegeek.com', 'www.boardgamegeek.com'))
     if not url:
         return None
     match = REGEX_BGG_ID.match(url.path)
@@ -529,7 +530,7 @@ def extract_bgg_id(url: Union[str, ParseResult, None]) -> Optional[int]:
 
 def extract_bgg_user_name(url: Union[str, ParseResult, None]) -> Optional[str]:
     ''' extract BGG user name from url '''
-    url = _parse_url(url, ('boardgamegeek.com', 'www.boardgamegeek.com'))
+    url = parse_url(url, ('boardgamegeek.com', 'www.boardgamegeek.com'))
     if not url:
         return None
     match = REGEX_BGG_USER.match(url.path)
@@ -538,7 +539,7 @@ def extract_bgg_user_name(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 def extract_wikidata_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     ''' extract Wikidata ID from URL '''
-    url = _parse_url(url, ('wikidata.org', 'www.wikidata.org', 'wikidata.dbpedia.org'))
+    url = parse_url(url, ('wikidata.org', 'www.wikidata.org', 'wikidata.dbpedia.org'))
     if not url:
         return None
     match = REGEX_WIKIDATA_ID.match(url.path)
@@ -547,13 +548,13 @@ def extract_wikidata_id(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 def extract_wikipedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     ''' extract Wikipedia ID from URL '''
-    url = _parse_url(url, ('en.wikipedia.org', 'en.m.wikipedia.org'))
+    url = parse_url(url, ('en.wikipedia.org', 'en.m.wikipedia.org'))
     return unquote_plus(url.path[6:]) or None if url and url.path.startswith('/wiki/') else None
 
 
 def extract_dbpedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     ''' extract DBpedia ID from URL '''
-    url = _parse_url(url, ('dbpedia.org', 'www.dbpedia.org', REGEX_DBPEDIA_DOMAIN))
+    url = parse_url(url, ('dbpedia.org', 'www.dbpedia.org', REGEX_DBPEDIA_DOMAIN))
     if not url:
         return None
     match = REGEX_DBPEDIA_ID.match(url.path)
@@ -562,7 +563,7 @@ def extract_dbpedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 def extract_luding_id(url: Union[str, ParseResult, None]) -> Optional[int]:
     ''' extract Luding ID from URL '''
-    url = _parse_url(url, ('luding.org', 'www.luding.org'))
+    url = parse_url(url, ('luding.org', 'www.luding.org'))
     if not url:
         return None
     match = REGEX_LUDING_ID.match(url.path)
@@ -571,7 +572,7 @@ def extract_luding_id(url: Union[str, ParseResult, None]) -> Optional[int]:
 
 def extract_freebase_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     ''' extract Freebase ID from URL '''
-    url = _parse_url(url, ('rdf.freebase.com', 'freebase.com'))
+    url = parse_url(url, ('rdf.freebase.com', 'freebase.com'))
     if not url:
         return None
     match = REGEX_FREEBASE_ID.match(url.path)
