@@ -57,6 +57,9 @@ class WikidataSpider(Spider):
 
     custom_settings = {
         'ROBOTSTXT_OBEY': False,
+        'RESOLVE_LABEL_URL': entity_data_url.format(wikidata_id='{}', fformat='json'),
+        'RESOLVE_LABEL_FIELDS': ('designer', 'artist', 'publisher'),
+        'RESOLVE_LABEL_LANGUAGE_PRIORITIES': ('en',),
     }
 
     def _api_url(self, query):
@@ -137,7 +140,6 @@ class WikidataSpider(Spider):
         self.logger.info('received %d games', len(games))
 
         for game in games:
-            # TODO make more robust (regex)
             wikidata_id = extract_wikidata_id(game)
             if wikidata_id:
                 yield Request(self._entity_url(wikidata_id), callback=self.parse_game)
@@ -170,8 +172,11 @@ class WikidataSpider(Spider):
             ldr.add_jmes('year', 'claims.P577[].mainsnak.datavalue.value.time')
             # TODO P571 inception
 
-            # TODO only ID, need to fetch label
-            ldr.add_jmes('designer', 'claims.P178[].mainsnak.datavalue.value.id')
+            ldr.add_jmes('designer', 'claims.P178[].mainsnak.datavalue.value.id') # developer
+            ldr.add_jmes('designer', 'claims.P50[].mainsnak.datavalue.value.id') # author
+            ldr.add_jmes('designer', 'claims.P170[].mainsnak.datavalue.value.id') # creator
+            ldr.add_jmes('designer', 'claims.P287[].mainsnak.datavalue.value.id') # designed by
+            ldr.add_jmes('artist', 'claims.P110[].mainsnak.datavalue.value.id') # illustrator
             ldr.add_jmes('publisher', 'claims.P123[].mainsnak.datavalue.value.id')
 
             ldr.add_value('url', response.url)

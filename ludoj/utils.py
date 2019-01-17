@@ -85,6 +85,14 @@ def clear_list(items: Iterable[Optional[TYPE]]) -> List[TYPE]:
     return list(OrderedDict.fromkeys(filter(None, items)))
 
 
+def first(items, default=None):
+    ''' return first item '''
+    for item in arg_to_iter(items):
+        if item is not None and item != '':
+            return item
+    return default
+
+
 def parse_int(string: Any, base: int = 10) -> Optional[int]:
     ''' safely convert an object to int if possible, else return None '''
 

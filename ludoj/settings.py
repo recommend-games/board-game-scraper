@@ -153,6 +153,7 @@ EXTENSIONS = {
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
+    'ludoj.pipelines.ResolveLabelPipeline': 0,
     'ludoj.pipelines.DataTypePipeline': 100,
     'ludoj.pipelines.ValidatePipeline': 200,
     'scrapy.pipelines.images.ImagesPipeline': 500,
