@@ -18,7 +18,9 @@ smart_open = "<1.6.0"
 Twisted = "*"
 pillow = "*"
 pyspark = "*"
+dedupe = "*"
 awscli = "*"
+pyyaml = "*"
 
 [dev-packages]
 pylint = "*"

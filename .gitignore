@@ -97,14 +97,16 @@ ENV/
 .DS_Store
 .~*
 ._*
+*.sqlite*
 bin/
 include/
 share/
 pip-selfcheck.json
 
+.tc/
+cluster/
 crawls/
 feeds/
 images/
 jobs/
 recommender/
-.tc/

@@ -1,0 +1,31 @@
+- field: names
+  type: Set
+- field: year
+  type: Custom
+  comparator: ludoj.cluster.abs_comp
+  has missing: yes
+- field: designer
+  type: Set
+  has missing: yes
+- field: artist
+  type: Set
+  has missing: yes
+- field: publisher
+  type: Set
+  has missing: yes
+- field: min_players
+  type: Exact
+- field: max_players
+  type: Exact
+- field: bgg_id
+  type: Exact
+- field: freebase_id
+  type: Exact
+- field: wikidata_id
+  type: Exact
+- field: wikipedia_id
+  type: Exact
+- field: dbpedia_id
+  type: Exact
+- field: luding_id
+  type: Exact
