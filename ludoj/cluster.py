@@ -7,10 +7,9 @@ import logging
 import math
 import os
 import re
-import sqlite3
 import sys
 
-# from functools import partial
+from collections import defaultdict
 from itertools import chain
 
 import dedupe
@@ -21,7 +20,7 @@ from scrapy.utils.project import get_project_settings
 from smart_open import smart_open
 
 from .items import GameItem
-from .utils import clear_list, parse_float, parse_json, serialize_json, smart_exists
+from .utils import clear_list, parse_float, parse_int, parse_json, smart_exists
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS = get_project_settings()
@@ -48,8 +47,6 @@ def _fields(file=os.path.join(BASE_DIR, 'fields.yaml')):
 
 
 DEDUPE_FIELDS = tuple(_fields())
-ALL_FIELDS = tuple(field['field'] for field in DEDUPE_FIELDS)
-LIST_FIELDS = tuple(field['field'] for field in DEDUPE_FIELDS if field['type'] == 'Set')
 
 VALUE_ID_REGEX = re.compile(r'^(.*?)(:(\d+))?$')
 VALUE_ID_FIELDS = (
@@ -59,29 +56,22 @@ VALUE_ID_FIELDS = (
 )
 
 
-class _Row(sqlite3.Row):
-    def __new__(cls, cursor, row):
-        row = tuple(
-            parse_json(value) or None if key[0] in LIST_FIELDS else value
-            for key, value in zip(cursor.description, row))
-        return super().__new__(cls, cursor, row)
-
-    def items(self):
-        ''' items iterator '''
-        return zip(self.keys(), self)
-
-
 def _parse_value_id(string, regex=VALUE_ID_REGEX):
     match = regex.match(string) if string else None
-    # TODO filter out '(Uncredited):3'
-    return match.group(1) or None if match else None
+    if not match or parse_int(match.group(3)) == 3: # filter out '(Uncredited):3'
+        return None
+    return match.group(1) or None
 
 
 def _parse_game(game):
-    game['names'] = clear_list(
-        chain(arg_to_iter(game.get('name')), arg_to_iter(game.get('alt_name'))))
+    for field in DEDUPE_FIELDS:
+        game.setdefault(field['field'], None)
+        if field['type'] == 'Set':
+            game[field['field']] = tuple(arg_to_iter(game[field['field']])) or None
+    game['names'] = tuple(clear_list(
+        chain(arg_to_iter(game.get('name')), arg_to_iter(game.get('alt_name')))))
     for field in VALUE_ID_FIELDS:
-        game[field] = clear_list(map(_parse_value_id, arg_to_iter(game.get(field))))
+        game[field] = tuple(clear_list(map(_parse_value_id, arg_to_iter(game.get(field)))))
     return game
 
 
@@ -106,137 +96,63 @@ def _load_games(*args):
                 LOGGER.exception('there was an error reading from file <%s>', file)
 
 
-def _serialize_fields(game, fields=ALL_FIELDS, list_fields=LIST_FIELDS):
-    return {
-        key: serialize_json(value) if key in list_fields else value
-        for key, value in game.items()
-        if key and value and (not fields or key in fields)
-    }
+def _make_id(game, id_field='id', id_prefix=None):
+    id_value = game.get(id_field)
+    return None if not id_value else f'{id_prefix}:{id_value}' if id_prefix else id_value
 
 
-def _fill_db(games, db_file=':memory:'):
-    if db_file != ':memory:':
-        try:
-            os.remove(db_file)
-        except Exception:
-            pass
-
-    LOGGER.info('connecting to SQLite database <%s>', db_file)
-    conn = sqlite3.connect(db_file)
-
-    with conn:
-        sql = '''CREATE TABLE games (
-            id INTEGER PRIMARY KEY,
-            names TEXT NOT NULL,
-            year INTEGER,
-            designer TEXT,
-            artist TEXT,
-            publisher TEXT,
-            min_players INTEGER,
-            max_players INTEGER,
-            bgg_id INTEGER,
-            freebase_id TEXT,
-            wikidata_id TEXT,
-            wikipedia_id TEXT,
-            dbpedia_id TEXT,
-            luding_id INTEGER
-        );'''
-        LOGGER.info('executing query <%s>', sql)
-        conn.execute(sql)
-
-        sql = f'''
-            INSERT INTO games ({', '.join(ALL_FIELDS)})
-            VALUES ({', '.join('?' for _ in ALL_FIELDS)});
-        '''
-        LOGGER.info('executing query <%s>', sql)
-        games = map(_serialize_fields, arg_to_iter(games))
-        games = (tuple(game.get(field) for field in ALL_FIELDS) for game in games)
-        conn.executemany(sql, games)
-
-    LOGGER.info("Let's test the database, shall we?")
-    conn.row_factory = _Row
-    for row in conn.execute('SELECT * FROM games LIMIT 1;'):
-        LOGGER.info(dict(row))
-
-    conn.close()
-    del conn
+def _make_data(games, id_field='id', id_prefix=None):
+    return {_make_id(game, id_field, id_prefix): game for game in games}
 
 
-def _process_row(row):
-    return {
-        key: tuple(value) if isinstance(value, list) else value
-        for key, value in row.items()
-    }
+def _train_gazetteer(
+        data_1,
+        data_2,
+        fields=DEDUPE_FIELDS,
+        training_file=None,
+    ):
+    LOGGER.info('training gazetteer with fields: %r', fields)
 
-
-def _load_data(db_file):
-    LOGGER.info('connecting to SQLite database <%s>', db_file)
-    conn = sqlite3.connect(db_file)
-    conn.row_factory = _Row
-
-    sql = 'SELECT * FROM games;'
-    LOGGER.info('executing query <%s>', sql)
-    data = {row['id']: _process_row(row) for row in conn.execute(sql)}
-    conn.close()
-    del conn
-    LOGGER.info('loaded %d games from the database', len(data))
-
-    return data
-
-
-def _train_deduper(data, fields=DEDUPE_FIELDS, training_file=None):
-    LOGGER.info('training deduper with fields: %r', fields)
-
-    deduper = dedupe.Dedupe(fields)
-    deduper.sample(data, 25_000)
+    gazetteer = dedupe.Gazetteer(fields)
+    gazetteer.sample(data_1, data_2, 50_000)
 
     if training_file and smart_exists(training_file):
         LOGGER.info('reading existing training from <%s>', training_file)
         with smart_open(training_file, 'r') as file_obj:
-            deduper.readTraining(file_obj)
+            gazetteer.readTraining(file_obj)
 
     LOGGER.info('start interactive labelling')
-    dedupe.convenience.consoleLabel(deduper)
+    dedupe.convenience.consoleLabel(gazetteer)
 
     if training_file:
         LOGGER.info('write training data back to <%s>', training_file)
         with smart_open(training_file, 'w') as file_obj:
-            deduper.writeTraining(file_obj)
+            gazetteer.writeTraining(file_obj)
 
     LOGGER.info('done labelling, begin training')
-    deduper.train(recall=0.9, index_predicates=True)
+    gazetteer.train(recall=0.9, index_predicates=True)
 
-    deduper.cleanupTraining()
+    gazetteer.cleanupTraining()
 
-    return deduper
-
-
-def _print_games(connection, *game_ids):
-    sql = f'''SELECT * FROM games WHERE id IN ({', '.join(map(str, game_ids))});'''
-    for game in connection.execute(sql):
-        print(serialize_json(dict(game), indent=4))
+    return gazetteer
 
 
 def _parse_args():
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('paths', nargs='*', help='input JSON Lines files')
-    parser.add_argument(
-        '--database', '-d', default=os.path.join(BASE_DIR, 'cluster', 'games.sqlite3'),
-        help='SQLite databse path')
-    parser.add_argument(
-        '--train', '-t', action='store_true', help='train deduper')
+    parser.add_argument('file_canonical', help='input JSON Lines files with canonical dataset')
+    parser.add_argument('files_link', nargs='+', help='input JSON Lines files to link')
+    parser.add_argument('--id-fields', '-i', nargs='+', help='ID fields')
+    parser.add_argument('--id-prefixes', '-I', nargs='+', help='ID prefixes')
+    parser.add_argument('--train', '-t', action='store_true', help='train deduper')
     parser.add_argument(
         '--training-file', '-T', default=os.path.join(BASE_DIR, 'cluster', 'training.json'),
         help='training JSON file')
     parser.add_argument(
-        '--deduper-file', '-D', default=os.path.join(BASE_DIR, 'cluster', 'deduper.pickle'),
-        help='deduper model file')
+        '--gazetteer-file', '-G', default=os.path.join(BASE_DIR, 'cluster', 'gazetteer.pickle'),
+        help='gazetteer model file')
     parser.add_argument('--threshold', '-r', type=float, help='clustering threshold')
     parser.add_argument(
         '--recall', '-R', type=float, default=1, help='threshold estimation recall weight')
-    parser.add_argument(
-        '--info', '-i', action='store_true',
-        help='display detailed information for each game in a cluster')
     parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
@@ -254,50 +170,66 @@ def _main():
 
     LOGGER.info(args)
 
-    if args.paths:
-        games = _load_games(args.paths)
-        _fill_db(db_file=args.database, games=games)
+    paths = (args.file_canonical,) + tuple(args.files_link)
+    id_fields = args.id_fields or ()
+    id_fields = tuple(id_fields) + ('id',) * (len(paths) - len(id_fields))
+    # TODO extract prefixes from file names
+    id_prefixes = args.id_prefixes or ()
+    id_prefixes = tuple(id_prefixes) + (None,) * (len(paths) - len(id_prefixes))
+
+    games_canonical = _load_games(paths[0])
+    data_canonical = _make_data(games_canonical, id_fields[0], id_prefixes[0])
+    del games_canonical
+
+    LOGGER.info('loaded %d games in the canonical dataset', len(data_canonical))
+
+    data_link = {}
+    for path, id_field, id_prefix in zip(paths[1:], id_fields[1:], id_prefixes[1:]):
+        games = _load_games(path)
+        data_link.update(_make_data(games, id_field, id_prefix))
         del games
 
-    data = _load_data(args.database)
+    LOGGER.info('loaded %d games in the dataset to link', len(data_link))
 
     if args.train:
-        deduper = _train_deduper(data=data, training_file=args.training_file)
+        gazetteer = _train_gazetteer(
+            data_canonical,
+            data_link,
+            training_file=args.training_file,
+        )
 
-        if args.deduper_file:
-            LOGGER.info('saving deduper model to <%s>', args.deduper_file)
-            with smart_open(args.deduper_file, 'wb') as file_obj:
-                deduper.writeSettings(file_obj)
+        if args.gazetteer_file:
+            LOGGER.info('saving gazetteer model to <%s>', args.gazetteer_file)
+            with smart_open(args.gazetteer_file, 'wb') as file_obj:
+                gazetteer.writeSettings(file_obj)
 
     else:
-        LOGGER.info('reading deduper model from <%s>', args.deduper_file)
-        with smart_open(args.deduper_file, 'rb') as file_obj:
-            deduper = dedupe.StaticDedupe(file_obj)
+        LOGGER.info('reading gazetteer model from <%s>', args.gazetteer_file)
+        with smart_open(args.gazetteer_file, 'rb') as file_obj:
+            gazetteer = dedupe.StaticGazetteer(file_obj)
 
-    LOGGER.info('using deduper model %r', deduper)
+    gazetteer.index(data_canonical)
 
-    threshold = args.threshold or deduper.threshold(data, recall_weight=args.recall)
+    LOGGER.info('using gazetteer model %r', gazetteer)
+
+    threshold = args.threshold or gazetteer.threshold(data_link, recall_weight=args.recall)
 
     LOGGER.info('using threshold %.3f', threshold)
 
-    clusters = deduper.match(data=data, threshold=threshold, generator=True)
+    clusters = gazetteer.match(
+        messy_data=data_link,
+        threshold=threshold,
+        n_matches=None,
+        generator=True,
+    )
+    links = defaultdict(set)
 
-    if args.info:
-        connection = sqlite3.connect(args.database)
-        connection.row_factory = _Row
-        LOGGER.info('displaying games information using %r', connection)
-    else:
-        connection = None
+    for cluster in clusters:
+        for (id_link, id_canonical), _ in cluster:
+            links[id_canonical].add(id_link)
 
-    for ids, scores in clusters:
-        info = (f'<{id_}> ({score:.3f})' for id_, score in zip(ids, scores))
-        print('cluster:', ', '.join(info))
-        if connection:
-            _print_games(connection, *ids)
-
-    if connection:
-        connection.close()
-        del connection
+    for id_canonical, linked in links.items():
+        LOGGER.info('%s <-> %s', id_canonical, linked)
 
 
 if __name__ == '__main__':
