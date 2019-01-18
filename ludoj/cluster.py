@@ -137,6 +137,10 @@ def _train_gazetteer(
     return gazetteer
 
 
+def _filename(path):
+    return os.path.splitext(os.path.basename(path))[0] or None
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('file_canonical', help='input JSON Lines files with canonical dataset')
@@ -171,11 +175,10 @@ def _main():
     LOGGER.info(args)
 
     paths = (args.file_canonical,) + tuple(args.files_link)
-    id_fields = args.id_fields or ()
-    id_fields = tuple(id_fields) + ('id',) * (len(paths) - len(id_fields))
-    # TODO extract prefixes from file names
     id_prefixes = args.id_prefixes or ()
-    id_prefixes = tuple(id_prefixes) + (None,) * (len(paths) - len(id_prefixes))
+    id_prefixes = tuple(id_prefixes) + tuple(map(_filename, paths[len(id_prefixes):]))
+    id_fields = args.id_fields or ()
+    id_fields = tuple(id_fields) + tuple(f'{prefix}_id' for prefix in id_prefixes[len(id_fields):])
 
     games_canonical = _load_games(paths[0])
     data_canonical = _make_data(games_canonical, id_fields[0], id_prefixes[0])
@@ -223,11 +226,14 @@ def _main():
         generator=True,
     )
     links = defaultdict(set)
+    del gazetteer
 
     for cluster in clusters:
         for (id_link, id_canonical), _ in cluster:
             links[id_canonical].add(id_link)
+    del clusters
 
+    # TODO save to disk
     for id_canonical, linked in links.items():
         LOGGER.info('%s <-> %s', id_canonical, linked)
 
