@@ -180,5 +180,6 @@ class ResolveImagePipeline:
     def process_item(self, item, spider):
         ''' resolve resource image URLs to actual file locations '''
         for field in self.fields:
-            item[field] = clear_list(map(self._parse_url, arg_to_iter(item.get(field))))
+            if item.get(field):
+                item[field] = clear_list(map(self._parse_url, arg_to_iter(item[field])))
         return item
