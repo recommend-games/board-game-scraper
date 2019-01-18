@@ -20,7 +20,7 @@ from scrapy.utils.project import get_project_settings
 from smart_open import smart_open
 
 from .items import GameItem
-from .utils import clear_list, parse_float, parse_int, parse_json, smart_exists
+from .utils import clear_list, parse_float, parse_int, parse_json, serialize_json, smart_exists
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS = get_project_settings()
@@ -157,6 +157,7 @@ def _parse_args():
     parser.add_argument('--threshold', '-r', type=float, help='clustering threshold')
     parser.add_argument(
         '--recall', '-R', type=float, default=1, help='threshold estimation recall weight')
+    parser.add_argument('--output', '-o', help='output location')
     parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
@@ -233,9 +234,17 @@ def _main():
             links[id_canonical].add(id_link)
     del clusters
 
-    # TODO save to disk
-    for id_canonical, linked in links.items():
-        LOGGER.info('%s <-> %s', id_canonical, linked)
+    LOGGER.info('found links for %d items', len(links))
+
+    if not args.output or args.output == '-':
+        for id_canonical, linked in links.items():
+            LOGGER.info('%s <-> %s', id_canonical, linked)
+
+    else:
+        LOGGER.info('saving clusters as JSON to <%s>', args.output)
+        links = {key: sorted(value) for key, value in links.items() if key and value}
+        with smart_open(args.output, 'w') as file_obj:
+            serialize_json(obj=links, file=file_obj, sort_keys=True, indent=4)
 
 
 if __name__ == '__main__':
