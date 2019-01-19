@@ -73,7 +73,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 nohup python3 -m ludoj.merge \
     'feeds/spielen/GameItem/*' \
     --out-path 'results/spielen.jl' \
-    --keys url \
+    --keys spielen_id \
     --key-types string \
     --latest scraped_at \
     --latest-types date \

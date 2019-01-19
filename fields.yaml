@@ -29,3 +29,5 @@
   type: Exact
 - field: luding_id
   type: Exact
+- field: spielen_id
+  type: Exact
