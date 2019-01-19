@@ -43,8 +43,8 @@ nohup python3 -m ludoj.merge \
         url image_url external_link \
         min_players max_players \
         min_age max_age \
-        bgg_id freebase_id wikidata_id \
-        wikipedia_id dbpedia_id luding_id \
+        bgg_id freebase_id wikidata_id wikipedia_id \
+        dbpedia_id luding_id spielen_id \
     --sort-output \
     --concat \
     >> 'logs/dbpedia_merge.log' 2>&1 &
@@ -63,8 +63,8 @@ nohup python3 -m ludoj.merge \
         url image_url external_link \
         min_players max_players \
         min_age max_age \
-        bgg_id freebase_id wikidata_id \
-        wikipedia_id dbpedia_id luding_id \
+        bgg_id freebase_id wikidata_id wikipedia_id \
+        dbpedia_id luding_id spielen_id \
     --sort-output \
     --concat \
     >> 'logs/luding_merge.log' 2>&1 &
@@ -73,7 +73,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 nohup python3 -m ludoj.merge \
     'feeds/spielen/GameItem/*' \
     --out-path 'results/spielen.jl' \
-    --keys url \
+    --keys spielen_id \
     --key-types string \
     --latest scraped_at \
     --latest-types date \
@@ -86,6 +86,8 @@ nohup python3 -m ludoj.merge \
         min_time max_time family \
         num_votes avg_rating worst_rating best_rating \
         complexity easiest_complexity hardest_complexity \
+        bgg_id freebase_id wikidata_id wikipedia_id \
+        dbpedia_id luding_id spielen_id \
     --sort-output \
     --concat \
     >> 'logs/spielen_merge.log' 2>&1 &
@@ -105,8 +107,8 @@ nohup python3 -m ludoj.merge \
         min_players max_players \
         min_age max_age \
         min_time max_time family \
-        bgg_id freebase_id wikidata_id \
-        wikipedia_id dbpedia_id luding_id \
+        bgg_id freebase_id wikidata_id wikipedia_id \
+        dbpedia_id luding_id spielen_id \
     --sort-output \
     --concat \
     >> 'logs/wikidata_merge.log' 2>&1 &
