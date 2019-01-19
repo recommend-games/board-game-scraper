@@ -8,6 +8,7 @@ from scrapy import Spider
 
 from ..items import GameItem
 from ..loaders import GameLoader
+from ..utils import clear_list, extract_spielen_id, now
 
 
 def _parse_interval(text):
@@ -28,26 +29,40 @@ class SpielenSpider(Spider):
     ''' Spielen.de spider '''
 
     name = 'spielen'
-    allowed_domains = ['spielen.de']
-    start_urls = ['https://gesellschaftsspiele.spielen.de/alle-brettspiele/']
+    allowed_domains = ('spielen.de',)
+    start_urls = (
+        'https://gesellschaftsspiele.spielen.de/alle-brettspiele/',
+        'https://gesellschaftsspiele.spielen.de/alle-brettspiele/?s=empfehlung',
+        'https://gesellschaftsspiele.spielen.de/alle-brettspiele/?s=neue',
+        'https://gesellschaftsspiele.spielen.de/alle-brettspiele/?s=name',
+        'https://gesellschaftsspiele.spielen.de/messeneuheiten/',
+    ) + tuple(
+        f'https://gesellschaftsspiele.spielen.de/ausgezeichnet-{year}/'
+        for year in range(2017, now().year + 1)
+    )
+    game_url = 'https://gesellschaftsspiele.spielen.de/alle-brettspiele/{}/'
     item_classes = (GameItem,)
 
     def parse(self, response):
         '''
         @url https://gesellschaftsspiele.spielen.de/alle-brettspiele/
         @returns items 0 0
-        @returns requests 19 19
+        @returns requests 23
         '''
 
-        next_page = (response.css('.listPagination a.glyphicon-step-forward::attr(href)')
-                     .extract_first())
-        if next_page:
-            yield response.follow(next_page, callback=self.parse)
+        pagination = response.css('.listPagination a::attr(href)').extract()
+        for page in clear_list(pagination):
+            yield response.follow(page, callback=self.parse)
 
-        for game in response.css('div.listItem'):
-            url = game.css('h3 a::attr(href)').extract_first()
-            if url:
-                yield response.follow(url, callback=self.parse_game)
+        urls = response.xpath('//@href').extract()
+        spielen_ids = map(extract_spielen_id, map(response.urljoin, urls))
+
+        for spielen_id in clear_list(spielen_ids):
+            yield response.follow(
+                self.game_url.format(spielen_id),
+                callback=self.parse_game,
+                meta={'spielen_id': spielen_id},
+            )
 
     # pylint: disable=no-self-use
     def parse_game(self, response):
@@ -59,7 +74,7 @@ class SpielenSpider(Spider):
                  url image_url video_url \
                  min_players max_players min_age min_time max_time family \
                  num_votes avg_rating worst_rating best_rating \
-                 complexity easiest_complexity hardest_complexity
+                 complexity easiest_complexity hardest_complexity spielen_id
         '''
 
         game = response.css('div.fullBox')
@@ -75,6 +90,8 @@ class SpielenSpider(Spider):
             response=response,
         )
 
+        spielen_id = response.meta.get('spielen_id') or extract_spielen_id(response.url)
+
         ldr.add_css('name', 'h2')
         ldr.add_xpath('year', './/div[b = "Erscheinungsjahr:"]/following-sibling::div//text()')
         ldr.add_xpath('description', './/h2/following-sibling::text()')
@@ -87,6 +104,7 @@ class SpielenSpider(Spider):
         ldr.add_xpath(
             'publisher', './/div[b = "Verlag:" or b = "Verlage:"]/following-sibling::div//a')
 
+        ldr.add_value('url', self.game_url.format(spielen_id))
         ldr.add_value('url', response.url)
 
         images = [
@@ -127,5 +145,7 @@ class SpielenSpider(Spider):
             '/span[following-sibling::span[contains(@class, "red")]]')
         complexity = len(complexity) + 1
         ldr.add_value('complexity', complexity)
+
+        ldr.add_value('spielen_id', spielen_id)
 
         return ldr.load_item()

@@ -38,6 +38,8 @@ REGEX_WIKIDATA_ID = re.compile(r'^/(wiki|entity|resource)/Q(\d+).*$')
 REGEX_DBPEDIA_DOMAIN = re.compile(r'^[a-z]{2}\.dbpedia\.org$')
 REGEX_DBPEDIA_ID = re.compile(r'^/(resource|page)/(.+)$')
 REGEX_LUDING_ID = re.compile(r'^.*gameid/(\d+).*$')
+REGEX_SPIELEN_ID = re.compile(
+    r'^/(alle-brettspiele|messeneuheiten|ausgezeichnet-\d+)/([^/\d][^/]*).*$')
 REGEX_FREEBASE_ID = re.compile(r'^/ns/(g|m)\.([^/]+).*$')
 
 def to_str(string: Any, encoding: str = 'utf-8') -> Optional[str]:
@@ -570,6 +572,15 @@ def extract_luding_id(url: Union[str, ParseResult, None]) -> Optional[int]:
     return parse_int(match.group(1)) if match else parse_int(extract_query_param(url, 'gameid'))
 
 
+def extract_spielen_id(url: Union[str, ParseResult, None]) -> Optional[str]:
+    ''' extract Spielen.de ID from URL '''
+    url = parse_url(url, ('gesellschaftsspiele.spielen.de', 'www.gesellschaftsspiele.spielen.de'))
+    if not url:
+        return None
+    match = REGEX_SPIELEN_ID.match(url.path)
+    return unquote_plus(match.group(2)) if match else extract_query_param(url, 'id')
+
+
 def extract_freebase_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     ''' extract Freebase ID from URL '''
     url = parse_url(url, ('rdf.freebase.com', 'freebase.com'))
@@ -589,4 +600,5 @@ def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
         'wikipedia_id': clear_list(map(extract_wikipedia_id, urls)),
         'dbpedia_id': clear_list(map(extract_dbpedia_id, urls)),
         'luding_id': clear_list(map(extract_luding_id, urls)),
+        'spielen_id': clear_list(map(extract_spielen_id, urls)),
     }

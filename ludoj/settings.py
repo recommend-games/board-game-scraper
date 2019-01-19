@@ -68,6 +68,7 @@ FEED_EXPORT_FIELDS = (
     'wikipedia_id',
     'dbpedia_id',
     'luding_id',
+    'spielen_id',
     'published_at',
     'updated_at',
     'scraped_at',
