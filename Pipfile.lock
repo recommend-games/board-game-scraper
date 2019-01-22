@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "68f8e459785f9eaedaeeaf66b0f2848fc4fc91d3122fe23f1745b22383145bf4"
+            "sha256": "4334b95ef76f4170b4ed21212e7667f414aedece354cdf2b595dac8f4d919a57"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -73,11 +73,11 @@
         },
         "awscli": {
             "hashes": [
-                "sha256:1e2c776ca47ca18ee5ad3d481c0410800b8155342fe73099bc702b17625d7a2d",
-                "sha256:b8e3e35a5c29fb8658bd59c6369835156a129ea6eef909a4a56997e9550b2031"
+                "sha256:577d3f467815a6b69ecb1b125b7f008edda0c29e58e1d39f940da749bb7c6e66",
+                "sha256:879ce2a560e84596f1a14a3ecd3b55d8848fcedd62e0b14a00985f824980f7fc"
             ],
             "index": "pypi",
-            "version": "==1.16.90"
+            "version": "==1.16.93"
         },
         "boto": {
             "hashes": [
@@ -89,17 +89,17 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:122603b00f8c458236d1bd09850bdea56fc45f271e75ca38e66dbce37f72cada",
-                "sha256:99ec19dc4f0aa8a8354db7baebe1ff57bd18aeb6a539b28693b2e8ca8dc3d85b"
+                "sha256:4ffe3214bfa8993fcc957c9528073ddf73125c6c7a18bb17143470bccecb7d13",
+                "sha256:b36df47ca517b7c2dcb981357fa255ff9460b6c70a5143e962b98f695fc3b729"
             ],
-            "version": "==1.9.80"
+            "version": "==1.9.83"
         },
         "botocore": {
             "hashes": [
-                "sha256:76a2969278250e010253ddf514f4b54eaa7d2b1430f682874c3c2ab92f25a96d",
-                "sha256:8c579bac9abeaff1270a7a25964b01d3db1367f42fa5f826e1303ec8a4b13cef"
+                "sha256:23eab3b3c59a3581eb8478774177e9f4cdb5edf7bf7bb26d02e22c50b2e6e469",
+                "sha256:97026101d5a9aebdd1f1f1794a25ac5fbf5969823590ee1461fb0103bc796c33"
             ],
-            "version": "==1.12.80"
+            "version": "==1.12.83"
         },
         "btrees": {
             "hashes": [
@@ -702,10 +702,10 @@
         },
         "pyopenssl": {
             "hashes": [
-                "sha256:26ff56a6b5ecaf3a2a59f132681e2a80afcc76b4f902f612f518f92c2a1bf854",
-                "sha256:6488f1423b00f73b7ad5167885312bb0ce410d3312eb212393795b53c8caa580"
+                "sha256:aeca66338f6de19d1aa46ed634c3b9ae519a64b458f8468aec688e7e3c20f200",
+                "sha256:c727930ad54b10fc157015014b666f2d8b41f70c0d03e83ab67624fd3dd5d1e6"
             ],
-            "version": "==18.0.0"
+            "version": "==19.0.0"
         },
         "pyspark": {
             "hashes": [
@@ -1182,9 +1182,9 @@
         },
         "wrapt": {
             "hashes": [
-                "sha256:e03f19f64d81d0a3099518ca26b04550026f131eced2e76ced7b85c6b8d32128"
+                "sha256:4aea003270831cceb8a90ff27c4031da6ead7ec1886023b80ce0dfe0adf61533"
             ],
-            "version": "==1.11.0"
+            "version": "==1.11.1"
         }
     }
 }

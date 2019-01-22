@@ -14,7 +14,7 @@ cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 rm --recursive --force results
 mkdir --parents 'logs' 'results'
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/GameItem/*' \
     --out-path 'results/bgg.jl' \
     --keys bgg_id \
@@ -30,7 +30,7 @@ nohup python3 -m ludoj.merge \
     >> 'logs/bgg_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/dbpedia/GameItem/*' \
     --out-path 'results/dbpedia.jl' \
     --keys dbpedia_id \
@@ -50,7 +50,7 @@ nohup python3 -m ludoj.merge \
     >> 'logs/dbpedia_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/dbpedia_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/luding/GameItem/*' \
     --out-path 'results/luding.jl' \
     --keys luding_id \
@@ -70,7 +70,7 @@ nohup python3 -m ludoj.merge \
     >> 'logs/luding_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/spielen/GameItem/*' \
     --out-path 'results/spielen.jl' \
     --keys spielen_id \
@@ -93,7 +93,7 @@ nohup python3 -m ludoj.merge \
     >> 'logs/spielen_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/spielen_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/wikidata/GameItem/*' \
     --out-path 'results/wikidata.jl' \
     --keys wikidata_id \
@@ -114,7 +114,7 @@ nohup python3 -m ludoj.merge \
     >> 'logs/wikidata_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/RatingItem/*' \
     --out-path 'results/bgg_ratings.jl' \
     --keys bgg_user_name bgg_id \
@@ -128,7 +128,7 @@ nohup python3 -m ludoj.merge \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/news/*.jl,feeds/news/*/*/*.jl' \
     --out-path 'results/news.jl' \
     --keys article_id \
