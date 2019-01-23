@@ -16,15 +16,13 @@ import dedupe
 import yaml
 
 from scrapy.utils.misc import arg_to_iter, load_object
-from scrapy.utils.project import get_project_settings
 from smart_open import smart_open
 
 from .items import GameItem
 from .utils import clear_list, parse_float, parse_int, parse_json, serialize_json, smart_exists
 
 LOGGER = logging.getLogger(__name__)
-SETTINGS = get_project_settings()
-BASE_DIR = SETTINGS.get('BASE_DIR')
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def abs_comp(field_1, field_2):
