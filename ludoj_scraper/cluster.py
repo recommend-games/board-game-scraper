@@ -110,6 +110,7 @@ def _train_gazetteer(
         data_2,
         fields=DEDUPE_FIELDS,
         training_file=None,
+        manual_labelling=False,
     ):
     LOGGER.info('training gazetteer with fields: %r', fields)
 
@@ -121,8 +122,9 @@ def _train_gazetteer(
         with smart_open(training_file, 'r') as file_obj:
             gazetteer.readTraining(file_obj)
 
-    LOGGER.info('start interactive labelling')
-    dedupe.convenience.consoleLabel(gazetteer)
+    if manual_labelling:
+        LOGGER.info('start interactive labelling')
+        dedupe.convenience.consoleLabel(gazetteer)
 
     if training_file:
         LOGGER.info('write training data back to <%s>', training_file)
@@ -139,6 +141,101 @@ def _train_gazetteer(
 
 def _filename(path):
     return os.path.splitext(os.path.basename(path))[0] or None
+
+
+def link_games(
+        gazetteer,
+        paths,
+        id_prefixes=None,
+        id_fields=None,
+        training_file=None,
+        manual_labelling=False,
+        threshold=None,
+        recall_weight=1,
+        output=None,
+    ):
+    ''' find links for games '''
+
+    paths = tuple(arg_to_iter(paths))
+    if len(paths) < 2:
+        raise ValueError(f'need at least 2 files to link games, but received {paths}')
+
+    id_prefixes = tuple(arg_to_iter(id_prefixes))
+    id_prefixes = id_prefixes + tuple(map(_filename, paths[len(id_prefixes):]))
+    id_fields = tuple(arg_to_iter(id_fields))
+    id_fields = id_fields + tuple(f'{prefix}_id' for prefix in id_prefixes[len(id_fields):])
+
+    games_canonical = _load_games(paths[0])
+    data_canonical = _make_data(games_canonical, id_fields[0], id_prefixes[0])
+    del games_canonical
+
+    LOGGER.info('loaded %d games in the canonical dataset <%s>', len(data_canonical), paths[0])
+
+    data_link = {}
+    for path, id_field, id_prefix in zip(paths[1:], id_fields[1:], id_prefixes[1:]):
+        games = _load_games(path)
+        data_link.update(_make_data(games, id_field, id_prefix))
+        del games
+
+    LOGGER.info('loaded %d games to link in the datasets %s', len(data_link), paths[1:])
+
+    if training_file:
+        gazetteer_trained = _train_gazetteer(
+            data_canonical,
+            data_link,
+            training_file=training_file,
+            manual_labelling=manual_labelling,
+        )
+
+        if isinstance(gazetteer, str):
+            LOGGER.info('saving gazetteer model to <%s>', gazetteer)
+            with smart_open(gazetteer, 'wb') as file_obj:
+                gazetteer_trained.writeSettings(file_obj)
+
+        gazetteer = gazetteer_trained
+        del gazetteer_trained
+
+    elif isinstance(gazetteer, str):
+        LOGGER.info('reading gazetteer model from <%s>', gazetteer)
+        with smart_open(gazetteer, 'rb') as file_obj:
+            gazetteer = dedupe.StaticGazetteer(file_obj)
+
+    gazetteer.index(data_canonical)
+
+    LOGGER.info('using gazetteer model %r', gazetteer)
+
+    threshold = threshold or gazetteer.threshold(data_link, recall_weight=recall_weight)
+
+    LOGGER.info('using threshold %.3f', threshold)
+
+    clusters = gazetteer.match(
+        messy_data=data_link,
+        threshold=threshold,
+        n_matches=None,
+        generator=True,
+    )
+    links = defaultdict(set)
+    del gazetteer
+
+    for cluster in clusters:
+        for (id_link, id_canonical), _ in cluster:
+            links[id_canonical].add(id_link)
+    del clusters
+
+    LOGGER.info('found links for %d items', len(links))
+
+    if output == '-':
+        for id_canonical, linked in links.items():
+            LOGGER.info('%s <-> %s', id_canonical, linked)
+
+    elif output:
+        LOGGER.info('saving clusters as JSON to <%s>', output)
+        links_sorted = {key: sorted(value) for key, value in links.items() if key and value}
+        with smart_open(output, 'w') as file_obj:
+            serialize_json(obj=links_sorted, file=file_obj, sort_keys=True, indent=4)
+        del links_sorted
+
+    return links
 
 
 def _parse_args():
@@ -175,76 +272,17 @@ def _main():
 
     LOGGER.info(args)
 
-    paths = (args.file_canonical,) + tuple(args.files_link)
-    id_prefixes = args.id_prefixes or ()
-    id_prefixes = tuple(id_prefixes) + tuple(map(_filename, paths[len(id_prefixes):]))
-    id_fields = args.id_fields or ()
-    id_fields = tuple(id_fields) + tuple(f'{prefix}_id' for prefix in id_prefixes[len(id_fields):])
-
-    games_canonical = _load_games(paths[0])
-    data_canonical = _make_data(games_canonical, id_fields[0], id_prefixes[0])
-    del games_canonical
-
-    LOGGER.info('loaded %d games in the canonical dataset', len(data_canonical))
-
-    data_link = {}
-    for path, id_field, id_prefix in zip(paths[1:], id_fields[1:], id_prefixes[1:]):
-        games = _load_games(path)
-        data_link.update(_make_data(games, id_field, id_prefix))
-        del games
-
-    LOGGER.info('loaded %d games in the dataset to link', len(data_link))
-
-    if args.train:
-        gazetteer = _train_gazetteer(
-            data_canonical,
-            data_link,
-            training_file=args.training_file,
-        )
-
-        if args.gazetteer_file:
-            LOGGER.info('saving gazetteer model to <%s>', args.gazetteer_file)
-            with smart_open(args.gazetteer_file, 'wb') as file_obj:
-                gazetteer.writeSettings(file_obj)
-
-    else:
-        LOGGER.info('reading gazetteer model from <%s>', args.gazetteer_file)
-        with smart_open(args.gazetteer_file, 'rb') as file_obj:
-            gazetteer = dedupe.StaticGazetteer(file_obj)
-
-    gazetteer.index(data_canonical)
-
-    LOGGER.info('using gazetteer model %r', gazetteer)
-
-    threshold = args.threshold or gazetteer.threshold(data_link, recall_weight=args.recall)
-
-    LOGGER.info('using threshold %.3f', threshold)
-
-    clusters = gazetteer.match(
-        messy_data=data_link,
-        threshold=threshold,
-        n_matches=None,
-        generator=True,
+    link_games(
+        gazetteer=args.gazetteer_file,
+        paths=[args.file_canonical] + args.files_link,
+        id_prefixes=args.id_prefixes,
+        id_fields=args.id_fields,
+        training_file=args.training_file if args.train else None,
+        manual_labelling=args.train,
+        threshold=args.threshold,
+        recall_weight=args.recall,
+        output=args.output or '-',
     )
-    links = defaultdict(set)
-    del gazetteer
-
-    for cluster in clusters:
-        for (id_link, id_canonical), _ in cluster:
-            links[id_canonical].add(id_link)
-    del clusters
-
-    LOGGER.info('found links for %d items', len(links))
-
-    if not args.output or args.output == '-':
-        for id_canonical, linked in links.items():
-            LOGGER.info('%s <-> %s', id_canonical, linked)
-
-    else:
-        LOGGER.info('saving clusters as JSON to <%s>', args.output)
-        links = {key: sorted(value) for key, value in links.items() if key and value}
-        with smart_open(args.output, 'w') as file_obj:
-            serialize_json(obj=links, file=file_obj, sort_keys=True, indent=4)
 
 
 if __name__ == '__main__':
