@@ -6,8 +6,8 @@ import os
 
 BOT_NAME = 'ludoj'
 
-SPIDER_MODULES = ['ludoj.spiders']
-NEWSPIDER_MODULE = 'ludoj.spiders'
+SPIDER_MODULES = ['ludoj_scraper.spiders']
+NEWSPIDER_MODULE = 'ludoj_scraper.spiders'
 
 LOG_LEVEL = 'INFO'
 
@@ -130,34 +130,34 @@ DEFAULT_REQUEST_HEADERS = {
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 #SPIDER_MIDDLEWARES = {
-#    'ludoj.middlewares.MyCustomSpiderMiddleware': 543,
+#    'ludoj_scraper.middlewares.MyCustomSpiderMiddleware': 543,
 #}
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    'ludoj.middlewares.DelayedRetry': 555,
+    'ludoj_scraper.middlewares.DelayedRetry': 555,
 }
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
     'scrapy.extensions.feedexport.FeedExporter': None,
-    'ludoj.extensions.MultiFeedExporter': 0,
+    'ludoj_scraper.extensions.MultiFeedExporter': 0,
     'scrapy.extensions.throttle.AutoThrottle': None,
-    'ludoj.extensions.NicerAutoThrottle': 0,
-    'ludoj.extensions.StateTag': 0,
-    'ludoj.extensions.MonitorDownloadsExtension': 500,
-    'ludoj.extensions.DumpStatsExtension': 500,
+    'ludoj_scraper.extensions.NicerAutoThrottle': 0,
+    'ludoj_scraper.extensions.StateTag': 0,
+    'ludoj_scraper.extensions.MonitorDownloadsExtension': 500,
+    'ludoj_scraper.extensions.DumpStatsExtension': 500,
 }
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'ludoj.pipelines.DataTypePipeline': 100,
-    'ludoj.pipelines.ValidatePipeline': 200,
-    'ludoj.pipelines.ResolveLabelPipeline': 300,
-    'ludoj.pipelines.ResolveImagePipeline': 400,
+    'ludoj_scraper.pipelines.DataTypePipeline': 100,
+    'ludoj_scraper.pipelines.ValidatePipeline': 200,
+    'ludoj_scraper.pipelines.ResolveLabelPipeline': 300,
+    'ludoj_scraper.pipelines.ResolveImagePipeline': 400,
     'scrapy.pipelines.images.ImagesPipeline': 500,
 }
 

@@ -11,12 +11,12 @@ set -euo pipefail
 SAVEDIR="$(pwd)"
 cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 
-rm --recursive --force results
-mkdir --parents 'logs' 'results'
+rm --recursive --force ../ludoj-data/scraped
+mkdir --parents 'logs' '../ludoj-data/scraped'
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/GameItem/*' \
-    --out-path 'results/bgg.jl' \
+    --out-path '../ludoj-data/scraped/bgg.jl' \
     --keys bgg_id \
     --key-types int \
     --latest scraped_at \
@@ -30,9 +30,9 @@ nohup python3 -m ludoj.merge \
     >> 'logs/bgg_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/dbpedia/GameItem/*' \
-    --out-path 'results/dbpedia.jl' \
+    --out-path '../ludoj-data/scraped/dbpedia.jl' \
     --keys dbpedia_id \
     --key-types string \
     --latest scraped_at \
@@ -50,9 +50,9 @@ nohup python3 -m ludoj.merge \
     >> 'logs/dbpedia_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/dbpedia_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/luding/GameItem/*' \
-    --out-path 'results/luding.jl' \
+    --out-path '../ludoj-data/scraped/luding.jl' \
     --keys luding_id \
     --key-types int \
     --latest scraped_at \
@@ -70,9 +70,9 @@ nohup python3 -m ludoj.merge \
     >> 'logs/luding_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/spielen/GameItem/*' \
-    --out-path 'results/spielen.jl' \
+    --out-path '../ludoj-data/scraped/spielen.jl' \
     --keys spielen_id \
     --key-types string \
     --latest scraped_at \
@@ -93,9 +93,9 @@ nohup python3 -m ludoj.merge \
     >> 'logs/spielen_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/spielen_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/wikidata/GameItem/*' \
-    --out-path 'results/wikidata.jl' \
+    --out-path '../ludoj-data/scraped/wikidata.jl' \
     --keys wikidata_id \
     --key-types string \
     --latest scraped_at \
@@ -114,9 +114,9 @@ nohup python3 -m ludoj.merge \
     >> 'logs/wikidata_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/RatingItem/*' \
-    --out-path 'results/bgg_ratings.jl' \
+    --out-path '../ludoj-data/scraped/bgg_ratings.jl' \
     --keys bgg_user_name bgg_id \
     --key-types string int \
     --latest scraped_at \
@@ -128,9 +128,9 @@ nohup python3 -m ludoj.merge \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
 
-nohup python3 -m ludoj.merge \
+nohup python3 -m ludoj_scraper.merge \
     'feeds/news/*.jl,feeds/news/*/*/*.jl' \
-    --out-path 'results/news.jl' \
+    --out-path '../ludoj-data/scraped/news.jl' \
     --keys article_id \
     --key-types string \
     --latest published_at scraped_at \
