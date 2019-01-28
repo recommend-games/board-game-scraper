@@ -601,4 +601,5 @@ def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
         'dbpedia_id': clear_list(map(extract_dbpedia_id, urls)),
         'luding_id': clear_list(map(extract_luding_id, urls)),
         'spielen_id': clear_list(map(extract_spielen_id, urls)),
+        # TODO bga_id
     }

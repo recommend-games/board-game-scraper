@@ -69,6 +69,7 @@ FEED_EXPORT_FIELDS = (
     'dbpedia_id',
     'luding_id',
     'spielen_id',
+    'bga_id',
     'published_at',
     'updated_at',
     'scraped_at',
@@ -197,6 +198,7 @@ DELAYED_RETRY_BACKOFF_MAX_DELAY = 100.0
 
 # Monitoring settings
 MONITOR_DOWNLOADS_ENABLED = True
+MONITOR_DOWNLOADS_INTERVAL = 60
 DUMP_STATS_ENABLED = True
 DUMP_STATS_INTERVAL = 5 * 60
 

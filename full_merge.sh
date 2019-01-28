@@ -10,6 +10,18 @@ mkdir --parents 'logs'
 DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
 nohup python3 -m ludoj_scraper.merge \
+    'feeds/bga/GameItem/*' \
+    --out-path "feeds/bga/GameItem/${DATE}_merged.jl" \
+    --keys bga_id \
+    --key-types string \
+    --latest scraped_at \
+    --latest-types date \
+    --latest-min 30 \
+    --concat \
+    >> 'logs/bga_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/bga_merge.log>.\\n"
+
+nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/GameItem/*' \
     --out-path "feeds/bgg/GameItem/${DATE}_merged.jl" \
     --keys bgg_id \

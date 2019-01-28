@@ -9,6 +9,26 @@ rm --recursive --force ../ludoj-data/scraped
 mkdir --parents 'logs' '../ludoj-data/scraped'
 
 nohup python3 -m ludoj_scraper.merge \
+    'feeds/bga/GameItem/*' \
+    --out-path '../ludoj-data/scraped/bga.jl' \
+    --keys bga_id \
+    --key-types string \
+    --latest scraped_at \
+    --latest-types date \
+    --latest-min 30 \
+    --fields name alt_name year \
+        description designer publisher \
+        url image_url external_link \
+        min_players max_players \
+        min_age max_age \
+        bgg_id freebase_id wikidata_id wikipedia_id \
+        dbpedia_id luding_id spielen_id bga_id \
+    --sort-output \
+    --concat \
+    >> 'logs/bga_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/bga_merge.log>.\\n"
+
+nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/GameItem/*' \
     --out-path '../ludoj-data/scraped/bgg.jl' \
     --keys bgg_id \
@@ -38,7 +58,7 @@ nohup python3 -m ludoj_scraper.merge \
         min_players max_players \
         min_age max_age \
         bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id \
+        dbpedia_id luding_id spielen_id bga_id \
     --sort-output \
     --concat \
     >> 'logs/dbpedia_merge.log' 2>&1 &
@@ -58,7 +78,7 @@ nohup python3 -m ludoj_scraper.merge \
         min_players max_players \
         min_age max_age \
         bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id \
+        dbpedia_id luding_id spielen_id bga_id \
     --sort-output \
     --concat \
     >> 'logs/luding_merge.log' 2>&1 &
@@ -81,7 +101,7 @@ nohup python3 -m ludoj_scraper.merge \
         num_votes avg_rating worst_rating best_rating \
         complexity easiest_complexity hardest_complexity \
         bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id \
+        dbpedia_id luding_id spielen_id bga_id \
     --sort-output \
     --concat \
     >> 'logs/spielen_merge.log' 2>&1 &
@@ -102,7 +122,7 @@ nohup python3 -m ludoj_scraper.merge \
         min_age max_age \
         min_time max_time family \
         bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id \
+        dbpedia_id luding_id spielen_id bga_id \
     --sort-output \
     --concat \
     >> 'logs/wikidata_merge.log' 2>&1 &
