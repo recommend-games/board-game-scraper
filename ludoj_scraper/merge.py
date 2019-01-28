@@ -115,7 +115,7 @@ def csv_merge(
 
     if latest_min is not None:
         LOGGER.info('filter out items before %r', latest_min)
-        rdd = rdd.filter(lambda item: item[0][0] and item[0][0] >= latest_min)
+        rdd = rdd.filter(lambda item: item and item[0] and item[0][0] and item[0][0] >= latest_min)
 
     rdd = rdd.map(lambda item: (_parse(item=item[1], keys=keys, parsers=key_parsers), item)) \
         .filter(lambda item: item[0] is not None) \
