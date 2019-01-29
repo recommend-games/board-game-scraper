@@ -2,8 +2,6 @@
 
 ''' Scrapy item loaders '''
 
-import json
-
 import jmespath
 
 from scrapy.loader import ItemLoader
@@ -12,7 +10,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import flatten
 from w3lib.html import remove_tags
 
-from .utils import identity, normalize_space, replace_all_entities
+from .utils import identity, normalize_space, parse_json, replace_all_entities
 
 
 class JsonLoader(ItemLoader):
@@ -21,11 +19,8 @@ class JsonLoader(ItemLoader):
     def __init__(self, response=None, json_obj=None, **kwargs):
         super(JsonLoader, self).__init__(response=response, **kwargs)
 
-        if json_obj is None and response is not None:
-            try:
-                json_obj = json.loads(response.text)
-            except Exception:
-                json_obj = None
+        if json_obj is None and hasattr(response, 'text'):
+            json_obj = parse_json(response.text)
 
         self.json_obj = json_obj
         self.context.setdefault('json', json_obj)
