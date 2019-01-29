@@ -17,9 +17,10 @@ class JsonLoader(ItemLoader):
     ''' enhance ItemLoader with JMESPath capabilities '''
 
     def __init__(self, response=None, json_obj=None, **kwargs):
+        response = response if hasattr(response, 'text') else None
         super(JsonLoader, self).__init__(response=response, **kwargs)
 
-        if json_obj is None and hasattr(response, 'text'):
+        if json_obj is None and response is not None:
             json_obj = parse_json(response.text)
 
         self.json_obj = json_obj
