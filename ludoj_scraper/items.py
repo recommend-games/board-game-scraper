@@ -315,6 +315,7 @@ class GameItem(TypedItem):
     luding_id = Field(
         dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
     spielen_id = Field(dtype=str)
+    bga_id = Field(dtype=str)
 
     published_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)
     updated_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)

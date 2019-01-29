@@ -41,6 +41,8 @@ REGEX_LUDING_ID = re.compile(r'^.*gameid/(\d+).*$')
 REGEX_SPIELEN_ID = re.compile(
     r'^/(alle-brettspiele|messeneuheiten|ausgezeichnet-\d+)/([^/\d][^/]*).*$')
 REGEX_FREEBASE_ID = re.compile(r'^/ns/(g|m)\.([^/]+).*$')
+REGEX_BGA_ID = re.compile(r'^.*/game/([a-zA-Z0-9]+)(/.*)?$')
+
 
 def to_str(string: Any, encoding: str = 'utf-8') -> Optional[str]:
     ''' safely returns either string or None '''
@@ -590,6 +592,19 @@ def extract_freebase_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     return f'/{match.group(1)}/{match.group(2)}' if match else extract_query_param(url, 'id')
 
 
+def extract_bga_id(url: Union[str, ParseResult, None]) -> Optional[str]:
+    ''' extract Board Game Atlas ID from URL '''
+    url = parse_url(url, ('boardgameatlas.com', 'www.boardgameatlas.com'))
+    if not url:
+        return None
+    match = REGEX_BGA_ID.match(url.path)
+    if match:
+        return match.group(1)
+    ids = extract_query_param(url, 'ids')
+    ids = ids.split(',') if ids else ()
+    return first(map(normalize_space, ids)) or extract_query_param(url, 'game-id')
+
+
 def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
     ''' extract all possible IDs from all the URLs '''
     urls = tuple(map(urlparse, urls))
@@ -601,4 +616,5 @@ def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
         'dbpedia_id': clear_list(map(extract_dbpedia_id, urls)),
         'luding_id': clear_list(map(extract_luding_id, urls)),
         'spielen_id': clear_list(map(extract_spielen_id, urls)),
+        'bga_id': clear_list(map(extract_bga_id, urls)),
     }
