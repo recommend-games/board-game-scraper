@@ -125,7 +125,6 @@ class BgaSpider(Spider):
                 priority=1,
             )
 
-    # pylint: disable=no-self-use
     def parse_images(self, response, item=None):
         '''
         @url https://www.boardgameatlas.com/api/game/images?game-id=OIXt3DmJU0&limit=100
@@ -153,13 +152,11 @@ class BgaSpider(Spider):
             priority=1,
         ) if bga_id else item
 
-    # pylint: disable=no-self-use
     def parse_videos(self, response, item=None):
         '''
         @url https://www.boardgameatlas.com/api/game/videos?game-id=OIXt3DmJU0&limit=100
-        @returns items 1 1
-        @returns requests 0 0
-        @scrapes video_url
+        @returns items 0 0
+        @returns requests 1 1
         '''
 
         item = _extract_item(item, response)
@@ -169,6 +166,32 @@ class BgaSpider(Spider):
         ldr.add_value('video_url', item.get('video_url'))
         ldr.add_jmes('video_url', 'videos[].url')
 
-        # TODO make further requests for prices and reviews (external links)
+        item = ldr.load_item()
+        bga_id = _extract_bga_id(item, response)
+        callback = partial(self.parse_reviews, item=item)
+
+        yield Request(
+            url=f'{self.api_url}/game/reviews?game-id={bga_id}&limit=100',
+            callback=callback,
+            errback=callback,
+            meta={'item': item, 'bga_id': bga_id},
+            priority=1,
+        ) if bga_id else item
+
+    # pylint: disable=no-self-use
+    def parse_reviews(self, response, item=None):
+        '''
+        @url https://www.boardgameatlas.com/api/game/reviews?game-id=OIXt3DmJU0&limit=100
+        @returns items 1 1
+        @returns requests 0 0
+        @scrapes external_link
+        '''
+
+        item = _extract_item(item, response)
+        result = _json_from_response(response)
+
+        ldr = GameJsonLoader(item=item, json_obj=result, response=response)
+        ldr.add_value('external_link', item.get('external_link'))
+        ldr.add_jmes('external_link', 'reviews[].url')
 
         return ldr.load_item()
