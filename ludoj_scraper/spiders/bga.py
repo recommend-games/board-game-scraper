@@ -18,15 +18,42 @@ def _json_from_response(response):
     return result or {}
 
 
+def _extract_meta(response=None):
+    if hasattr(response, 'meta') and response.meta:
+        return response.meta
+    if hasattr(response, 'request') and hasattr(response.request, 'meta'):
+        return response.request.meta or {}
+    return {}
+
+
 def _extract_item(item=None, response=None, item_cls=GameItem):
     if item:
         return item
-    if hasattr(response, 'meta') and response.meta.get('item'):
-        return response.meta['item']
-    if (hasattr(response, 'request') and hasattr(response.request, 'meta')
-            and response.request.meta.get('item')):
-        return response.request.meta['item']
-    return item_cls()
+    meta = _extract_meta(response)
+    return meta.get('item') or item_cls()
+
+
+def _extract_url(item=None, response=None, default=None):
+    if item and item.get('url'):
+        return item['url']
+    meta = _extract_meta(response)
+    if meta.get('url'):
+        return meta['url']
+    if hasattr(response, 'url') and response.url:
+        return response.url
+    if hasattr(response, 'request') and hasattr(response.request, 'url'):
+        return response.request.url
+    return default
+
+
+def _extract_bga_id(item=None, response=None):
+    if item and item.get('bga_id'):
+        return item['bga_id']
+    meta = _extract_meta(response)
+    if meta.get('bga_id'):
+        return meta['bga_id']
+    url = _extract_url(item, response)
+    return extract_bga_id(url)
 
 
 class BgaSpider(Spider):
@@ -94,7 +121,7 @@ class BgaSpider(Spider):
                 url=f'{self.api_url}/game/images?game-id={bga_id}&limit=100',
                 callback=callback,
                 errback=callback,
-                meta={'item': item},
+                meta={'item': item, 'bga_id': bga_id},
                 priority=1,
             )
 
@@ -102,9 +129,8 @@ class BgaSpider(Spider):
     def parse_images(self, response, item=None):
         '''
         @url https://www.boardgameatlas.com/api/game/images?game-id=OIXt3DmJU0&limit=100
-        @returns items 1 1
-        @returns requests 0 0
-        @scrapes image_url
+        @returns items 0 0
+        @returns requests 1 1
         '''
 
         item = _extract_item(item, response)
@@ -115,6 +141,34 @@ class BgaSpider(Spider):
         ldr.add_jmes('image_url', 'images[].url')
         ldr.add_jmes('image_url', 'images[].thumb')
 
-        # TODO make further requests for prices, videos, and reviews (external links)
+        item = ldr.load_item()
+        bga_id = _extract_bga_id(item, response)
+        callback = partial(self.parse_videos, item=item)
+
+        yield Request(
+            url=f'{self.api_url}/game/videos?game-id={bga_id}&limit=100',
+            callback=callback,
+            errback=callback,
+            meta={'item': item, 'bga_id': bga_id},
+            priority=1,
+        ) if bga_id else item
+
+    # pylint: disable=no-self-use
+    def parse_videos(self, response, item=None):
+        '''
+        @url https://www.boardgameatlas.com/api/game/videos?game-id=OIXt3DmJU0&limit=100
+        @returns items 1 1
+        @returns requests 0 0
+        @scrapes video_url
+        '''
+
+        item = _extract_item(item, response)
+        result = _json_from_response(response)
+
+        ldr = GameJsonLoader(item=item, json_obj=result, response=response)
+        ldr.add_value('video_url', item.get('video_url'))
+        ldr.add_jmes('video_url', 'videos[].url')
+
+        # TODO make further requests for prices and reviews (external links)
 
         return ldr.load_item()

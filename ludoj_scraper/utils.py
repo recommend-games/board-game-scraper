@@ -602,7 +602,7 @@ def extract_bga_id(url: Union[str, ParseResult, None]) -> Optional[str]:
         return match.group(1)
     ids = extract_query_param(url, 'ids')
     ids = ids.split(',') if ids else ()
-    return first(map(normalize_space, ids))
+    return first(map(normalize_space, ids)) or extract_query_param(url, 'game-id')
 
 
 def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
