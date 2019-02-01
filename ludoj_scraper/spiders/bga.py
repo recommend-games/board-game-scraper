@@ -122,7 +122,6 @@ class BgaSpider(Spider):
                 callback=callback,
                 errback=callback,
                 meta={'item': item, 'bga_id': bga_id},
-                priority=1,
             )
 
     def parse_images(self, response, item=None):
@@ -149,7 +148,6 @@ class BgaSpider(Spider):
             callback=callback,
             errback=callback,
             meta={'item': item, 'bga_id': bga_id},
-            priority=1,
         ) if bga_id else item
 
     def parse_videos(self, response, item=None):
@@ -175,7 +173,6 @@ class BgaSpider(Spider):
             callback=callback,
             errback=callback,
             meta={'item': item, 'bga_id': bga_id},
-            priority=1,
         ) if bga_id else item
 
     # pylint: disable=no-self-use
