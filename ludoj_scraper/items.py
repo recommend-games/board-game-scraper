@@ -171,6 +171,12 @@ class GameItem(TypedItem):
     )
 
     url = Field(dtype=str)
+    official_url = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
     image_url = Field(
         dtype=list,
         output_processor=clear_list,
@@ -187,7 +193,22 @@ class GameItem(TypedItem):
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
-
+    rules_url = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
+    rules_file = Field(
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
+    review_url = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
     external_link = Field(
         dtype=list,
         output_processor=clear_list,
