@@ -123,11 +123,15 @@ class TypedItem(Item):
 class GameItem(TypedItem):
     ''' item representing a game '''
 
+    JSON_OUTPUT = SETTINGS.get('FEED_FORMAT') in ('jl', 'json', 'jsonl', 'jsonlines')
+    JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
+    BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool
+
     name = Field(dtype=str, required=True)
     alt_name = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     year = Field(
@@ -150,19 +154,19 @@ class GameItem(TypedItem):
     designer = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     artist = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     publisher = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
 
@@ -170,23 +174,24 @@ class GameItem(TypedItem):
     image_url = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     image_file = Field(
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     video_url = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
+
     external_link = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     list_price = Field(dtype=str) # currency?
@@ -221,60 +226,60 @@ class GameItem(TypedItem):
     category = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     mechanic = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     cooperative = Field(
         dtype=bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     compilation = Field(
         dtype=bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     compilation_of = Field(
         dtype=list,
         input_processor=MapCompose(parse_int),
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     family = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     expansion = Field(
         dtype=list,
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     implementation = Field(
         dtype=list,
         input_processor=MapCompose(parse_int),
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     integration = Field(
         dtype=list,
         input_processor=MapCompose(parse_int),
         output_processor=clear_list,
-        serializer=identity if _json_output() else serialize_json,
+        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
 
@@ -331,6 +336,9 @@ class GameItem(TypedItem):
 class RatingItem(TypedItem):
     ''' item representing a rating '''
 
+    JSON_OUTPUT = SETTINGS.get('FEED_FORMAT') in ('jl', 'json', 'jsonl', 'jsonlines')
+    BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool
+
     bgg_id = Field(dtype=int, dtype_convert=parse_int, required=True)
     bgg_user_name = Field(dtype=str, required=True)
 
@@ -341,7 +349,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     bgg_user_prev_owned = Field(
@@ -349,7 +357,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     bgg_user_for_trade = Field(
@@ -357,7 +365,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     bgg_user_want_in_trade = Field(
@@ -365,7 +373,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     bgg_user_want_to_play = Field(
@@ -373,7 +381,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     bgg_user_want_to_buy = Field(
@@ -381,7 +389,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     bgg_user_preordered = Field(
@@ -389,7 +397,7 @@ class RatingItem(TypedItem):
         dtype_convert=parse_bool,
         default=None,
         input_processor=IDENTITY,
-        serializer=identity if _json_output() else _serialize_bool,
+        serializer=BOOL_SERIALIZER,
         parser=parse_bool,
     )
     bgg_user_wishlist = Field(
