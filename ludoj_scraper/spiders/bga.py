@@ -181,14 +181,14 @@ class BgaSpider(Spider):
         @url https://www.boardgameatlas.com/api/game/reviews?game-id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
-        @scrapes external_link
+        @scrapes review_url
         '''
 
         item = _extract_item(item, response)
         result = _json_from_response(response)
 
         ldr = GameJsonLoader(item=item, json_obj=result, response=response)
-        ldr.add_value('external_link', item.get('external_link'))
-        ldr.add_jmes('external_link', 'reviews[].url')
+        ldr.add_value('review_url', item.get('review_url'))
+        ldr.add_jmes('review_url', 'reviews[].url')
 
         return ldr.load_item()

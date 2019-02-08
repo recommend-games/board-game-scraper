@@ -352,7 +352,8 @@ class DBpediaSpider(Spider):
         @url http://dbpedia.org/sparql?query=SELECT+%3Fproperty+%3Fvalue+%3Flabel+WHERE+%7B+%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCatan%3E+%3Fproperty+%3Fvalue+.+OPTIONAL+%7B+%3Fvalue+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23label%3E+%3Flabel+.+%7D+%7D&format=text%2Fxml
         @returns items 1 1
         @returns requests 0 0
-        @scrapes name alt_name year description designer publisher image_url external_link \
+        @scrapes name alt_name year description designer publisher \
+            official_url image_url external_link \
             min_players min_age bgg_id freebase_id wikidata_id wikipedia_id dbpedia_id
         '''
 
@@ -409,15 +410,15 @@ class DBpediaSpider(Spider):
 
         ldr.add_value('url', uri)
         ldr.add_xpath(
+            'official_url', _sparql_xpath('http://xmlns.com/foaf/0.1/homepage', value_type='uri'))
+        ldr.add_xpath(
+            'official_url', _sparql_xpath('http://dbpedia.org/property/web', value_type='uri'))
+        ldr.add_xpath(
             'image_url', _sparql_xpath('http://xmlns.com/foaf/0.1/depiction', value_type='uri'))
         ldr.add_xpath(
             'image_url', _sparql_xpath('http://dbpedia.org/ontology/thumbnail', value_type='uri'))
         ldr.add_xpath(
             'image_url', _sparql_xpath('http://dbpedia.org/property/imageLink', value_type='uri'))
-        ldr.add_xpath(
-            'external_link', _sparql_xpath('http://xmlns.com/foaf/0.1/homepage', value_type='uri'))
-        ldr.add_xpath(
-            'external_link', _sparql_xpath('http://dbpedia.org/property/web', value_type='uri'))
         ldr.add_xpath(
             'external_link',
             _sparql_xpath('http://dbpedia.org/ontology/wikiPageExternalLink', value_type='uri'))
@@ -432,6 +433,7 @@ class DBpediaSpider(Spider):
         ldr.add_xpath('min_age', _sparql_xpath('http://dbpedia.org/property/ages'))
 
         ldr.add_xpath('bgg_id', _sparql_xpath('http://dbpedia.org/property/bggid'))
-        ldr.add_value(None, extract_ids(uri, *ldr.get_output_value('external_link')))
+        ldr.add_value(None, extract_ids(
+            uri, *ldr.get_output_value('external_link'), *ldr.get_output_value('official_url')))
 
         return ldr.load_item()
