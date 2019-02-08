@@ -149,7 +149,7 @@ class WikidataSpider(Spider):
         @url https://www.wikidata.org/wiki/Special:EntityData/Q17271.json
         @returns items 1 1
         @returns requests 0 0
-        @scrapes name alt_name designer publisher url image_url external_link \
+        @scrapes name alt_name designer publisher url official_url image_url external_link \
             min_players max_players bgg_id wikidata_id wikipedia_id freebase_id luding_id
         '''
 
@@ -184,7 +184,7 @@ class WikidataSpider(Spider):
                 'image_url', 'claims.P18[].mainsnak.datavalue.value',
                 MapCompose(identity, response.urljoin))
             # official website
-            ldr.add_jmes('external_link', 'claims.P856[].mainsnak.datavalue.value')
+            ldr.add_jmes('official_url', 'claims.P856[].mainsnak.datavalue.value')
             # Wikipedia pages
             ldr.add_jmes('external_link', 'sitelinks.*.url')
 
@@ -199,6 +199,9 @@ class WikidataSpider(Spider):
             ldr.add_jmes('wikidata_id', 'id')
             ldr.add_jmes('wikidata_id', 'title')
             ldr.add_jmes('luding_id', 'claims.P3528[].mainsnak.datavalue.value')
-            ldr.add_value(None, extract_ids(response.url, *ldr.get_output_value('external_link')))
+            ldr.add_value(None, extract_ids(
+                response.url,
+                *ldr.get_output_value('external_link'),
+                *ldr.get_output_value('official_url')))
 
             yield ldr.load_item()

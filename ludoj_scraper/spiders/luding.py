@@ -37,11 +37,11 @@ class LudingSpider(Spider):
     # pylint: disable=no-self-use
     def parse_game(self, response):
         '''
-        @url http://luding.org/cgi-bin/GameData.py?f=00w^E4W&gameid=1508
+        @url http://www.luding.org/cgi-bin/GameData.py/ENgameid/1508
         @returns items 1 1
         @returns requests 0 0
         @scrapes name year game_type description designer artist publisher \
-                 url image_url luding_id \
+                 url image_url review_url external_link luding_id \
                  min_players max_players min_age
         '''
 
@@ -62,8 +62,14 @@ class LudingSpider(Spider):
         ldr.add_xpath('url', '(.//a/@href)[last()]')
         images = game.css('img::attr(src)').extract()
         ldr.add_value('image_url', {response.urljoin(i) for i in images})
+        review_urls = game.xpath(
+            'tr[contains(td[1], "review")]//'
+            'a/@href[starts-with(., "/cgi-bin/Redirect.py")]').extract()
+        review_urls = [extract_query_param(response.urljoin(link), 'URL') for link in review_urls]
+        ldr.add_value('review_url', review_urls)
         links = game.xpath('.//a/@href[starts-with(., "/cgi-bin/Redirect.py")]').extract()
-        links = [extract_query_param(response.urljoin(link), 'URL') for link in links]
+        links = (extract_query_param(response.urljoin(link), 'URL') for link in links)
+        links = [link for link in links if link not in frozenset(review_urls)]
         ldr.add_value('external_link', links)
 
         players = game.xpath('tr[td = "No. of players:"]/td[2]/text()').extract_first()
@@ -74,6 +80,6 @@ class LudingSpider(Spider):
         age = re.match(r'^.*?(\d+).*$', age) if age else None
         ldr.add_value('min_age', age.group(1) if age else None)
 
-        ldr.add_value(None, extract_ids(response.url, *links))
+        ldr.add_value(None, extract_ids(response.url, *links, *review_urls))
 
         return ldr.load_item()

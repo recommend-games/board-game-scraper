@@ -76,7 +76,7 @@ class SpielenSpider(Spider):
         @returns items 1 1
         @returns requests 0 0
         @scrapes name year description designer artist publisher \
-                 url image_url video_url \
+                 url image_url video_url rules_url \
                  min_players max_players min_age min_time max_time family \
                  num_votes avg_rating worst_rating best_rating \
                  complexity easiest_complexity hardest_complexity spielen_id
@@ -122,6 +122,9 @@ class SpielenSpider(Spider):
             game.css('iframe::attr(src)').extract()
             + game.css('iframe::attr(data-src)').extract())
         ldr.add_value('video_url', (response.urljoin(v) for v in videos if v))
+
+        rules = game.xpath('.//a[@title = "Klicken zum Herunterladen."]/@href').extract()
+        ldr.add_value('rules_url', map(response.urljoin, rules))
 
         players = game.xpath(
             './/div[b = "Spieler:"]/following-sibling::div/text()').extract_first()
