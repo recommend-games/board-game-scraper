@@ -307,7 +307,7 @@ class GameItem(TypedItem):
     rank = Field(
         dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
     num_votes = Field(
-        dtype=int, dtype_convert=parse_int, input_processor=NN_INT_PROCESSOR, default=0)
+        dtype=int, dtype_convert=parse_int, input_processor=NN_INT_PROCESSOR, default=None)
     avg_rating = Field(
         dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR, default=None)
     stddev_rating = Field(
