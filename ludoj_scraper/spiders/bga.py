@@ -8,7 +8,7 @@ from scrapy import Request, Spider
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
-from ..utils import extract_bga_id, now, parse_json
+from ..utils import extract_bga_id, now, parse_float, parse_json
 
 API_URL = 'https://www.boardgameatlas.com/api'
 
@@ -106,7 +106,9 @@ class BgaSpider(Spider):
             ldr.add_jmes('image_url', 'image_url')
             ldr.add_jmes('image_url', 'thumb_url')
 
-            ldr.add_jmes('list_price', 'msrp')
+            list_price = ldr.get_jmes('msrp')
+            list_price = map('USD{:.2f}'.format, filter(None, map(parse_float, list_price)))
+            ldr.add_value('list_price', list_price)
 
             ldr.add_jmes('min_players', 'min_players')
             ldr.add_jmes('max_players', 'max_players')
