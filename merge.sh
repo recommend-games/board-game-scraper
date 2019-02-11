@@ -8,6 +8,8 @@ cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 rm --recursive --force ../ludoj-data/scraped
 mkdir --parents 'logs' '../ludoj-data/scraped'
 
+# TODO remove num_votes once they're clear from scrape results
+
 nohup python3 -m ludoj_scraper.merge \
     'feeds/bga/GameItem/*' \
     --out-path '../ludoj-data/scraped/bga.jl' \
@@ -16,13 +18,8 @@ nohup python3 -m ludoj_scraper.merge \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
-    --fields name alt_name year \
-        description designer publisher \
-        url official_url image_url video_url rules_url review_url external_link \
-        min_players max_players \
-        min_age max_age \
-        bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id bga_id \
+    --fields-exclude num_votes image_file rules_file \
+        published_at updated_at scraped_at \
     --sort-output \
     --concat \
     >> 'logs/bga_merge.log' 2>&1 &
@@ -36,8 +33,7 @@ nohup python3 -m ludoj_scraper.merge \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
-    --fields-exclude game_type list_price image_file rules_file \
-        freebase_id wikidata_id wikipedia_id dbpedia_id luding_id \
+    --fields-exclude image_file rules_file \
         published_at updated_at scraped_at \
     --sort-output \
     --concat \
@@ -52,13 +48,8 @@ nohup python3 -m ludoj_scraper.merge \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
-    --fields name alt_name year \
-        description designer publisher \
-        url official_url image_url video_url rules_url review_url external_link \
-        min_players max_players \
-        min_age max_age \
-        bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id bga_id \
+    --fields-exclude num_votes image_file rules_file \
+        published_at updated_at scraped_at \
     --sort-output \
     --concat \
     >> 'logs/dbpedia_merge.log' 2>&1 &
@@ -72,13 +63,8 @@ nohup python3 -m ludoj_scraper.merge \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
-    --fields name year game_type \
-        description designer artist publisher \
-        url official_url image_url video_url rules_url review_url external_link \
-        min_players max_players \
-        min_age max_age \
-        bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id bga_id \
+    --fields-exclude num_votes image_file rules_file \
+        published_at updated_at scraped_at \
     --sort-output \
     --concat \
     >> 'logs/luding_merge.log' 2>&1 &
@@ -92,16 +78,8 @@ nohup python3 -m ludoj_scraper.merge \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
-    --fields name year description \
-        designer artist publisher \
-        url official_url image_url video_url rules_url review_url external_link \
-        min_players max_players \
-        min_age max_age \
-        min_time max_time family \
-        num_votes avg_rating worst_rating best_rating \
-        complexity easiest_complexity hardest_complexity \
-        bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id bga_id \
+    --fields-exclude image_file rules_file \
+        published_at updated_at scraped_at \
     --sort-output \
     --concat \
     >> 'logs/spielen_merge.log' 2>&1 &
@@ -115,14 +93,8 @@ nohup python3 -m ludoj_scraper.merge \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
-    --fields name alt_name year \
-        designer artist publisher \
-        url official_url image_url video_url rules_url review_url external_link \
-        min_players max_players \
-        min_age max_age \
-        min_time max_time family \
-        bgg_id freebase_id wikidata_id wikipedia_id \
-        dbpedia_id luding_id spielen_id bga_id \
+    --fields-exclude num_votes image_file rules_file \
+        published_at updated_at scraped_at \
     --sort-output \
     --concat \
     >> 'logs/wikidata_merge.log' 2>&1 &
