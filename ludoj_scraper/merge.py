@@ -57,10 +57,12 @@ def _compare(first, second):
         latest_second is not None and latest_second >= latest_first) else first
 
 
+def _empty(value):
+    return False if isinstance(value, bool) or parse_float(value) is not None else not value
+
+
 def _filter_fields(item, remove_empty=True, fieldnames=None, fieldnames_exclude=None):
-    item = (
-        (k, v) for k, v in item.items() if v is not None and v != ''
-    ) if remove_empty else item.items()
+    item = ((k, v) for k, v in item.items() if not _empty(v)) if remove_empty else item.items()
     item = ((k, v) for k, v in item if k in fieldnames) if fieldnames else item
     item = ((k, v) for k, v in item if k not in fieldnames_exclude) if fieldnames_exclude else item
     return dict(item)

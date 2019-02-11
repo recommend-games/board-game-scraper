@@ -18,7 +18,7 @@ nohup python3 -m ludoj_scraper.merge \
     --latest-min 30 \
     --fields name alt_name year \
         description designer publisher \
-        url image_url external_link \
+        url official_url image_url video_url rules_url review_url external_link \
         min_players max_players \
         min_age max_age \
         bgg_id freebase_id wikidata_id wikipedia_id \
@@ -36,7 +36,7 @@ nohup python3 -m ludoj_scraper.merge \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
-    --fields-exclude game_type list_price image_file \
+    --fields-exclude game_type list_price image_file rules_file \
         freebase_id wikidata_id wikipedia_id dbpedia_id luding_id \
         published_at updated_at scraped_at \
     --sort-output \
@@ -54,7 +54,7 @@ nohup python3 -m ludoj_scraper.merge \
     --latest-min 30 \
     --fields name alt_name year \
         description designer publisher \
-        url image_url external_link \
+        url official_url image_url video_url rules_url review_url external_link \
         min_players max_players \
         min_age max_age \
         bgg_id freebase_id wikidata_id wikipedia_id \
@@ -74,7 +74,7 @@ nohup python3 -m ludoj_scraper.merge \
     --latest-min 30 \
     --fields name year game_type \
         description designer artist publisher \
-        url image_url external_link \
+        url official_url image_url video_url rules_url review_url external_link \
         min_players max_players \
         min_age max_age \
         bgg_id freebase_id wikidata_id wikipedia_id \
@@ -94,7 +94,7 @@ nohup python3 -m ludoj_scraper.merge \
     --latest-min 30 \
     --fields name year description \
         designer artist publisher \
-        url image_url video_url \
+        url official_url image_url video_url rules_url review_url external_link \
         min_players max_players \
         min_age max_age \
         min_time max_time family \
@@ -117,7 +117,7 @@ nohup python3 -m ludoj_scraper.merge \
     --latest-min 30 \
     --fields name alt_name year \
         designer artist publisher \
-        url image_url external_link \
+        url official_url image_url video_url rules_url review_url external_link \
         min_players max_players \
         min_age max_age \
         min_time max_time family \
