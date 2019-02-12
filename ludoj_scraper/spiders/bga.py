@@ -3,8 +3,10 @@
 ''' Board Game Atlas spider '''
 
 from functools import partial
+from urllib.parse import urlencode
 
 from scrapy import Request, Spider
+from scrapy.utils.project import get_project_settings
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
@@ -56,6 +58,11 @@ def _extract_bga_id(item=None, response=None):
     return extract_bga_id(url)
 
 
+def _extract_requests(response=None):
+    meta = _extract_meta(response)
+    return meta.get('game_requests')
+
+
 class BgaSpider(Spider):
     ''' Board Game Atlas spider '''
 
@@ -63,15 +70,69 @@ class BgaSpider(Spider):
     allowed_domains = ('boardgameatlas.com',)
     item_classes = (GameItem,)
     api_url = API_URL
-    start_urls = tuple(
-        f'{API_URL}/search?order-by=popularity&limit=100&skip={page * 100}'
-        for page in range(225))
+    expected_items = 21251
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        ''' initialise spider from crawler '''
+
+        kwargs.setdefault('settings', crawler.settings)
+        spider = cls(*args, **kwargs)
+        spider._set_crawler(crawler)
+        return spider
+
+    def __init__(self, *args, settings=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        settings = settings or get_project_settings()
+        self.client_id = settings.get('BGA_CLIENT_ID')
+        self.scrape_images = settings.getbool('BGA_SCRAPE_IMAGES')
+        self.scrape_videos = settings.getbool('BGA_SCRAPE_VIDEOS')
+        self.scrape_reviews = settings.getbool('BGA_SCRAPE_REVIEWS')
+
+    def _api_url(self, path='search', query=None):
+        query = query or {}
+        query.setdefault('client_id', self.client_id)
+        query.setdefault('limit', 100)
+        return '{}/{}?{}'.format(
+            self.api_url, path, urlencode(sorted(query.items(), key=lambda x: x[0])))
+
+    def _game_requests(self, bga_id):
+        if self.scrape_images:
+            yield self._api_url('game/images', {'game-id': bga_id}), self.parse_images
+        if self.scrape_videos:
+            yield self._api_url('game/videos', {'game-id': bga_id}), self.parse_videos
+        if self.scrape_reviews:
+            yield self._api_url('game/reviews', {'game-id': bga_id}), self.parse_reviews
+
+    def _next_request_or_item(self, item, requests):
+        if not requests:
+            return item
+
+        url, callback = requests.pop(0)
+        callback = partial(callback, item=item)
+        return Request(
+            url=url,
+            callback=callback,
+            errback=callback,
+            meta={'item': item, 'game_requests': requests},
+        )
+
+    def start_requests(self):
+        ''' generate start requests '''
+
+        for page in range(self.expected_items * 21 // 2000):
+            query = {
+                'order-by': 'popularity',
+                'skip': page * 100,
+            }
+            yield Request(self._api_url(query=query), callback=self.parse)
 
     def parse(self, response):
         '''
         @url https://www.boardgameatlas.com/api/search?order-by=popularity&limit=100
-        @returns items 0 0
-        @returns requests 100 100
+        @returns items 100 100
+        @returns requests 0 0
+        @scrapes name description url image_url bga_id scraped_at worst_rating best_rating
         '''
 
         result = _json_from_response(response)
@@ -117,20 +178,15 @@ class BgaSpider(Spider):
             ldr.add_jmes('max_time', 'max_playtime')
 
             item = ldr.load_item()
-            callback = partial(self.parse_images, item=item)
-
-            yield Request(
-                url=f'{self.api_url}/game/images?game-id={bga_id}&limit=100',
-                callback=callback,
-                errback=callback,
-                meta={'item': item, 'bga_id': bga_id},
-            )
+            requests = list(self._game_requests(bga_id))
+            yield self._next_request_or_item(item, requests)
 
     def parse_images(self, response, item=None):
         '''
         @url https://www.boardgameatlas.com/api/game/images?game-id=OIXt3DmJU0&limit=100
-        @returns items 0 0
-        @returns requests 1 1
+        @returns items 1 1
+        @returns requests 0 0
+        @scrapes image_url
         '''
 
         item = _extract_item(item, response)
@@ -142,21 +198,15 @@ class BgaSpider(Spider):
         ldr.add_jmes('image_url', 'images[].thumb')
 
         item = ldr.load_item()
-        bga_id = _extract_bga_id(item, response)
-        callback = partial(self.parse_videos, item=item)
-
-        yield Request(
-            url=f'{self.api_url}/game/videos?game-id={bga_id}&limit=100',
-            callback=callback,
-            errback=callback,
-            meta={'item': item, 'bga_id': bga_id},
-        ) if bga_id else item
+        requests = _extract_requests(response)
+        return self._next_request_or_item(item, requests)
 
     def parse_videos(self, response, item=None):
         '''
         @url https://www.boardgameatlas.com/api/game/videos?game-id=OIXt3DmJU0&limit=100
-        @returns items 0 0
-        @returns requests 1 1
+        @returns items 1 1
+        @returns requests 0 0
+        @scrapes video_url
         '''
 
         item = _extract_item(item, response)
@@ -167,15 +217,8 @@ class BgaSpider(Spider):
         ldr.add_jmes('video_url', 'videos[].url')
 
         item = ldr.load_item()
-        bga_id = _extract_bga_id(item, response)
-        callback = partial(self.parse_reviews, item=item)
-
-        yield Request(
-            url=f'{self.api_url}/game/reviews?game-id={bga_id}&limit=100',
-            callback=callback,
-            errback=callback,
-            meta={'item': item, 'bga_id': bga_id},
-        ) if bga_id else item
+        requests = _extract_requests(response)
+        return self._next_request_or_item(item, requests)
 
     # pylint: disable=no-self-use
     def parse_reviews(self, response, item=None):
@@ -193,4 +236,6 @@ class BgaSpider(Spider):
         ldr.add_value('review_url', item.get('review_url'))
         ldr.add_jmes('review_url', 'reviews[].url')
 
-        return ldr.load_item()
+        item = ldr.load_item()
+        requests = _extract_requests(response)
+        return self._next_request_or_item(item, requests)

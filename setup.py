@@ -26,6 +26,7 @@ REQUIRED = (
     'pympler',
     'pyspark',
     'python-dateutil',
+    'python-dotenv',
     'pyyaml',
     'requests',
     'scrapy',
