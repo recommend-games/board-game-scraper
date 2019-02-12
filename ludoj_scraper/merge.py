@@ -165,6 +165,11 @@ def _canonical_str(string):
     return string.lower() if string else None
 
 
+def _to_lower(string):
+    string = to_str(string)
+    return string.lower() if string is not None else None
+
+
 def _str_to_parser(string):
     string = _canonical_str(string)
 
@@ -174,6 +179,7 @@ def _str_to_parser(string):
     return (parse_int if string == 'int'
             else parse_float if string == 'float'
             else partial(parse_date, tzinfo=timezone.utc) if string == 'date'
+            else _to_lower if string in ('istr', 'istring')
             else to_str)
 
 
@@ -184,7 +190,8 @@ def _parse_args():
     parser.add_argument(
         '--keys', '-k', nargs='+', default=('id',), help='target columns for merging')
     parser.add_argument(
-        '--key-types', '-K', nargs='+', choices=('str', 'string', 'int', 'float', 'date'),
+        '--key-types', '-K', nargs='+',
+        choices=('str', 'string', 'istr', 'istring', 'int', 'float', 'date'),
         help='target column data type')
     parser.add_argument('--latest', '-l', nargs='+', help='target column for latest item')
     parser.add_argument(

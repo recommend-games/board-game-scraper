@@ -147,7 +147,7 @@ class GameItem(TypedItem):
     description = Field(
         dtype=str,
         input_processor=MapCompose(
-            remove_tags, replace_all_entities,
+            identity, str, remove_tags, replace_all_entities,
             partial(normalize_space, preserve_newline=True)),
     )
 
@@ -361,10 +361,11 @@ class RatingItem(TypedItem):
     BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool
 
     bgg_id = Field(dtype=int, dtype_convert=parse_int, required=True)
-    bgg_user_name = Field(dtype=str, required=True)
+    bgg_user_name = Field(
+        dtype=str, required=True, input_processor=MapCompose(identity, str, str.lower))
 
     bgg_user_rating = Field(
-        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR, default=None)
+        dtype=float, dtype_convert=parse_float, default=None, input_processor=POS_FLOAT_PROCESSOR)
     bgg_user_owned = Field(
         dtype=bool,
         dtype_convert=parse_bool,
