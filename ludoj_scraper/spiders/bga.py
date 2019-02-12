@@ -72,6 +72,10 @@ class BgaSpider(Spider):
     api_url = API_URL
     expected_items = 21251
 
+    custom_settings = {
+        'IMAGES_URLS_FIELD': None,
+    }
+
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         ''' initialise spider from crawler '''
@@ -104,6 +108,7 @@ class BgaSpider(Spider):
         if self.scrape_reviews:
             yield self._api_url('game/reviews', {'game-id': bga_id}), self.parse_reviews
 
+    # pylint: disable=no-self-use
     def _next_request_or_item(self, item, requests):
         if not requests:
             return item
