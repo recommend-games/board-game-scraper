@@ -102,6 +102,7 @@ class BggSpider(Spider):
         'DELAYED_RETRY_HTTP_CODES': (202,),
         'DELAYED_RETRY_DELAY': 5.0,
         'AUTOTHROTTLE_HTTP_CODES': (429, 503, 504),
+        'PULL_QUEUE_ENABLED': True,
     }
 
     scrape_ratings = False

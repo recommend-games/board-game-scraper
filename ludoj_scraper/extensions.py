@@ -125,18 +125,21 @@ class NicerAutoThrottle(AutoThrottle):
 
 # see https://github.com/scrapy/scrapy/issues/2173
 class _LoopingExtension:
-    _interval = None
+    task = None
     _task = None
+    _interval = None
 
     def setup_looping_task(self, task, crawler, interval):
         ''' setup task to run periodically at a given interval '''
 
+        self.task = task
         self._interval = interval
-        self._task = LoopingCall(task)
         crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(self._spider_closed, signal=signals.spider_closed)
 
-    def _spider_opened(self):
+    def _spider_opened(self, spider):
+        if self._task is None:
+            self._task = LoopingCall(self.task, spider=spider)
         self._task.start(self._interval, now=False)
 
     def _spider_closed(self):
@@ -161,7 +164,8 @@ class MonitorDownloadsExtension(_LoopingExtension):
         self.crawler = crawler
         self.setup_looping_task(self._monitor, crawler, interval)
 
-    def _monitor(self):
+    # pylint: disable=unused-argument
+    def _monitor(self, spider):
         active_downloads = len(self.crawler.engine.downloader.active)
         LOGGER.info('active downloads: %d', active_downloads)
 
@@ -183,9 +187,84 @@ class DumpStatsExtension(_LoopingExtension):
         self.stats = crawler.stats
         self.setup_looping_task(self._print_stats, crawler, interval)
 
-    def _print_stats(self):
+    # pylint: disable=unused-argument
+    def _print_stats(self, spider):
         stats = self.stats.get_stats()
         LOGGER.info('Scrapy stats: %s', pprint.pformat(stats))
+
+
+class PullQueueExtension(_LoopingExtension):
+    ''' periodically pull from a queue '''
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        ''' init from crawler '''
+
+        if not crawler.settings.getbool('PULL_QUEUE_ENABLED'):
+            raise NotConfigured
+
+        project = crawler.settings.get('PULL_QUEUE_PROJECT')
+        subscription = crawler.settings.get('PULL_QUEUE_SUBSCRIPTION')
+
+        if not project or not subscription:
+            raise NotConfigured
+
+        interval = crawler.settings.getfloat('PULL_QUEUE_INTERVAL', 60 * 60)
+
+        return cls(crawler, interval, project, subscription)
+
+    def __init__(self, crawler, interval, project, subscription, max_messages=100):
+        try:
+            from google.cloud import pubsub_v1
+            self.client = pubsub_v1.SubscriberClient()
+        except Exception as exc:
+            LOGGER.exception('Google Cloud Pub/Sub Client could not be initialised')
+            raise NotConfigured from exc
+
+        # pylint: disable=no-member
+        self.subscription_path = self.client.subscription_path(project, subscription)
+        self.max_messages = max_messages
+
+        self.setup_looping_task(self._pull_queue, crawler, interval)
+
+    def _pull_queue(self, spider):
+        LOGGER.info('pulling subscription <%s>', self.subscription_path)
+
+        while True:
+            # pylint: disable=no-member
+            response = self.client.pull(
+                subscription=self.subscription_path,
+                max_messages=self.max_messages,
+                return_immediately=True,
+            )
+
+            if not response or not response.received_messages:
+                return
+
+            ack_ids = [
+                message.ack_id for message in response.received_messages
+                if self.process_message(message.message, spider)
+            ]
+
+            if ack_ids:
+                self.client.acknowledge(subscription=self.subscription_path, ack_ids=ack_ids)
+
+    # pylint: disable=no-self-use
+    def process_message(self, message, spider, encoding='utf-8'):
+        ''' schedule collection request for user name '''
+
+        LOGGER.debug('processing message <%s>', message)
+
+        user_name = message.data.decode(encoding)
+        if user_name and hasattr(spider, 'collection_request'):
+            request = spider.collection_request(
+                user_name=user_name,
+                priority=1,
+                dont_filter=True,
+            )
+            spider.crawler.engine.crawl(request, spider)
+
+        return True
 
 
 class StateTag:
