@@ -22,6 +22,7 @@ REQUIRED = (
     'awscli',
     'boto',
     'dedupe',
+    'google-cloud-pubsub',
     'jmespath',
     'pympler',
     'pyspark',
