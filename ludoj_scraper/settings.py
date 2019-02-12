@@ -4,6 +4,12 @@
 
 import os
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(verbose=True)
+except ImportError:
+    pass
+
 BOT_NAME = 'ludoj'
 
 SPIDER_MODULES = ['ludoj_scraper.spiders']
@@ -231,3 +237,6 @@ FILES_STORE = os.path.join(BASE_DIR, 'rules')
 FILES_URLS_FIELD = 'rules_url'
 FILES_RESULT_FIELD = 'rules_file'
 FILES_EXPIRES = 180
+
+# Board Game Atlas
+BGA_CLIENT_ID = os.getenv('BGA_CLIENT_ID')

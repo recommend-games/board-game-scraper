@@ -3,8 +3,10 @@
 ''' Board Game Atlas spider '''
 
 from functools import partial
+from urllib.parse import urlencode
 
 from scrapy import Request, Spider
+from scrapy.utils.project import get_project_settings
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
@@ -63,9 +65,38 @@ class BgaSpider(Spider):
     allowed_domains = ('boardgameatlas.com',)
     item_classes = (GameItem,)
     api_url = API_URL
-    start_urls = tuple(
-        f'{API_URL}/search?order-by=popularity&limit=100&skip={page * 100}'
-        for page in range(225))
+    expected_items = 21251
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        ''' initialise spider from crawler '''
+
+        kwargs.setdefault('settings', crawler.settings)
+        spider = cls(*args, **kwargs)
+        spider._set_crawler(crawler)
+        return spider
+
+    def __init__(self, *args, settings=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        settings = settings or get_project_settings()
+        self.client_id = settings.get('BGA_CLIENT_ID')
+
+    def _api_url(self, path='search', query=None):
+        query = query or {}
+        query.setdefault('client_id', self.client_id)
+        query.setdefault('limit', 100)
+        return '{}/{}?{}'.format(
+            self.api_url, path, urlencode(sorted(query.items(), key=lambda x: x[0])))
+
+    def start_requests(self):
+        ''' generate start requests '''
+
+        for page in range(self.expected_items * 21 // 2000):
+            query = {
+                'order-by': 'popularity',
+                'skip': page * 100,
+            }
+            yield Request(self._api_url(query=query), callback=self.parse)
 
     def parse(self, response):
         '''
@@ -120,7 +151,7 @@ class BgaSpider(Spider):
             callback = partial(self.parse_images, item=item)
 
             yield Request(
-                url=f'{self.api_url}/game/images?game-id={bga_id}&limit=100',
+                url=self._api_url('game/images', {'game-id': bga_id}),
                 callback=callback,
                 errback=callback,
                 meta={'item': item, 'bga_id': bga_id},
@@ -146,7 +177,7 @@ class BgaSpider(Spider):
         callback = partial(self.parse_videos, item=item)
 
         yield Request(
-            url=f'{self.api_url}/game/videos?game-id={bga_id}&limit=100',
+            url=self._api_url('game/videos', {'game-id': bga_id}),
             callback=callback,
             errback=callback,
             meta={'item': item, 'bga_id': bga_id},
@@ -171,7 +202,7 @@ class BgaSpider(Spider):
         callback = partial(self.parse_reviews, item=item)
 
         yield Request(
-            url=f'{self.api_url}/game/reviews?game-id={bga_id}&limit=100',
+            url=self._api_url('game/reviews', {'game-id': bga_id}),
             callback=callback,
             errback=callback,
             meta={'item': item, 'bga_id': bga_id},
