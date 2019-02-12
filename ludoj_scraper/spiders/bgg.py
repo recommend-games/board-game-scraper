@@ -102,6 +102,7 @@ class BggSpider(Spider):
         'DELAYED_RETRY_HTTP_CODES': (202,),
         'DELAYED_RETRY_DELAY': 5.0,
         'AUTOTHROTTLE_HTTP_CODES': (429, 503, 504),
+        'PULL_QUEUE_ENABLED': True,
     }
 
     scrape_ratings = False
@@ -198,14 +199,22 @@ class BggSpider(Spider):
     def _game_request(self, bgg_id, default=None, **kwargs):
         return next(self._game_requests(bgg_id, **kwargs), default)
 
-    def _collection_request(self, user_name, *, priority=0, **kwargs):
-        url = self._api_url(
-            action='collection', username=user_name, subtype='boardgame',
-            excludesubtype='boardgameexpansion', stats=1, version=0)
+    def collection_request(self, user_name, *, meta=None, **kwargs):
+        ''' make a collection request for that user '''
 
-        request = Request(url, callback=self.parse_collection, priority=priority)
+        url = self._api_url(
+            action='collection',
+            username=user_name,
+            subtype='boardgame',
+            excludesubtype='boardgameexpansion',
+            stats=1,
+            version=0,
+        )
+
+        request = Request(url, callback=self.parse_collection, **kwargs)
+        if meta:
+            request.meta.update(meta)
         request.meta['bgg_user_name'] = user_name
-        request.meta.update(kwargs)
 
         return request
 
@@ -281,7 +290,7 @@ class BggSpider(Spider):
 
         user_names = filter(None, map(extract_bgg_user_name, urls))
         for user_name in clear_list(user_names):
-            yield self._collection_request(user_name)
+            yield self.collection_request(user_name)
 
     def parse_game(self, response):
         # pylint: disable=line-too-long
@@ -332,7 +341,7 @@ class BggSpider(Spider):
                     continue
 
                 if self.scrape_collections:
-                    yield self._collection_request(user_name)
+                    yield self.collection_request(user_name)
 
                 else:
                     ldr = RatingLoader(

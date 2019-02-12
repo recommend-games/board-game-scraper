@@ -158,6 +158,7 @@ EXTENSIONS = {
     'scrapy.extensions.throttle.AutoThrottle': None,
     'ludoj_scraper.extensions.NicerAutoThrottle': 0,
     'ludoj_scraper.extensions.StateTag': 0,
+    'ludoj_scraper.extensions.PullQueueExtension': 100,
     'ludoj_scraper.extensions.MonitorDownloadsExtension': 500,
     'ludoj_scraper.extensions.DumpStatsExtension': 500,
 }
@@ -243,3 +244,8 @@ BGA_CLIENT_ID = os.getenv('BGA_CLIENT_ID')
 BGA_SCRAPE_IMAGES = False
 BGA_SCRAPE_VIDEOS = False
 BGA_SCRAPE_REVIEWS = False
+
+PULL_QUEUE_ENABLED = False
+PULL_QUEUE_PROJECT = os.getenv('PULL_QUEUE_PROJECT')
+PULL_QUEUE_SUBSCRIPTION = os.getenv('PULL_QUEUE_SUBSCRIPTION')
+PULL_QUEUE_INTERVAL = 15 * 60
