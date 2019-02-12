@@ -104,7 +104,7 @@ nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/RatingItem/*' \
     --out-path '../ludoj-data/scraped/bgg_ratings.jl' \
     --keys bgg_user_name bgg_id \
-    --key-types string int \
+    --key-types istring int \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \

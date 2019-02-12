@@ -202,6 +202,7 @@ class BggSpider(Spider):
     def collection_request(self, user_name, *, meta=None, **kwargs):
         ''' make a collection request for that user '''
 
+        user_name = user_name.lower()
         url = self._api_url(
             action='collection',
             username=user_name,
@@ -345,7 +346,11 @@ class BggSpider(Spider):
 
                 else:
                     ldr = RatingLoader(
-                        item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
+                        item=RatingItem(
+                            bgg_id=bgg_id,
+                            bgg_user_name=user_name.lower(),
+                            scraped_at=scraped_at,
+                        ),
                         selector=comment,
                         response=response,
                     )
@@ -458,6 +463,7 @@ class BggSpider(Spider):
             self.logger.warning('no user name found, cannot process collection')
             return
 
+        user_name = user_name.lower()
         games = response.xpath('/items/item')
         bgg_ids = games.xpath('@objectid').extract()
         yield from self._game_requests(*bgg_ids)

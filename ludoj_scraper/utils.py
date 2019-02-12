@@ -538,7 +538,8 @@ def extract_bgg_user_name(url: Union[str, ParseResult, None]) -> Optional[str]:
     if not url:
         return None
     match = REGEX_BGG_USER.match(url.path)
-    return unquote_plus(match.group(1)) if match else extract_query_param(url, 'username')
+    user_name = unquote_plus(match.group(1)) if match else extract_query_param(url, 'username')
+    return user_name.lower() if user_name else None
 
 
 def extract_wikidata_id(url: Union[str, ParseResult, None]) -> Optional[str]:
