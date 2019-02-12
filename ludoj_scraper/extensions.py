@@ -215,8 +215,8 @@ class PullQueueExtension(_LoopingExtension):
 
     def __init__(self, crawler, interval, project, subscription, max_messages=100):
         try:
-            from google.cloud import pubsub_v1
-            self.client = pubsub_v1.SubscriberClient()
+            from google.cloud import pubsub
+            self.client = pubsub.SubscriberClient()
         except Exception as exc:
             LOGGER.exception('Google Cloud Pub/Sub Client could not be initialised')
             raise NotConfigured from exc
