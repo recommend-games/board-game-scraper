@@ -6,6 +6,8 @@ import logging
 import os
 import pprint
 
+from datetime import timedelta
+
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import FeedExporter
@@ -14,6 +16,8 @@ from scrapy.utils.job import job_dir
 from scrapy.utils.misc import load_object
 from twisted.internet.defer import DeferredList, maybeDeferred
 from twisted.internet.task import LoopingCall
+
+from .utils import now, parse_float
 
 LOGGER = logging.getLogger(__name__)
 
@@ -210,10 +214,25 @@ class PullQueueExtension(_LoopingExtension):
             raise NotConfigured
 
         interval = crawler.settings.getfloat('PULL_QUEUE_INTERVAL', 60 * 60)
+        prevent_rescrape_for = crawler.settings.getfloat('PULL_QUEUE_PREVENT_RESCRAPE_FOR') or None
 
-        return cls(crawler, interval, project, subscription)
+        return cls(
+            crawler=crawler,
+            interval=interval,
+            project=project,
+            subscription=subscription,
+            prevent_rescrape_for=prevent_rescrape_for,
+        )
 
-    def __init__(self, crawler, interval, project, subscription, max_messages=100):
+    def __init__(
+            self,
+            crawler,
+            interval,
+            project,
+            subscription,
+            max_messages=100,
+            prevent_rescrape_for=None,
+        ):
         try:
             from google.cloud import pubsub
             self.client = pubsub.SubscriberClient()
@@ -224,6 +243,14 @@ class PullQueueExtension(_LoopingExtension):
         # pylint: disable=no-member
         self.subscription_path = self.client.subscription_path(project, subscription)
         self.max_messages = max_messages
+
+        prevent_rescrape_for = (
+            prevent_rescrape_for if isinstance(prevent_rescrape_for, timedelta)
+            else parse_float(prevent_rescrape_for))
+        self.prevent_rescrape_for = (
+            timedelta(seconds=prevent_rescrape_for) if isinstance(prevent_rescrape_for, float)
+            else prevent_rescrape_for)
+        self.last_scraped = {}
 
         self.setup_looping_task(self._pull_queue, crawler, interval)
 
@@ -256,13 +283,28 @@ class PullQueueExtension(_LoopingExtension):
         LOGGER.debug('processing message <%s>', message)
 
         user_name = message.data.decode(encoding)
-        if user_name and hasattr(spider, 'collection_request'):
-            request = spider.collection_request(
-                user_name=user_name,
-                priority=1,
-                dont_filter=True,
-            )
-            spider.crawler.engine.crawl(request, spider)
+        if not user_name or not hasattr(spider, 'collection_request'):
+            return True
+
+        user_name = user_name.lower()
+
+        if self.prevent_rescrape_for:
+            last_scraped = self.last_scraped.get(user_name)
+            curr_time = now()
+
+            if last_scraped and last_scraped + self.prevent_rescrape_for > curr_time:
+                LOGGER.debug('dropped <%s>: last scraped %s', user_name, last_scraped)
+                return True
+
+            self.last_scraped[user_name] = curr_time
+
+        LOGGER.debug('scheduling collection request for <%s>', user_name)
+        request = spider.collection_request(
+            user_name=user_name,
+            priority=1,
+            dont_filter=True,
+        )
+        spider.crawler.engine.crawl(request, spider)
 
         return True
 
