@@ -101,6 +101,20 @@ nohup python3 -m ludoj_scraper.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 
 nohup python3 -m ludoj_scraper.merge \
+    'feeds/bgg/UserItem/*' \
+    --out-path '../ludoj-data/scraped/bgg_users.jl' \
+    --keys bgg_user_name \
+    --key-types istring \
+    --latest scraped_at \
+    --latest-types date \
+    --latest-min 30 \
+    --fields-exclude published_at scraped_at \
+    --sort-output \
+    --concat \
+    >> 'logs/bgg_users_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/bgg_users_merge.log>.\\n"
+
+nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/RatingItem/*' \
     --out-path '../ludoj-data/scraped/bgg_ratings.jl' \
     --keys bgg_user_name bgg_id \
