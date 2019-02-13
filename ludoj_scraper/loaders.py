@@ -64,6 +64,14 @@ class GameJsonLoader(JsonLoader, GameLoader):
     ''' loader for GameItem plus JMESPath capabilities '''
 
 
+class UserLoader(ItemLoader):
+    ''' loader for UserItem '''
+
+    default_input_processor = MapCompose(
+        identity, str, remove_tags, replace_all_entities, normalize_space)
+    default_output_processor = TakeFirst()
+
+
 class RatingLoader(ItemLoader):
     ''' loader for RatingItem '''
 

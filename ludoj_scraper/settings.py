@@ -88,6 +88,12 @@ FEED_EXPORT_FIELDS = (
 MULTI_FEED_ENABLED = True
 MULTI_FEED_EXPORT_FIELDS = {
     'GameItem': FEED_EXPORT_FIELDS,
+    'UserItem': (
+        'bgg_user_name',
+        'published_at',
+        'updated_at',
+        'scraped_at',
+    ),
     'RatingItem': (
         'bgg_id',
         'bgg_user_name',
@@ -104,7 +110,7 @@ MULTI_FEED_EXPORT_FIELDS = {
         'published_at',
         'updated_at',
         'scraped_at',
-    )
+    ),
 }
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
