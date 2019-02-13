@@ -5,7 +5,7 @@
 import csv
 import logging
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from functools import partial
 
 from scrapy import Field, Item
@@ -33,6 +33,7 @@ POS_FLOAT_PROCESSOR = MapCompose(
 NN_FLOAT_PROCESSOR = MapCompose(
     identity, str, remove_tags, replace_all_entities, normalize_space,
     parse_float, partial(validate_range, lower=0))
+DATE_PROCESSOR = MapCompose(partial(parse_date, tzinfo=timezone.utc))
 
 
 def _json_output():
@@ -343,12 +344,51 @@ class GameItem(TypedItem):
     spielen_id = Field(dtype=str)
     bga_id = Field(dtype=str)
 
-    published_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)
-    updated_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)
+    published_at = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
+    updated_at = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
     scraped_at = Field(
         dtype=datetime,
         required=True,
         default=now,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
+
+
+class UserItem(TypedItem):
+    ''' item representing a user '''
+
+    bgg_user_name = Field(
+        dtype=str, required=True, input_processor=MapCompose(identity, str, str.lower))
+
+    published_at = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
+    updated_at = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
+    scraped_at = Field(
+        dtype=datetime,
+        required=True,
+        default=now,
+        input_processor=DATE_PROCESSOR,
         serializer=serialize_date,
         parser=parse_date,
     )
@@ -427,12 +467,23 @@ class RatingItem(TypedItem):
     bgg_user_play_count = Field(
         dtype=int, dtype_convert=parse_int, input_processor=NN_INT_PROCESSOR, default=0)
 
-    published_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)
-    updated_at = Field(dtype=datetime, serializer=serialize_date, parser=parse_date)
+    published_at = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
+    updated_at = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
     scraped_at = Field(
         dtype=datetime,
         required=True,
         default=now,
+        input_processor=DATE_PROCESSOR,
         serializer=serialize_date,
         parser=parse_date,
     )

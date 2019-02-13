@@ -13,8 +13,8 @@ from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.project import get_project_settings
 
-from ..items import GameItem, RatingItem
-from ..loaders import GameLoader, RatingLoader
+from ..items import GameItem, RatingItem, UserItem
+from ..loaders import GameLoader, RatingLoader, UserLoader
 from ..utils import (
     batchify, clear_list, extract_bgg_id, extract_bgg_user_name,
     normalize_space, now, parse_int)
@@ -87,7 +87,7 @@ class BggSpider(Spider):
         'https://boardgamegeek.com/browse/boardgame/',
         'https://boardgamegeek.com/browse/user/numreviews',
         'https://boardgamegeek.com/browse/user/numsessions')
-    item_classes = (GameItem, RatingItem)
+    item_classes = (GameItem, UserItem, RatingItem)
     state = None
 
     # https://www.boardgamegeek.com/wiki/page/BGG_XML_API2
@@ -451,9 +451,9 @@ class BggSpider(Spider):
         # pylint: disable=line-too-long
         '''
         @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&stats=1&version=0
-        @returns items 130
-        @returns requests 12
-        @scrapes bgg_id bgg_user_name scraped_at
+        @returns items 950
+        @returns requests 90
+        @scrapes bgg_user_name scraped_at
         '''
 
         user_name = response.meta.get('bgg_user_name') or extract_bgg_user_name(response.url)
@@ -464,6 +464,14 @@ class BggSpider(Spider):
             return
 
         user_name = user_name.lower()
+
+        ldr = UserLoader(
+            item=UserItem(bgg_user_name=user_name, scraped_at=scraped_at),
+            response=response,
+        )
+        ldr.add_xpath('updated_at', '/items/@pubdate')
+        yield ldr.load_item()
+
         games = response.xpath('/items/item')
         bgg_ids = games.xpath('@objectid').extract()
         yield from self._game_requests(*bgg_ids)
@@ -491,5 +499,7 @@ class BggSpider(Spider):
             ldr.add_xpath('bgg_user_preordered', 'status/@preordered')
             ldr.add_xpath('bgg_user_wishlist', 'status[@wishlist = "1"]/@wishlistpriority')
             ldr.add_xpath('bgg_user_play_count', 'numplays/text()')
+
+            ldr.add_xpath('updated_at', 'status/@lastmodified')
 
             yield ldr.load_item()
