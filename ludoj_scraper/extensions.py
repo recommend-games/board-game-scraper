@@ -214,8 +214,15 @@ class PullQueueExtension(_LoopingExtension):
             raise NotConfigured
 
         interval = crawler.settings.getfloat('PULL_QUEUE_INTERVAL', 60 * 60)
+        prevent_rescrape_for = crawler.settings.getfloat('PULL_QUEUE_PREVENT_RESCRAPE_FOR') or None
 
-        return cls(crawler, interval, project, subscription)
+        return cls(
+            crawler=crawler,
+            interval=interval,
+            project=project,
+            subscription=subscription,
+            prevent_rescrape_for=prevent_rescrape_for,
+        )
 
     def __init__(
             self,
@@ -286,10 +293,12 @@ class PullQueueExtension(_LoopingExtension):
             curr_time = now()
 
             if last_scraped and last_scraped + self.prevent_rescrape_for > curr_time:
+                LOGGER.debug('dropped <%s>: last scraped %s', user_name, last_scraped)
                 return True
 
             self.last_scraped[user_name] = curr_time
 
+        LOGGER.debug('scheduling collection request for <%s>', user_name)
         request = spider.collection_request(
             user_name=user_name,
             priority=1,
