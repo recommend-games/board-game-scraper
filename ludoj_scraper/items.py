@@ -144,7 +144,12 @@ class GameItem(TypedItem):
             lambda year: year or None),
         default=None,
     )
-    game_type = Field(dtype=str)
+    game_type = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
     description = Field(
         dtype=str,
         input_processor=MapCompose(

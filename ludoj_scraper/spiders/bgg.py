@@ -78,6 +78,14 @@ def _value_id(items, sep=':'):
         yield f'{value}{sep}{id_}' if id_ else value
 
 
+def _value_id_rank(items, sep=':'):
+    for item in arg_to_iter(items):
+        value = item.xpath('@friendlyname').extract_first() or ''
+        value = value[:-5] if value and value.lower().endswith(' rank') else value
+        id_ = item.xpath('@id').extract_first() or ''
+        yield f'{value}{sep}{id_}' if id_ else value
+
+
 class BggSpider(Spider):
     ''' BoardGameGeek spider '''
 
@@ -305,7 +313,7 @@ class BggSpider(Spider):
             min_players max_players min_players_rec max_players_rec \
             min_players_best max_players_best \
             min_age min_age_rec min_time max_time \
-            category mechanic cooperative compilation family expansion \
+            game_type category mechanic cooperative compilation family expansion \
             rank num_votes avg_rating stddev_rating \
             bayes_rating worst_rating best_rating \
             complexity easiest_complexity hardest_complexity \
@@ -414,6 +422,9 @@ class BggSpider(Spider):
             ldr.add_xpath('max_time', 'playingtime/@value')
             ldr.add_xpath('max_time', 'minplaytime/@value')
 
+            ldr.add_value(
+                'game_type',
+                _value_id_rank(game.xpath('statistics/ratings/ranks/rank[@type = "family"]')))
             ldr.add_value('category', _value_id(game.xpath('link[@type = "boardgamecategory"]')))
             ldr.add_value('mechanic', _value_id(game.xpath('link[@type = "boardgamemechanic"]')))
             # look for <link type="boardgamemechanic" id="2023" value="Co-operative Play" />
