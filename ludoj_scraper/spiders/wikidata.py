@@ -150,7 +150,7 @@ class WikidataSpider(Spider):
         @returns items 1 1
         @returns requests 0 0
         @scrapes name alt_name designer publisher url official_url image_url external_link \
-            min_players max_players bgg_id wikidata_id wikipedia_id freebase_id luding_id
+            min_players max_players bgg_id wikidata_id wikipedia_id freebase_id luding_id bga_id
         '''
 
         try:
@@ -199,6 +199,7 @@ class WikidataSpider(Spider):
             ldr.add_jmes('wikidata_id', 'id')
             ldr.add_jmes('wikidata_id', 'title')
             ldr.add_jmes('luding_id', 'claims.P3528[].mainsnak.datavalue.value')
+            ldr.add_jmes('bga_id', 'claims.P6491[].mainsnak.datavalue.value')
             ldr.add_value(None, extract_ids(
                 response.url,
                 *ldr.get_output_value('external_link'),
