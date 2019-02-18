@@ -472,6 +472,13 @@ class RatingItem(TypedItem):
     bgg_user_play_count = Field(
         dtype=int, dtype_convert=parse_int, input_processor=NN_INT_PROCESSOR, default=0)
 
+    comment = Field(
+        dtype=str,
+        input_processor=MapCompose(
+            identity, str, remove_tags, replace_all_entities,
+            partial(normalize_space, preserve_newline=True)),
+    )
+
     published_at = Field(
         dtype=datetime,
         input_processor=DATE_PROCESSOR,

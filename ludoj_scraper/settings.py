@@ -107,6 +107,7 @@ MULTI_FEED_EXPORT_FIELDS = {
         'bgg_user_preordered',
         'bgg_user_wishlist',
         'bgg_user_play_count',
+        'comment',
         'published_at',
         'updated_at',
         'scraped_at',

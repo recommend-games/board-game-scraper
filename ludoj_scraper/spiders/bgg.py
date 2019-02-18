@@ -363,6 +363,7 @@ class BggSpider(Spider):
                         response=response,
                     )
                     ldr.add_xpath('bgg_user_rating', '@rating')
+                    ldr.add_xpath('comment', '@value')
                     yield ldr.load_item()
 
             if response.meta.get('skip_game_item'):
@@ -495,7 +496,11 @@ class BggSpider(Spider):
                 continue
 
             ldr = RatingLoader(
-                item=RatingItem(bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at),
+                item=RatingItem(
+                    bgg_id=bgg_id,
+                    bgg_user_name=user_name,
+                    scraped_at=scraped_at,
+                ),
                 selector=game,
                 response=response,
             )
@@ -510,6 +515,8 @@ class BggSpider(Spider):
             ldr.add_xpath('bgg_user_preordered', 'status/@preordered')
             ldr.add_xpath('bgg_user_wishlist', 'status[@wishlist = "1"]/@wishlistpriority')
             ldr.add_xpath('bgg_user_play_count', 'numplays/text()')
+
+            ldr.add_xpath('comment', 'comment/text()')
 
             ldr.add_xpath('updated_at', 'status/@lastmodified')
 
