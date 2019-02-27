@@ -68,7 +68,7 @@ def _filter_fields(item, remove_empty=True, fieldnames=None, fieldnames_exclude=
     return dict(item)
 
 
-def csv_merge(
+def merge_files(
         in_paths,
         out_path,
         keys=('id',),
@@ -85,7 +85,7 @@ def csv_merge(
         concat_output=False,
         **spark,
     ):
-    ''' merge CSV files into one '''
+    ''' merge files into one '''
 
     context = _spark_context(**spark)
 
@@ -235,7 +235,7 @@ def _main():
         if args.latest_min and args.latest_types and _canonical_str(args.latest_types[0]) == 'date'
         else args.latest_min)
 
-    csv_merge(
+    merge_files(
         in_paths=args.paths,
         out_path=args.out_path,
         keys=args.keys,
