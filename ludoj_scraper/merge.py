@@ -10,20 +10,24 @@ import sys
 import tempfile
 
 from datetime import timedelta, timezone
-from functools import partial
+from functools import lru_cache, partial
 from pathlib import Path
 
 from scrapy.utils.misc import arg_to_iter
 
 from .utils import (
-    concat, identity, now, parse_date, parse_float, parse_int, parse_json, serialize_json, to_str)
+    concat, identity, now, parse_date, parse_float, parse_int,
+    parse_json, serialize_json, to_lower, to_str)
 
 csv.field_size_limit(sys.maxsize)
 
 LOGGER = logging.getLogger(__name__)
 
 
+@lru_cache()
 def _spark_context(log_level=None, **kwargs):
+    LOGGER.info('creating Spark context with log level <%s> and config %r', log_level, kwargs)
+
     os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
 
     try:
@@ -165,11 +169,6 @@ def _canonical_str(string):
     return string.lower() if string else None
 
 
-def _to_lower(string):
-    string = to_str(string)
-    return string.lower() if string is not None else None
-
-
 def _str_to_parser(string):
     string = _canonical_str(string)
 
@@ -179,7 +178,7 @@ def _str_to_parser(string):
     return (parse_int if string == 'int'
             else parse_float if string == 'float'
             else partial(parse_date, tzinfo=timezone.utc) if string == 'date'
-            else _to_lower if string in ('istr', 'istring')
+            else to_lower if string in ('istr', 'istring')
             else to_str)
 
 

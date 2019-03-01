@@ -53,6 +53,12 @@ def to_str(string: Any, encoding: str = 'utf-8') -> Optional[str]:
     return string.translate(NON_PRINTABLE_TANSLATE) if string is not None else None
 
 
+def to_lower(string):
+    ''' safely convert to lower case string, else return None '''
+    string = to_str(string)
+    return string.lower() if string is not None else None
+
+
 def identity(obj: Any) -> Any:
     ''' do nothing '''
     return obj
@@ -289,17 +295,13 @@ def serialize_json(obj, file=None, **kwargs):
 
 def parse_bool(item):
     ''' parses an item and converts it to a boolean '''
-
-    if isinstance(item, bool):
-        return item
-
+    if isinstance(item, int):
+        return bool(item)
     if item in ('True', 'true', 'Yes', 'yes'):
         return True
-
     integer = parse_int(item)
     if integer is not None:
         return bool(integer)
-
     return False
 
 

@@ -3,7 +3,7 @@
 set -euxo pipefail
 
 python -m ludoj_scraper.cluster \
-    --recall .75 \
+    --recall .625 \
     --output ../ludoj-data/links.json \
     ../ludoj-data/scraped/bgg.jl \
     ../ludoj-data/scraped/bga.jl \
