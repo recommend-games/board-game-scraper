@@ -78,3 +78,7 @@ class RatingLoader(ItemLoader):
     default_input_processor = MapCompose(
         identity, str, remove_tags, replace_all_entities, normalize_space)
     default_output_processor = TakeFirst()
+
+
+class RatingJsonLoader(JsonLoader, RatingLoader):
+    ''' loader for RatingItem plus JMESPath capabilities '''

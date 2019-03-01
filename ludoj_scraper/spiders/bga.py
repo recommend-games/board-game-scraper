@@ -3,13 +3,14 @@
 ''' Board Game Atlas spider '''
 
 from functools import partial
+from itertools import chain
 from urllib.parse import urlencode
 
 from scrapy import Request, Spider
 from scrapy.utils.project import get_project_settings
 
-from ..items import GameItem
-from ..loaders import GameJsonLoader
+from ..items import GameItem, RatingItem
+from ..loaders import GameJsonLoader, RatingJsonLoader
 from ..utils import extract_bga_id, now, parse_float, parse_json
 
 API_URL = 'https://www.boardgameatlas.com/api'
@@ -68,9 +69,10 @@ class BgaSpider(Spider):
 
     name = 'bga'
     allowed_domains = ('boardgameatlas.com',)
-    item_classes = (GameItem,)
+    item_classes = (GameItem, RatingItem)
     api_url = API_URL
-    expected_items = 21251
+    expected_items = 25_000
+    expected_reviews = 30_000
 
     custom_settings = {
         'IMAGES_URLS_FIELD': None,
@@ -135,9 +137,17 @@ class BgaSpider(Spider):
             }
             yield Request(self._api_url(query=query), callback=self.parse)
 
+        for page in range(self.expected_reviews * 21 // 2000):
+            query = {'skip': page * 100}
+            yield Request(
+                self._api_url(path='reviews', query=query),
+                callback=self.parse_user_reviews,
+            )
+
+    # pylint: disable=line-too-long
     def parse(self, response):
         '''
-        @url https://www.boardgameatlas.com/api/search?order-by=popularity&limit=100
+        @url https://www.boardgameatlas.com/api/search?client_id=SB1VGnDv7M&order-by=popularity&limit=100
         @returns items 100 100
         @returns requests 0 0
         @scrapes name description url image_url bga_id scraped_at worst_rating best_rating
@@ -191,7 +201,7 @@ class BgaSpider(Spider):
 
     def parse_images(self, response, item=None):
         '''
-        @url https://www.boardgameatlas.com/api/game/images?game-id=OIXt3DmJU0&limit=100
+        @url https://www.boardgameatlas.com/api/game/images?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes image_url
@@ -211,7 +221,7 @@ class BgaSpider(Spider):
 
     def parse_videos(self, response, item=None):
         '''
-        @url https://www.boardgameatlas.com/api/game/videos?game-id=OIXt3DmJU0&limit=100
+        @url https://www.boardgameatlas.com/api/game/videos?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes video_url
@@ -231,7 +241,7 @@ class BgaSpider(Spider):
     # pylint: disable=no-self-use
     def parse_reviews(self, response, item=None):
         '''
-        @url https://www.boardgameatlas.com/api/game/reviews?game-id=OIXt3DmJU0&limit=100
+        @url https://www.boardgameatlas.com/api/game/reviews?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes review_url
@@ -247,3 +257,31 @@ class BgaSpider(Spider):
         item = ldr.load_item()
         requests = _extract_requests(response)
         return self._next_request_or_item(item, requests)
+
+    def parse_user_reviews(self, response):
+        '''
+        @url https://www.boardgameatlas.com/api/reviews?client_id=SB1VGnDv7M&limit=100
+        @returns items 100 100
+        @returns requests 0 0
+        @scrapes bga_id bga_user_id bga_user_name
+        '''
+
+        result = _json_from_response(response)
+        reviews = result.get('reviews') or ()
+        scraped_at = now()
+
+        for review in reviews:
+            ldr = RatingJsonLoader(
+                item=RatingItem(scraped_at=scraped_at),
+                json_obj=review,
+                response=response,
+            )
+
+            ldr.add_jmes('bga_id', 'game.id.objectId')
+            ldr.add_jmes('bga_user_id', 'user.id')
+            ldr.add_jmes('bga_user_name', 'user.username')
+            ldr.add_jmes('bga_user_rating', 'rating')
+            comments = chain(ldr.get_jmes('title'), ldr.get_jmes('description'))
+            ldr.add_value('comment', '\n'.join(filter(None, comments)))
+
+            yield ldr.load_item()
