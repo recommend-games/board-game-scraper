@@ -405,9 +405,8 @@ class RatingItem(TypedItem):
     JSON_OUTPUT = SETTINGS.get('FEED_FORMAT') in ('jl', 'json', 'jsonl', 'jsonlines')
     BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool
 
-    bgg_id = Field(dtype=int, dtype_convert=parse_int, required=True)
-    bgg_user_name = Field(
-        dtype=str, required=True, input_processor=MapCompose(identity, str, str.lower))
+    bgg_id = Field(dtype=int, dtype_convert=parse_int)
+    bgg_user_name = Field(dtype=str, input_processor=MapCompose(identity, str, str.lower))
 
     bgg_user_rating = Field(
         dtype=float, dtype_convert=parse_float, default=None, input_processor=POS_FLOAT_PROCESSOR)
@@ -471,6 +470,12 @@ class RatingItem(TypedItem):
         dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
     bgg_user_play_count = Field(
         dtype=int, dtype_convert=parse_int, input_processor=NN_INT_PROCESSOR, default=0)
+
+    bga_id = Field(dtype=str)
+    bga_user_id = Field(dtype=str)
+    bga_user_name = Field(dtype=str, input_processor=MapCompose(identity, str))
+    bga_user_rating = Field(
+        dtype=float, dtype_convert=parse_float, default=None, input_processor=POS_FLOAT_PROCESSOR)
 
     comment = Field(
         dtype=str,
