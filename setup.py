@@ -28,6 +28,7 @@ REQUIRED = (
     'pyspark',
     'python-dateutil',
     'python-dotenv',
+    'pytrie',
     'pyyaml',
     'requests',
     'scrapy',
