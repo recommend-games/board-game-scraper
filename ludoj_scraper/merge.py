@@ -9,15 +9,15 @@ import os
 import sys
 import tempfile
 
-from datetime import timedelta, timezone
+from datetime import timedelta
 from functools import lru_cache, partial
 from pathlib import Path
 
 from scrapy.utils.misc import arg_to_iter
 
 from .utils import (
-    concat, identity, now, parse_date, parse_float, parse_int,
-    parse_json, serialize_json, to_lower, to_str)
+    concat, identity, now, parse_float, parse_int,
+    parse_json, serialize_json, str_to_parser, to_lower)
 
 csv.field_size_limit(sys.maxsize)
 
@@ -164,24 +164,6 @@ def merge_files(
     LOGGER.info('done merging')
 
 
-def _canonical_str(string):
-    string = to_str(string)
-    return string.lower() if string else None
-
-
-def _str_to_parser(string):
-    string = _canonical_str(string)
-
-    if not string:
-        return to_str
-
-    return (parse_int if string == 'int'
-            else parse_float if string == 'float'
-            else partial(parse_date, tzinfo=timezone.utc) if string == 'date'
-            else to_lower if string in ('istr', 'istring')
-            else to_str)
-
-
 def _parse_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('paths', nargs='*', help='input JSON Lines files and dirs')
@@ -227,11 +209,11 @@ def _main():
 
     LOGGER.info(args)
 
-    key_parsers = map(_str_to_parser, arg_to_iter(args.key_types))
-    latest_parsers = map(_str_to_parser, arg_to_iter(args.latest_types))
+    key_parsers = map(str_to_parser, arg_to_iter(args.key_types))
+    latest_parsers = map(str_to_parser, arg_to_iter(args.latest_types))
     latest_min = (
         now() - timedelta(days=parse_int(args.latest_min))
-        if args.latest_min and args.latest_types and _canonical_str(args.latest_types[0]) == 'date'
+        if args.latest_min and args.latest_types and to_lower(args.latest_types[0]) == 'date'
         else args.latest_min)
 
     merge_files(

@@ -11,6 +11,7 @@ import string as string_lib
 
 from collections import OrderedDict
 from datetime import datetime, timezone
+from functools import partial
 from itertools import groupby
 from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
@@ -305,6 +306,18 @@ def parse_bool(item):
     return False
 
 
+def str_to_parser(string):
+    ''' parser from key string '''
+    string = to_lower(string)
+    if not string:
+        return to_str
+    return (parse_int if string == 'int'
+            else parse_float if string == 'float'
+            else partial(parse_date, tzinfo=timezone.utc) if string == 'date'
+            else to_lower if string in ('istr', 'istring')
+            else to_str)
+
+
 def validate_range(value, lower=None, upper=None):
     ''' validate that the given value is between lower and upper '''
     try:
@@ -333,8 +346,7 @@ def smart_exists(path, raise_exc=False):
             LOGGER.error('<boto> library must be importable: %s', exc)
             if raise_exc:
                 raise exc
-            else:
-                return False
+            return False
 
         try:
             bucket = boto.connect_s3().get_bucket(url.hostname, validate=True)
@@ -375,8 +387,7 @@ def smart_walk(path, load=False, raise_exc=False, accept_path=const_true, **s3_a
             LOGGER.exception(exc)
             if raise_exc:
                 raise exc
-            else:
-                return
+            return
 
         path = path[1:]
 
@@ -400,8 +411,7 @@ def smart_walk(path, load=False, raise_exc=False, accept_path=const_true, **s3_a
             LOGGER.exception(exc)
             if raise_exc:
                 raise exc
-            else:
-                return
+            return
 
         try:
             for key, content in s3_iter_bucket(
