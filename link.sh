@@ -3,10 +3,11 @@
 set -euxo pipefail
 
 python -m ludoj_scraper.cluster \
-    --recall .625 \
+    --recall .5 \
+    --id-prefixes 'bgg' 'bga' 'spielen' 'luding' 'wikidata' \
     --output ../ludoj-data/links.json \
-    ../ludoj-data/scraped/bgg.jl \
-    ../ludoj-data/scraped/bga.jl \
-    ../ludoj-data/scraped/spielen.jl \
-    ../ludoj-data/scraped/luding.jl \
-    ../ludoj-data/scraped/wikidata.jl
+    ../ludoj-data/scraped/bgg_GameItem.jl \
+    ../ludoj-data/scraped/bga_GameItem.jl \
+    ../ludoj-data/scraped/spielen_GameItem.jl \
+    ../ludoj-data/scraped/luding_GameItem.jl \
+    ../ludoj-data/scraped/wikidata_GameItem.jl
