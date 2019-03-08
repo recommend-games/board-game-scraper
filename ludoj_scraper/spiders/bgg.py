@@ -17,7 +17,7 @@ from ..items import GameItem, RatingItem, UserItem
 from ..loaders import GameLoader, RatingLoader, UserLoader
 from ..utils import (
     batchify, clear_list, extract_bgg_id, extract_bgg_user_name,
-    normalize_space, now, parse_int)
+    extract_query_param, normalize_space, now, parse_int)
 
 DIGITS_REGEX = re.compile(r'^\D*(\d+).*$')
 
@@ -487,6 +487,11 @@ class BggSpider(Spider):
         games = response.xpath('/items/item')
         bgg_ids = games.xpath('@objectid').extract()
         yield from self._game_requests(*bgg_ids)
+
+        if not extract_query_param(response.url, 'played'):
+            # TODO if not played in request, make request with played=1 (#43)
+            # yield self.collection_request(user_name, played=1)
+            pass
 
         for game in games:
             bgg_id = game.xpath('@objectid').extract_first()
