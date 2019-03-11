@@ -94,7 +94,7 @@ def _save_to_prefixes(dst, trie, file, fields='bgg_user_name', sep=','):
 
         if prefix in seen:
             LOGGER.info('appending to file <%s>...', path)
-            mode = 'wa'
+            mode = 'a'
         else:
             LOGGER.info('writing to file <%s>...', path)
             mode = 'w'
