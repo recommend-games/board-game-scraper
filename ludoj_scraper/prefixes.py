@@ -14,7 +14,7 @@ from itertools import groupby
 from pytrie import SortedStringTrie as Trie
 from scrapy.utils.misc import arg_to_iter
 
-from .utils import parse_json
+from .utils import parse_int, parse_json, to_str
 
 LOGGER = logging.getLogger(__name__)
 NON_WORD_REGEX = re.compile(r'[^a-z]')
@@ -60,10 +60,35 @@ def _prefixes(trie, prefix='', limit=LIMIT):
             yield from _prefixes(trie, pre, limit)
 
 
+def _prefixes_from_file(file):
+    if isinstance(file, str):
+        LOGGER.info('reading prefixes from <%s>...', file)
+        with open(file) as file_obj:
+            yield from _prefixes_from_file(file_obj)
+            return
+
+    for line in file:
+        line = to_str(line)
+        parts = line.split() if line else None
+        if not parts or not parts[0]:
+            continue
+        count = parse_int(parts[1]) if len(parts) >= 2 else None
+        yield parts[0], count
+
+
+def _trie_from_file(file):
+    try:
+        return Trie(_prefixes_from_file(file))
+    except Exception:
+        pass
+    return None
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('in_path', help='input JSON Lines file')
-    parser.add_argument('--out-path', '-o', help='output path')
+    parser.add_argument('--construct', '-c', action='store_true', help='construct a new trie')
+    parser.add_argument('--trie-path', '-t', help='path to trie')
     parser.add_argument('--limits', '-l', nargs='+', type=int, help='limits to use')
     parser.add_argument(
         '--keys', '-k', nargs='+', default=('bgg_user_name',), help='target columns for merging')
@@ -84,21 +109,26 @@ def _main():
 
     LOGGER.info(args)
 
-    LOGGER.info('making trie for <%s>', args.in_path)
-    trie = _make_trie(args.in_path, args.keys)
+    trie = _trie_from_file(args.trie_path) if not args.construct else None
 
-    limits = tuple(arg_to_iter(args.limits)) or (LIMIT,)
+    if not trie:
+        LOGGER.info('making trie for <%s>', args.in_path)
+        full_trie = _make_trie(args.in_path, args.keys)
+        limits = tuple(arg_to_iter(args.limits)) or (LIMIT,)
 
-    for limit in limits:
-        LOGGER.info('using limit %d', limit)
-        out_path = args.out_path.format(limit=limit) if args.out_path else None
-        if not out_path or out_path == '-':
-            for prefix, count in _prefixes(trie, limit=limit):
-                print(f'{prefix}\t{count}')
-        else:
-            with open(out_path, 'w') as file_obj:
-                for prefix, count in _prefixes(trie, limit=limit):
-                    file_obj.write(f'{prefix}\t{count}\n')
+        for limit in limits:
+            trie = Trie(_prefixes(full_trie, limit=limit))
+            LOGGER.info('%d prefixes using limit %d', len(trie), limit)
+            out_path = args.trie_path.format(limit=limit) if args.trie_path else None
+            if not out_path or out_path == '-':
+                for prefix, count in trie.items():
+                    print(f'{prefix}\t{count}')
+            else:
+                with open(out_path, 'w') as file_obj:
+                    for prefix, count in trie.items():
+                        file_obj.write(f'{prefix}\t{count}\n')
+
+    LOGGER.info('constructed trie of size %d', len(trie))
 
     LOGGER.info('done')
 
