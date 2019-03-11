@@ -14,7 +14,7 @@ from itertools import groupby
 from pytrie import SortedStringTrie as Trie
 from scrapy.utils.misc import arg_to_iter
 
-from .utils import parse_int, parse_json, to_str
+from .utils import parse_int, parse_json, serialize_json, to_str
 
 LOGGER = logging.getLogger(__name__)
 NON_WORD_REGEX = re.compile(r'[^a-z]')
@@ -28,22 +28,22 @@ def _parse_key(key):
     return key
 
 
-def _process_file(file, fields='bgg_user_name', sep=','):
+def _process_file(file, fields='bgg_user_name', sep=',', count=False):
     fields = tuple(arg_to_iter(fields))
 
     if isinstance(file, str):
         with open(file, 'r') as file_obj:
-            yield from _process_file(file_obj, fields)
+            yield from _process_file(file_obj, fields, sep, count)
             return
 
     items = filter(None, map(parse_json, file))
     for key, group in groupby(
             items, key=lambda item: tuple(_parse_key(item[field]) for field in fields)):
-        yield sep.join(key), sum(1 for _ in group)
+        yield sep.join(key), sum(1 for _ in group) if count else group
 
 
-def _make_trie(file, fields='bgg_user_name'):
-    return Trie(_process_file(file, fields))
+def _make_trie(file, fields='bgg_user_name', sep=','):
+    return Trie(_process_file(file, fields, sep, count=True))
 
 
 def _count(trie, prefix=None):
@@ -84,6 +84,30 @@ def _trie_from_file(file):
     return None
 
 
+def _save_to_prefixes(dst, trie, file, fields='bgg_user_name', sep=','):
+    seen = set()
+
+    for prefix, group in groupby(
+            _process_file(file, fields, sep, False),
+            key=lambda item: trie.longest_prefix(item[0])):
+        path = dst.format(prefix=prefix)
+
+        if prefix in seen:
+            LOGGER.info('appending to file <%s>...', path)
+            mode = 'wa'
+        else:
+            LOGGER.info('writing to file <%s>...', path)
+            mode = 'w'
+            seen.add(prefix)
+
+        # TODO make sure parent dirs exist
+        with open(path, mode) as file_obj:
+            for _, items in group:
+                for item in items:
+                    serialize_json(item, file_obj, indent=None, sort_keys=True)
+                    file_obj.write('\n')
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('in_path', help='input JSON Lines file')
@@ -92,6 +116,7 @@ def _parse_args():
     parser.add_argument('--limits', '-l', nargs='+', type=int, help='limits to use')
     parser.add_argument(
         '--keys', '-k', nargs='+', default=('bgg_user_name',), help='target columns for merging')
+    parser.add_argument('--out-path', '-o', help='output path')
     parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
@@ -129,6 +154,8 @@ def _main():
                         file_obj.write(f'{prefix}\t{count}\n')
 
     LOGGER.info('constructed trie of size %d', len(trie))
+
+    _save_to_prefixes(args.out_path, trie, args.in_path, fields=args.keys)
 
     LOGGER.info('done')
 
