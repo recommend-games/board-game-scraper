@@ -11,6 +11,7 @@ import string as string_lib
 
 from collections import OrderedDict
 from datetime import datetime, timezone
+from functools import partial
 from itertools import groupby
 from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
@@ -305,6 +306,18 @@ def parse_bool(item):
     return False
 
 
+def str_to_parser(string):
+    ''' parser from key string '''
+    string = to_lower(string)
+    if not string:
+        return to_str
+    return (parse_int if string == 'int'
+            else parse_float if string == 'float'
+            else partial(parse_date, tzinfo=timezone.utc) if string == 'date'
+            else to_lower if string in ('istr', 'istring')
+            else to_str)
+
+
 def validate_range(value, lower=None, upper=None):
     ''' validate that the given value is between lower and upper '''
     try:
@@ -333,8 +346,7 @@ def smart_exists(path, raise_exc=False):
             LOGGER.error('<boto> library must be importable: %s', exc)
             if raise_exc:
                 raise exc
-            else:
-                return False
+            return False
 
         try:
             bucket = boto.connect_s3().get_bucket(url.hostname, validate=True)
@@ -375,8 +387,7 @@ def smart_walk(path, load=False, raise_exc=False, accept_path=const_true, **s3_a
             LOGGER.exception(exc)
             if raise_exc:
                 raise exc
-            else:
-                return
+            return
 
         path = path[1:]
 
@@ -400,8 +411,7 @@ def smart_walk(path, load=False, raise_exc=False, accept_path=const_true, **s3_a
             LOGGER.exception(exc)
             if raise_exc:
                 raise exc
-            else:
-                return
+            return
 
         try:
             for key, content in s3_iter_bucket(
@@ -495,17 +505,28 @@ def smart_walks(*paths, load=False, raise_exc=False, **kwargs):
 
 def concat(dst, srcs):
     ''' concatenate files '''
-    LOGGER.info('concatenating files into <%s>', dst)
-    with open(dst, 'w') as out_file:
-        for src in arg_to_iter(srcs):
-            LOGGER.info('copy data from <%s>', src)
-            with open(src, 'r') as in_file:
-                shutil.copyfileobj(in_file, out_file)
-                if in_file.tell():
-                    in_file.seek(in_file.tell() - 1)
-                    if in_file.read(1) != '\n':
-                        out_file.write('\n')
-    LOGGER.info('done concatenating')
+
+    if isinstance(dst, (str, bytes, os.PathLike)):
+        LOGGER.info('concatenating files into <%s>', dst)
+        with open(dst, 'w') as out_file:
+            return concat(out_file, srcs)
+
+    total = 0
+
+    for src in arg_to_iter(srcs):
+        LOGGER.info('copy data from <%s>', src)
+        with open(src, 'r') as in_file:
+            shutil.copyfileobj(in_file, dst)
+            if in_file.tell():
+                total += in_file.tell()
+                in_file.seek(in_file.tell() - 1)
+                if in_file.read(1) != '\n':
+                    out_file.write('\n')
+                    total += 1
+
+    LOGGER.info('done concatenating, %d bytes in total', total)
+
+    return total
 
 
 def _match(string: str, comparison: Union[str, Pattern]):
