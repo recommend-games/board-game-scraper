@@ -130,15 +130,16 @@ echo -e "Started! Follow logs from <$(pwd)/logs/bga_ratings_merge.log>.\\n"
 
 nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/RatingItem/*' \
-    --out-path '../ludoj-data/scraped/bgg_RatingItem.jl' \
+    --out-path '../ludoj-data/scraped/bgg_RatingItem/{prefix}.jl' \
     --keys bgg_user_name bgg_id \
     --key-types istring int \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --fields-exclude published_at updated_at scraped_at \
-    --sort-output \
-    --concat \
+    --split \
+    --split-limit 300_000 \
+    --trie-path '../ludoj-data/prefixes.txt' \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
 
