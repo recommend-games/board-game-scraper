@@ -87,6 +87,7 @@ def _trie_from_file(file):
 
 def _save_to_prefixes(dst, trie, file, fields='bgg_user_name', sep=','):
     seen = set()
+    total = 0
 
     for prefix, group in groupby(
             _process_file(file, fields, sep, False),
@@ -102,11 +103,54 @@ def _save_to_prefixes(dst, trie, file, fields='bgg_user_name', sep=','):
             mode = 'w'
             seen.add(prefix)
 
+        count = 0
         with open(path, mode) as file_obj:
             for _, items in group:
                 for item in items:
                     serialize_json(item, file_obj, indent=None, sort_keys=True)
                     file_obj.write('\n')
+                    count += 1
+        LOGGER.info('done writing %d items to <%s>...', count, path)
+        total += count
+
+    LOGGER.info('done writing %d items in total...', total)
+
+
+def split_file(
+        in_file,
+        out_file,
+        fields='bgg_user_name',
+        trie_file=None,
+        limits=LIMIT,
+        construct=False,
+    ):
+    ''' split input file along prefixes '''
+
+    trie = None
+
+    if trie_file and not construct:
+        LOGGER.info('loading trie from file <%s>...', trie_file)
+        trie = _trie_from_file(trie_file)
+
+    if not trie:
+        LOGGER.info('making trie for <%s>...', in_file)
+        full_trie = _make_trie(file=in_file, fields=fields)
+        limits = tuple(arg_to_iter(limits)) or (LIMIT,)
+
+        for limit in limits:
+            trie = Trie(_prefixes(full_trie, limit=limit))
+            LOGGER.info('%d prefixes using limit %d', len(trie), limit)
+            out_path = trie_file.format(limit=limit) if trie_file else None
+            if not out_path or out_path == '-':
+                for prefix, count in trie.items():
+                    print(f'{prefix}\t{count}')
+            else:
+                with open(out_path, 'w') as file_obj:
+                    for prefix, count in trie.items():
+                        file_obj.write(f'{prefix}\t{count}\n')
+
+    LOGGER.info('constructed trie of size %d', len(trie))
+    _save_to_prefixes(dst=out_file, trie=trie, file=in_file, fields=fields)
 
 
 def _parse_args():
@@ -135,30 +179,14 @@ def _main():
 
     LOGGER.info(args)
 
-    trie = _trie_from_file(args.trie_path) if not args.construct else None
-
-    if not trie:
-        LOGGER.info('making trie for <%s>', args.in_path)
-        full_trie = _make_trie(args.in_path, args.keys)
-        limits = tuple(arg_to_iter(args.limits)) or (LIMIT,)
-
-        for limit in limits:
-            trie = Trie(_prefixes(full_trie, limit=limit))
-            LOGGER.info('%d prefixes using limit %d', len(trie), limit)
-            out_path = args.trie_path.format(limit=limit) if args.trie_path else None
-            if not out_path or out_path == '-':
-                for prefix, count in trie.items():
-                    print(f'{prefix}\t{count}')
-            else:
-                with open(out_path, 'w') as file_obj:
-                    for prefix, count in trie.items():
-                        file_obj.write(f'{prefix}\t{count}\n')
-
-    LOGGER.info('constructed trie of size %d', len(trie))
-
-    _save_to_prefixes(args.out_path, trie, args.in_path, fields=args.keys)
-
-    LOGGER.info('done')
+    split_file(
+        in_file=args.in_path,
+        out_file=args.out_path,
+        fields=args.keys,
+        trie_file=args.trie_path,
+        limits=args.limits,
+        construct=args.construct,
+    )
 
 
 if __name__ == '__main__':
