@@ -32,7 +32,7 @@ def _parse_key(key):
 def _process_file(file, fields='bgg_user_name', sep=',', count=False):
     fields = tuple(arg_to_iter(fields))
 
-    if isinstance(file, str):
+    if isinstance(file, (str, bytes, os.PathLike)):
         with open(file, 'r') as file_obj:
             yield from _process_file(file_obj, fields, sep, count)
             return
@@ -41,6 +41,11 @@ def _process_file(file, fields='bgg_user_name', sep=',', count=False):
     for key, group in groupby(
             items, key=lambda item: tuple(_parse_key(item[field]) for field in fields)):
         yield sep.join(key), sum(1 for _ in group) if count else group
+
+    try:
+        file.seek(0)
+    except Exception:
+        LOGGER.error('unable to reset file position in <%s>...', file)
 
 
 def _make_trie(file, fields='bgg_user_name', sep=','):
@@ -62,7 +67,7 @@ def _prefixes(trie, prefix='', limit=LIMIT):
 
 
 def _prefixes_from_file(file):
-    if isinstance(file, str):
+    if isinstance(file, (str, bytes, os.PathLike)):
         LOGGER.info('reading prefixes from <%s>...', file)
         with open(file) as file_obj:
             yield from _prefixes_from_file(file_obj)

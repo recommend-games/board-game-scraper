@@ -505,17 +505,28 @@ def smart_walks(*paths, load=False, raise_exc=False, **kwargs):
 
 def concat(dst, srcs):
     ''' concatenate files '''
-    LOGGER.info('concatenating files into <%s>', dst)
-    with open(dst, 'w') as out_file:
-        for src in arg_to_iter(srcs):
-            LOGGER.info('copy data from <%s>', src)
-            with open(src, 'r') as in_file:
-                shutil.copyfileobj(in_file, out_file)
-                if in_file.tell():
-                    in_file.seek(in_file.tell() - 1)
-                    if in_file.read(1) != '\n':
-                        out_file.write('\n')
-    LOGGER.info('done concatenating')
+
+    if isinstance(dst, (str, bytes, os.PathLike)):
+        LOGGER.info('concatenating files into <%s>', dst)
+        with open(dst, 'w') as out_file:
+            return concat(out_file, srcs)
+
+    total = 0
+
+    for src in arg_to_iter(srcs):
+        LOGGER.info('copy data from <%s>', src)
+        with open(src, 'r') as in_file:
+            shutil.copyfileobj(in_file, dst)
+            if in_file.tell():
+                total += in_file.tell()
+                in_file.seek(in_file.tell() - 1)
+                if in_file.read(1) != '\n':
+                    out_file.write('\n')
+                    total += 1
+
+    LOGGER.info('done concatenating, %d bytes in total', total)
+
+    return total
 
 
 def _match(string: str, comparison: Union[str, Pattern]):

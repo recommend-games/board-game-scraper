@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-''' merge CSV files '''
+''' merge data files '''
 
 import argparse
 import csv
@@ -15,6 +15,7 @@ from pathlib import Path
 
 from scrapy.utils.misc import arg_to_iter
 
+from .prefixes import split_file
 from .utils import (
     concat, identity, now, parse_float, parse_int,
     parse_json, serialize_json, str_to_parser, to_lower)
@@ -192,6 +193,10 @@ def _parse_args():
         help='sort descending (only in connection with --sort-field)')
     parser.add_argument(
         '--concat', '-c', action='store_true', help='concatenate output into one file')
+    parser.add_argument('--split', '-p', action='store_true', help='split output along prefixes')
+    parser.add_argument('--trie-path', '-t', help='path to prefix trie')
+    parser.add_argument(
+        '--split-limit', '-P', type=int, default=300_000, help='limit of items per prefix')
     parser.add_argument(
         '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
 
@@ -216,24 +221,58 @@ def _main():
         if args.latest_min and args.latest_types and to_lower(args.latest_types[0]) == 'date'
         else args.latest_min)
 
-    merge_files(
-        in_paths=args.paths,
-        out_path=args.out_path,
-        keys=args.keys,
-        key_parsers=key_parsers,
-        latest=args.latest,
-        latest_parsers=latest_parsers,
-        latest_min=latest_min,
-        fieldnames=args.fields,
-        fieldnames_exclude=args.fields_exclude,
-        sort_output=args.sort_output,
-        sort_latest=args.sort_latest,
-        sort_field=args.sort_field,
-        sort_descending=args.sort_desc,
-        concat_output=args.concat,
-        log_level='DEBUG' if args.verbose > 1 else 'INFO' if args.verbose > 0 else 'WARN',
-        # TODO Spark config
-    )
+    if args.split:
+        with tempfile.TemporaryFile('w+') as tmp_file:
+            LOGGER.info(
+                'merging into temp file %r, then splitting along prefixes into <%s>...',
+                tmp_file, args.out_path)
+
+            merge_files(
+                in_paths=args.paths,
+                out_path=tmp_file,
+                keys=args.keys,
+                key_parsers=key_parsers,
+                latest=args.latest,
+                latest_parsers=latest_parsers,
+                latest_min=latest_min,
+                fieldnames=args.fields,
+                fieldnames_exclude=args.fields_exclude,
+                sort_output=True,
+                concat_output=True,
+                log_level='DEBUG' if args.verbose > 1 else 'INFO' if args.verbose > 0 else 'WARN',
+                # TODO Spark config
+            )
+
+            tmp_file.seek(0)
+
+            split_file(
+                in_file=tmp_file,
+                out_file=args.out_path,
+                fields=args.keys[0],
+                trie_file=args.trie_path,
+                limits=args.split_limit,
+                construct=False,
+            )
+
+    else:
+        merge_files(
+            in_paths=args.paths,
+            out_path=args.out_path,
+            keys=args.keys,
+            key_parsers=key_parsers,
+            latest=args.latest,
+            latest_parsers=latest_parsers,
+            latest_min=latest_min,
+            fieldnames=args.fields,
+            fieldnames_exclude=args.fields_exclude,
+            sort_output=args.sort_output,
+            sort_latest=args.sort_latest,
+            sort_field=args.sort_field,
+            sort_descending=args.sort_desc,
+            concat_output=args.concat,
+            log_level='DEBUG' if args.verbose > 1 else 'INFO' if args.verbose > 0 else 'WARN',
+            # TODO Spark config
+        )
 
 
 if __name__ == '__main__':
