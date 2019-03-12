@@ -293,12 +293,12 @@ class PullQueueExtension(_LoopingExtension):
             curr_time = now()
 
             if last_scraped and last_scraped + self.prevent_rescrape_for > curr_time:
-                LOGGER.debug('dropped <%s>: last scraped %s', user_name, last_scraped)
+                LOGGER.info('dropped <%s>: last scraped %s', user_name, last_scraped)
                 return True
 
             self.last_scraped[user_name] = curr_time
 
-        LOGGER.debug('scheduling collection request for <%s>', user_name)
+        LOGGER.info('scheduling collection request for <%s>', user_name)
         request = spider.collection_request(
             user_name=user_name,
             priority=1,
