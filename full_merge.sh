@@ -94,6 +94,19 @@ nohup python3 -m ludoj_scraper.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_users_merge.log>.\\n"
 
 nohup python3 -m ludoj_scraper.merge \
+    'feeds/bga/RatingItem/*' \
+    --out-path "feeds/bga/RatingItem/${DATE}_merged.jl" \
+    --keys bga_user_id bga_id \
+    --key-types string string \
+    --latest scraped_at \
+    --latest-types date \
+    --latest-min 30 \
+    --fields-exclude bgg_user_play_count \
+    --concat \
+    >> 'logs/bga_ratings_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/bga_ratings_merge.log>.\\n"
+
+nohup python3 -m ludoj_scraper.merge \
     'feeds/bgg/RatingItem/*' \
     --out-path "feeds/bgg/RatingItem/${DATE}_merged.jl" \
     --keys bgg_user_name bgg_id \
