@@ -5,6 +5,7 @@
 
 import argparse
 import logging
+import os
 import re
 import string
 import sys
@@ -90,7 +91,8 @@ def _save_to_prefixes(dst, trie, file, fields='bgg_user_name', sep=','):
     for prefix, group in groupby(
             _process_file(file, fields, sep, False),
             key=lambda item: trie.longest_prefix(item[0])):
-        path = dst.format(prefix=prefix)
+        path = os.path.abspath(dst.format(prefix=prefix))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
         if prefix in seen:
             LOGGER.info('appending to file <%s>...', path)
@@ -100,7 +102,6 @@ def _save_to_prefixes(dst, trie, file, fields='bgg_user_name', sep=','):
             mode = 'w'
             seen.add(prefix)
 
-        # TODO make sure parent dirs exist
         with open(path, mode) as file_obj:
             for _, items in group:
                 for item in items:
