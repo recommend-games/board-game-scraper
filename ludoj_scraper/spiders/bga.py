@@ -71,14 +71,14 @@ class BgaSpider(Spider):
     allowed_domains = ('boardgameatlas.com',)
     item_classes = (GameItem, RatingItem)
     api_url = API_URL
-    expected_items = 25_000
-    expected_reviews = 30_000
+    expected_items = 27_500
+    expected_reviews = 35_000
 
     custom_settings = {
         'IMAGES_URLS_FIELD': None,
-        'DOWNLOAD_DELAY': .5,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 4,
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': 2,
+        'DOWNLOAD_DELAY': 10,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 2,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 1,
     }
 
     @classmethod
