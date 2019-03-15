@@ -160,8 +160,9 @@ class BggSpider(Spider):
 
     def _api_url(self, action, **kwargs):
         kwargs['pagesize'] = self.page_size
+        params = ((k, v) for k, v in kwargs.items() if k and v is not None)
         return '{}/{}?{}'.format(
-            self.xml_api_url, action, urlencode(sorted(kwargs.items(), key=lambda x: x[0])))
+            self.xml_api_url, action, urlencode(sorted(params, key=lambda x: x[0])))
 
     def _game_requests(self, *bgg_ids, batch_size=10, page=1, priority=0, **kwargs):
         bgg_ids = clear_list(map(parse_int, bgg_ids))
@@ -207,7 +208,7 @@ class BggSpider(Spider):
     def _game_request(self, bgg_id, default=None, **kwargs):
         return next(self._game_requests(bgg_id, **kwargs), default)
 
-    def collection_request(self, user_name, *, meta=None, **kwargs):
+    def collection_request(self, user_name, *, meta=None, played=None, **kwargs):
         ''' make a collection request for that user '''
 
         user_name = user_name.lower()
@@ -218,6 +219,7 @@ class BggSpider(Spider):
             excludesubtype='boardgameexpansion',
             stats=1,
             version=0,
+            played=played,
         )
 
         request = Request(url, callback=self.parse_collection, **kwargs)
@@ -463,7 +465,7 @@ class BggSpider(Spider):
         # pylint: disable=line-too-long
         '''
         @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&stats=1&version=0
-        @returns items 950
+        @returns items 1000
         @returns requests 90
         @scrapes bgg_user_name scraped_at
         '''
@@ -477,21 +479,20 @@ class BggSpider(Spider):
 
         user_name = user_name.lower()
 
-        ldr = UserLoader(
-            item=UserItem(bgg_user_name=user_name, scraped_at=scraped_at),
-            response=response,
-        )
-        ldr.add_xpath('updated_at', '/items/@pubdate')
-        yield ldr.load_item()
+        if not extract_query_param(response.url, 'played'):
+            ldr = UserLoader(
+                item=UserItem(bgg_user_name=user_name, scraped_at=scraped_at),
+                response=response,
+            )
+            ldr.add_xpath('updated_at', '/items/@pubdate')
+            yield ldr.load_item()
+
+            # explicitly fetch played games (not part of collection by default)
+            yield self.collection_request(user_name, played=1, priority=1)
 
         games = response.xpath('/items/item')
         bgg_ids = games.xpath('@objectid').extract()
         yield from self._game_requests(*bgg_ids)
-
-        if not extract_query_param(response.url, 'played'):
-            # TODO if not played in request, make request with played=1 (#43)
-            # yield self.collection_request(user_name, played=1)
-            pass
 
         for game in games:
             bgg_id = game.xpath('@objectid').extract_first()
