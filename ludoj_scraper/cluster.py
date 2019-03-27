@@ -109,6 +109,7 @@ def _train_gazetteer(
         fields=DEDUPE_FIELDS,
         training_file=None,
         manual_labelling=False,
+        pretty_print=False,
     ):
     LOGGER.info('training gazetteer with fields: %r', fields)
 
@@ -128,6 +129,11 @@ def _train_gazetteer(
         LOGGER.info('write training data back to <%s>', training_file)
         with smart_open(training_file, 'w') as file_obj:
             gazetteer.writeTraining(file_obj)
+        if pretty_print:
+            with smart_open(training_file, 'r') as file_obj:
+                training = parse_json(file_obj)
+            with smart_open(training_file, 'w') as file_obj:
+                serialize_json(obj=training, file=file_obj, sort_keys=True, indent=4)
 
     LOGGER.info('done labelling, begin training')
     gazetteer.train(recall=0.9, index_predicates=True)
@@ -151,6 +157,7 @@ def link_games(
         threshold=None,
         recall_weight=1,
         output=None,
+        pretty_print=True,
     ):
     ''' find links for games '''
 
@@ -183,6 +190,7 @@ def link_games(
             data_link,
             training_file=training_file,
             manual_labelling=manual_labelling,
+            pretty_print=pretty_print,
         )
 
         if isinstance(gazetteer, str):
@@ -229,8 +237,9 @@ def link_games(
     elif output:
         LOGGER.info('saving clusters as JSON to <%s>', output)
         links_sorted = {key: sorted(value) for key, value in links.items() if key and value}
+        json_formats = {'sort_keys': True, 'indent': 4} if pretty_print else {}
         with smart_open(output, 'w') as file_obj:
-            serialize_json(obj=links_sorted, file=file_obj, sort_keys=True, indent=4)
+            serialize_json(obj=links_sorted, file=file_obj, **json_formats)
         del links_sorted
 
     return links
