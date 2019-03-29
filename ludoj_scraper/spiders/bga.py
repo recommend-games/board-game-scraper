@@ -197,7 +197,9 @@ class BgaSpider(Spider):
             ldr.add_jmes('min_time', 'min_playtime')
             ldr.add_jmes('max_time', 'max_playtime')
 
-            # TODO resolve mechanic and category
+            # TODO resolve mechanic and category (#48)
+            # https://www.boardgameatlas.com/api/docs/game/categories
+            # https://www.boardgameatlas.com/api/docs/game/mechanics
             ldr.add_jmes('category', 'categories[].id')
             ldr.add_jmes('mechanic', 'mechanics[].id')
 
