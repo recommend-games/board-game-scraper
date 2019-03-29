@@ -184,6 +184,8 @@ class BgaSpider(Spider):
             ldr.add_jmes('url', 'url')
             ldr.add_jmes('image_url', 'image_url')
             ldr.add_jmes('image_url', 'thumb_url')
+            ldr.add_jmes('rules_url', 'rules_url')
+            ldr.add_jmes('external_link', 'official_url')
 
             list_price = ldr.get_jmes('msrp')
             list_price = map('USD{:.2f}'.format, filter(None, map(parse_float, list_price)))
@@ -194,6 +196,15 @@ class BgaSpider(Spider):
             ldr.add_jmes('min_age', 'min_age')
             ldr.add_jmes('min_time', 'min_playtime')
             ldr.add_jmes('max_time', 'max_playtime')
+
+            # TODO resolve mechanic and category (#48)
+            # https://www.boardgameatlas.com/api/docs/game/categories
+            # https://www.boardgameatlas.com/api/docs/game/mechanics
+            ldr.add_jmes('category', 'categories[].id')
+            ldr.add_jmes('mechanic', 'mechanics[].id')
+
+            ldr.add_jmes('num_votes', 'num_user_ratings')
+            ldr.add_jmes('avg_rating', 'average_user_rating')
 
             item = ldr.load_item()
             requests = list(self._game_requests(bga_id))
