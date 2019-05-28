@@ -15,7 +15,7 @@ URL = 'https://gitlab.com/mshepherd/ludoj-scraper'
 EMAIL = 'recommend.ludoj@gmail.com'
 AUTHOR = 'Markus Shepherd'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '1.10.6'
+VERSION = '1.10.7'
 
 # What packages are required for this module to be executed?
 REQUIRED = (

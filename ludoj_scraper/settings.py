@@ -181,8 +181,8 @@ ITEM_PIPELINES = {
     'ludoj_scraper.pipelines.ValidatePipeline': 200,
     'ludoj_scraper.pipelines.ResolveLabelPipeline': 300,
     'ludoj_scraper.pipelines.ResolveImagePipeline': 400,
-    'scrapy.pipelines.images.ImagesPipeline': 500,
-    'scrapy.pipelines.images.FilesPipeline': 600,
+    'scrapy.pipelines.images.ImagesPipeline': None,
+    'scrapy.pipelines.images.FilesPipeline': None,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -237,7 +237,7 @@ MEDIA_ALLOW_REDIRECTS = True
 
 # Image processing
 IMAGES_STORE = os.path.join(BASE_DIR, 'images')
-IMAGES_URLS_FIELD = None # 'image_url'
+IMAGES_URLS_FIELD = 'image_url'
 IMAGES_RESULT_FIELD = 'image_file'
 IMAGES_EXPIRES = 180
 IMAGES_THUMBS = {
@@ -246,7 +246,7 @@ IMAGES_THUMBS = {
 
 # File processing
 FILES_STORE = os.path.join(BASE_DIR, 'rules')
-FILES_URLS_FIELD = None # 'rules_url'
+FILES_URLS_FIELD = 'rules_url'
 FILES_RESULT_FIELD = 'rules_file'
 FILES_EXPIRES = 180
 
