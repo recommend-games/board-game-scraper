@@ -72,7 +72,7 @@ class BgaSpider(Spider):
     item_classes = (GameItem, RatingItem)
     api_url = API_URL
     expected_items = 27_500
-    expected_reviews = 35_000
+    expected_reviews = 40_000
 
     custom_settings = {
         'IMAGES_URLS_FIELD': None,
