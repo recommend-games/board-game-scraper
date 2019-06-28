@@ -73,11 +73,11 @@
         },
         "awscli": {
             "hashes": [
-                "sha256:42cc603a0b488af28557655372eda096f1e2ffd18beef01c3f8709e8cba630a0",
-                "sha256:753bc4bf21b1d58fb2b64814b90f1dd34af5c79244f35868e74057af7c3f25e5"
+                "sha256:9cab21e0bbec93bba94c4bd9dcea204696c3337ecc57ef3c87eac48d6145255b",
+                "sha256:ae7c874d7fbc3bcfd844442381abf9db5eb186295d8df0a7e2a207b41fefa3e3"
             ],
             "index": "pypi",
-            "version": "==1.16.184"
+            "version": "==1.16.189"
         },
         "boto": {
             "hashes": [
@@ -89,17 +89,17 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:73b65793f12141e14393a4f321861f3f33b68f9dfe4f14b7e65cdbfda5c7ccdb",
-                "sha256:e6472861a88d0bb47844c7d03764b730c7fb9ab393a5f0a29f6b4dc0b20bee3d"
+                "sha256:031fc6b43f7132941d71fa012c404ae10d4ad6191c97580cad7f43619fb5505e",
+                "sha256:b1db8ea71b676c08c07d52a44b0b03007fc922b7618bab8c79f6fd638334bf68"
             ],
-            "version": "==1.9.174"
+            "version": "==1.9.179"
         },
         "botocore": {
             "hashes": [
-                "sha256:3356e72901d5a4259b8858785e415a895641454971e3fa67b4076b4c9bed543d",
-                "sha256:f7220c6dd551724d4af796fb7ddfef6d423bade92e78c3cc2282953b38dfb259"
+                "sha256:0bcab3d6ee49f348169fe93744feae09aae1445f1e0cb1109caccbec487fbeb0",
+                "sha256:adbc569149432143a0d6f578c0a16417a24f7a579116d086d5cecbb70d848ddb"
             ],
-            "version": "==1.12.174"
+            "version": "==1.12.179"
         },
         "btrees": {
             "hashes": [
@@ -396,10 +396,10 @@
                 "grpc"
             ],
             "hashes": [
-                "sha256:7ccfab741a333e8d4259d4bcd93d587ebacee0a41316d93440a9c0c230a999c6",
-                "sha256:a302404746347c3098c13b47c5d9b1a2fbbe4b3118d9e79b32b21e54b7bd1aeb"
+                "sha256:72a1c8966bdbd70a72de32760368aec399fe6a5c2a6675d9476cb9ae27046de7",
+                "sha256:f45d74aef41e1de49ceadebf382e1291ddcbe431a8b533aff8a1140a35531465"
             ],
-            "version": "==1.12.0"
+            "version": "==1.13.0"
         },
         "google-auth": {
             "hashes": [
