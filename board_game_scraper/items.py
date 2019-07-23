@@ -743,3 +743,74 @@ class RatingItem(TypedItem):
         serializer=serialize_date,
         parser=parse_date,
     )
+
+
+class ReviewItem(TypedItem):
+    ''' item representing a review '''
+
+    JSON_OUTPUT = SETTINGS.get('FEED_FORMAT') in ('jl', 'json', 'jsonl', 'jsonlines')
+    JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
+    BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool
+
+    url = Field(dtype=str, required=True)
+    image_url = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
+    image_file = Field(
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
+    video_url = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
+    external_link = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
+
+    rating = Field(
+        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR, default=None)
+    worst_rating = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    best_rating = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+
+    bgg_id = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    freebase_id = Field(dtype=str)
+    wikidata_id = Field(dtype=str)
+    wikipedia_id = Field(dtype=str)
+    dbpedia_id = Field(dtype=str)
+    luding_id = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR, default=None)
+    spielen_id = Field(dtype=str)
+    bga_id = Field(dtype=str)
+
+    published_at = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
+    updated_at = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
+    scraped_at = Field(
+        dtype=datetime,
+        required=True,
+        default=now,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
