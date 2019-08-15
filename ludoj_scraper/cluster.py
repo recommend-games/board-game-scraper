@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-''' merge different sources '''
+""" merge different sources """
 
 import argparse
 import logging
@@ -19,57 +19,65 @@ from scrapy.utils.misc import arg_to_iter, load_object
 from smart_open import smart_open
 
 from .items import GameItem
-from .utils import clear_list, parse_float, parse_int, parse_json, serialize_json, smart_exists
+from .utils import (
+    clear_list,
+    parse_float,
+    parse_int,
+    parse_json,
+    serialize_json,
+    smart_exists,
+)
 
 LOGGER = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def abs_comp(field_1, field_2):
-    ''' returns absolute value of difference if both arguments are valid, else inf '''
+    """ returns absolute value of difference if both arguments are valid, else inf """
     field_1 = parse_float(field_1)
     field_2 = parse_float(field_2)
     return math.inf if field_1 is None or field_2 is None else abs(field_1 - field_2)
 
 
-def _fields(file=os.path.join(BASE_DIR, 'fields.yaml')):
-    LOGGER.info('loading dedupe fields from <%s>', file)
+def _fields(file=os.path.join(BASE_DIR, "fields.yaml")):
+    LOGGER.info("loading dedupe fields from <%s>", file)
     with smart_open(file) as file_obj:
         fields = yaml.safe_load(file_obj)
 
     for field in fields:
-        if field.get('comparator'):
-            field['comparator'] = load_object(field['comparator'])
+        if field.get("comparator"):
+            field["comparator"] = load_object(field["comparator"])
 
     return fields
 
 
 DEDUPE_FIELDS = tuple(_fields())
 
-VALUE_ID_REGEX = re.compile(r'^(.*?)(:(\d+))?$')
-VALUE_ID_FIELDS = (
-    'designer',
-    'artist',
-    'publisher',
-)
+VALUE_ID_REGEX = re.compile(r"^(.*?)(:(\d+))?$")
+VALUE_ID_FIELDS = ("designer", "artist", "publisher")
 
 
 def _parse_value_id(string, regex=VALUE_ID_REGEX):
     match = regex.match(string) if string else None
-    if not match or parse_int(match.group(3)) == 3: # filter out '(Uncredited):3'
+    if not match or parse_int(match.group(3)) == 3:  # filter out '(Uncredited):3'
         return None
     return match.group(1) or None
 
 
 def _parse_game(game):
     for field in DEDUPE_FIELDS:
-        game.setdefault(field['field'], None)
-        if field['type'] == 'Set':
-            game[field['field']] = tuple(arg_to_iter(game[field['field']])) or None
-    game['names'] = tuple(clear_list(
-        chain(arg_to_iter(game.get('name')), arg_to_iter(game.get('alt_name')))))
+        game.setdefault(field["field"], None)
+        if field["type"] == "Set":
+            game[field["field"]] = tuple(arg_to_iter(game[field["field"]])) or None
+    game["names"] = tuple(
+        clear_list(
+            chain(arg_to_iter(game.get("name")), arg_to_iter(game.get("alt_name")))
+        )
+    )
     for field in VALUE_ID_FIELDS:
-        game[field] = tuple(clear_list(map(_parse_value_id, arg_to_iter(game.get(field)))))
+        game[field] = tuple(
+            clear_list(map(_parse_value_id, arg_to_iter(game.get(field))))
+        )
     return game
 
 
@@ -79,10 +87,10 @@ def _load_games(*args):
             if not file:
                 continue
 
-            LOGGER.info('reading from file <%s>', file)
+            LOGGER.info("reading from file <%s>", file)
 
             try:
-                with smart_open(file, 'r') as file_obj:
+                with smart_open(file, "r") as file_obj:
                     games = map(parse_json, file_obj)
                     games = filter(None, games)
                     games = map(GameItem.parse, games)
@@ -91,51 +99,53 @@ def _load_games(*args):
                     yield from games
 
             except Exception:
-                LOGGER.exception('there was an error reading from file <%s>', file)
+                LOGGER.exception("there was an error reading from file <%s>", file)
 
 
-def _make_id(game, id_field='id', id_prefix=None):
+def _make_id(game, id_field="id", id_prefix=None):
     id_value = game.get(id_field)
-    return None if not id_value else f'{id_prefix}:{id_value}' if id_prefix else id_value
+    return (
+        None if not id_value else f"{id_prefix}:{id_value}" if id_prefix else id_value
+    )
 
 
-def _make_data(games, id_field='id', id_prefix=None):
+def _make_data(games, id_field="id", id_prefix=None):
     return {_make_id(game, id_field, id_prefix): game for game in games}
 
 
 def _train_gazetteer(
-        data_1,
-        data_2,
-        fields=DEDUPE_FIELDS,
-        training_file=None,
-        manual_labelling=False,
-        pretty_print=False,
-    ):
-    LOGGER.info('training gazetteer with fields: %r', fields)
+    data_1,
+    data_2,
+    fields=DEDUPE_FIELDS,
+    training_file=None,
+    manual_labelling=False,
+    pretty_print=False,
+):
+    LOGGER.info("training gazetteer with fields: %r", fields)
 
     gazetteer = dedupe.Gazetteer(fields)
     gazetteer.sample(data_1, data_2, 50_000)
 
     if training_file and smart_exists(training_file):
-        LOGGER.info('reading existing training from <%s>', training_file)
-        with smart_open(training_file, 'r') as file_obj:
+        LOGGER.info("reading existing training from <%s>", training_file)
+        with smart_open(training_file, "r") as file_obj:
             gazetteer.readTraining(file_obj)
 
     if manual_labelling:
-        LOGGER.info('start interactive labelling')
+        LOGGER.info("start interactive labelling")
         dedupe.convenience.consoleLabel(gazetteer)
 
     if training_file:
-        LOGGER.info('write training data back to <%s>', training_file)
-        with smart_open(training_file, 'w') as file_obj:
+        LOGGER.info("write training data back to <%s>", training_file)
+        with smart_open(training_file, "w") as file_obj:
             gazetteer.writeTraining(file_obj)
         if pretty_print:
-            with smart_open(training_file, 'r') as file_obj:
+            with smart_open(training_file, "r") as file_obj:
                 training = parse_json(file_obj)
-            with smart_open(training_file, 'w') as file_obj:
+            with smart_open(training_file, "w") as file_obj:
                 serialize_json(obj=training, file=file_obj, sort_keys=True, indent=4)
 
-    LOGGER.info('done labelling, begin training')
+    LOGGER.info("done labelling, begin training")
     gazetteer.train(recall=0.9, index_predicates=True)
 
     gazetteer.cleanupTraining()
@@ -148,33 +158,37 @@ def _filename(path):
 
 
 def link_games(
-        gazetteer,
-        paths,
-        id_prefixes=None,
-        id_fields=None,
-        training_file=None,
-        manual_labelling=False,
-        threshold=None,
-        recall_weight=1,
-        output=None,
-        pretty_print=True,
-    ):
-    ''' find links for games '''
+    gazetteer,
+    paths,
+    id_prefixes=None,
+    id_fields=None,
+    training_file=None,
+    manual_labelling=False,
+    threshold=None,
+    recall_weight=1,
+    output=None,
+    pretty_print=True,
+):
+    """ find links for games """
 
     paths = tuple(arg_to_iter(paths))
     if len(paths) < 2:
-        raise ValueError(f'need at least 2 files to link games, but received {paths}')
+        raise ValueError(f"need at least 2 files to link games, but received {paths}")
 
     id_prefixes = tuple(arg_to_iter(id_prefixes))
-    id_prefixes = id_prefixes + tuple(map(_filename, paths[len(id_prefixes):]))
+    id_prefixes = id_prefixes + tuple(map(_filename, paths[len(id_prefixes) :]))
     id_fields = tuple(arg_to_iter(id_fields))
-    id_fields = id_fields + tuple(f'{prefix}_id' for prefix in id_prefixes[len(id_fields):])
+    id_fields = id_fields + tuple(
+        f"{prefix}_id" for prefix in id_prefixes[len(id_fields) :]
+    )
 
     games_canonical = _load_games(paths[0])
     data_canonical = _make_data(games_canonical, id_fields[0], id_prefixes[0])
     del games_canonical
 
-    LOGGER.info('loaded %d games in the canonical dataset <%s>', len(data_canonical), paths[0])
+    LOGGER.info(
+        "loaded %d games in the canonical dataset <%s>", len(data_canonical), paths[0]
+    )
 
     data_link = {}
     for path, id_field, id_prefix in zip(paths[1:], id_fields[1:], id_prefixes[1:]):
@@ -182,7 +196,7 @@ def link_games(
         data_link.update(_make_data(games, id_field, id_prefix))
         del games
 
-    LOGGER.info('loaded %d games to link in the datasets %s', len(data_link), paths[1:])
+    LOGGER.info("loaded %d games to link in the datasets %s", len(data_link), paths[1:])
 
     if training_file:
         gazetteer_trained = _train_gazetteer(
@@ -194,31 +208,28 @@ def link_games(
         )
 
         if isinstance(gazetteer, str):
-            LOGGER.info('saving gazetteer model to <%s>', gazetteer)
-            with smart_open(gazetteer, 'wb') as file_obj:
+            LOGGER.info("saving gazetteer model to <%s>", gazetteer)
+            with smart_open(gazetteer, "wb") as file_obj:
                 gazetteer_trained.writeSettings(file_obj)
 
         gazetteer = gazetteer_trained
         del gazetteer_trained
 
     elif isinstance(gazetteer, str):
-        LOGGER.info('reading gazetteer model from <%s>', gazetteer)
-        with smart_open(gazetteer, 'rb') as file_obj:
+        LOGGER.info("reading gazetteer model from <%s>", gazetteer)
+        with smart_open(gazetteer, "rb") as file_obj:
             gazetteer = dedupe.StaticGazetteer(file_obj)
 
     gazetteer.index(data_canonical)
 
-    LOGGER.info('using gazetteer model %r', gazetteer)
+    LOGGER.info("using gazetteer model %r", gazetteer)
 
     threshold = threshold or gazetteer.threshold(data_link, recall_weight=recall_weight)
 
-    LOGGER.info('using threshold %.3f', threshold)
+    LOGGER.info("using threshold %.3f", threshold)
 
     clusters = gazetteer.match(
-        messy_data=data_link,
-        threshold=threshold,
-        n_matches=None,
-        generator=True,
+        messy_data=data_link, threshold=threshold, n_matches=None, generator=True
     )
     links = defaultdict(set)
     del gazetteer
@@ -228,17 +239,19 @@ def link_games(
             links[id_canonical].add(id_link)
     del clusters
 
-    LOGGER.info('found links for %d items', len(links))
+    LOGGER.info("found links for %d items", len(links))
 
-    if output == '-':
+    if output == "-":
         for id_canonical, linked in links.items():
-            LOGGER.info('%s <-> %s', id_canonical, linked)
+            LOGGER.info("%s <-> %s", id_canonical, linked)
 
     elif output:
-        LOGGER.info('saving clusters as JSON to <%s>', output)
-        links_sorted = {key: sorted(value) for key, value in links.items() if key and value}
-        json_formats = {'sort_keys': True, 'indent': 4} if pretty_print else {}
-        with smart_open(output, 'w') as file_obj:
+        LOGGER.info("saving clusters as JSON to <%s>", output)
+        links_sorted = {
+            key: sorted(value) for key, value in links.items() if key and value
+        }
+        json_formats = {"sort_keys": True, "indent": 4} if pretty_print else {}
+        with smart_open(output, "w") as file_obj:
             serialize_json(obj=links_sorted, file=file_obj, **json_formats)
         del links_sorted
 
@@ -246,24 +259,42 @@ def link_games(
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('file_canonical', help='input JSON Lines files with canonical dataset')
-    parser.add_argument('files_link', nargs='+', help='input JSON Lines files to link')
-    parser.add_argument('--id-fields', '-i', nargs='+', help='ID fields')
-    parser.add_argument('--id-prefixes', '-I', nargs='+', help='ID prefixes')
-    parser.add_argument('--train', '-t', action='store_true', help='train deduper')
+    parser = argparse.ArgumentParser(description="")
     parser.add_argument(
-        '--training-file', '-T', default=os.path.join(BASE_DIR, 'cluster', 'training.json'),
-        help='training JSON file')
+        "file_canonical", help="input JSON Lines files with canonical dataset"
+    )
+    parser.add_argument("files_link", nargs="+", help="input JSON Lines files to link")
+    parser.add_argument("--id-fields", "-i", nargs="+", help="ID fields")
+    parser.add_argument("--id-prefixes", "-I", nargs="+", help="ID prefixes")
+    parser.add_argument("--train", "-t", action="store_true", help="train deduper")
     parser.add_argument(
-        '--gazetteer-file', '-G', default=os.path.join(BASE_DIR, 'cluster', 'gazetteer.pickle'),
-        help='gazetteer model file')
-    parser.add_argument('--threshold', '-r', type=float, help='clustering threshold')
+        "--training-file",
+        "-T",
+        default=os.path.join(BASE_DIR, "cluster", "training.json"),
+        help="training JSON file",
+    )
     parser.add_argument(
-        '--recall', '-R', type=float, default=1, help='threshold estimation recall weight')
-    parser.add_argument('--output', '-o', help='output location')
+        "--gazetteer-file",
+        "-G",
+        default=os.path.join(BASE_DIR, "cluster", "gazetteer.pickle"),
+        help="gazetteer model file",
+    )
+    parser.add_argument("--threshold", "-r", type=float, help="clustering threshold")
     parser.add_argument(
-        '--verbose', '-v', action='count', default=0, help='log level (repeat for more verbosity)')
+        "--recall",
+        "-R",
+        type=float,
+        default=1,
+        help="threshold estimation recall weight",
+    )
+    parser.add_argument("--output", "-o", help="output location")
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=0,
+        help="log level (repeat for more verbosity)",
+    )
 
     return parser.parse_args()
 
@@ -274,7 +305,7 @@ def _main():
     logging.basicConfig(
         stream=sys.stderr,
         level=logging.DEBUG if args.verbose > 0 else logging.INFO,
-        format='%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s',
+        format="%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s",
     )
 
     LOGGER.info(args)
@@ -288,9 +319,9 @@ def _main():
         manual_labelling=args.train,
         threshold=args.threshold,
         recall_weight=args.recall,
-        output=args.output or '-',
+        output=args.output or "-",
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()
