@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-''' monkey-patches '''
+""" monkey-patches """
 
 import csv
 import sys
@@ -20,4 +20,4 @@ else:
 csv.field_size_limit(sys.maxsize)
 
 # monkey-patching responsetypes to include SPAQRL XML results
-responsetypes.classes['application/sparql-results+xml'] = XmlResponse
+responsetypes.classes["application/sparql-results+xml"] = XmlResponse
