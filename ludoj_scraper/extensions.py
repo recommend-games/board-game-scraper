@@ -229,16 +229,20 @@ class PullQueueExtension(_LoopingExtension):
             raise NotConfigured
 
         interval = crawler.settings.getfloat("PULL_QUEUE_INTERVAL", 60 * 60)
+        max_messages = crawler.settings.getint("PULL_QUEUE_MAX_MESSAGES", 10)
         prevent_rescrape_for = (
             crawler.settings.getfloat("PULL_QUEUE_PREVENT_RESCRAPE_FOR") or None
         )
+        pull_timeout = crawler.settings.getfloat("PULL_QUEUE_PULL_TIMEOUT") or None
 
         return cls(
             crawler=crawler,
             interval=interval,
             project=project,
             subscription=subscription,
+            max_messages=max_messages,
             prevent_rescrape_for=prevent_rescrape_for,
+            pull_timeout=pull_timeout,
         )
 
     def __init__(
@@ -247,8 +251,9 @@ class PullQueueExtension(_LoopingExtension):
         interval,
         project,
         subscription,
-        max_messages=100,
+        max_messages=10,
         prevent_rescrape_for=None,
+        pull_timeout=None,
     ):
         try:
             from google.cloud import pubsub
@@ -272,6 +277,8 @@ class PullQueueExtension(_LoopingExtension):
             if isinstance(prevent_rescrape_for, float)
             else prevent_rescrape_for
         )
+        self.pull_timeout = parse_float(pull_timeout)
+        self.return_immediately = not self.pull_timeout
         self.last_scraped = {}
 
         self.setup_looping_task(self._pull_queue, crawler, interval)
@@ -281,13 +288,21 @@ class PullQueueExtension(_LoopingExtension):
 
         while True:
             # pylint: disable=no-member
-            response = self.client.pull(
-                subscription=self.subscription_path,
-                max_messages=self.max_messages,
-                return_immediately=True,
-            )
+            try:
+                response = self.client.pull(
+                    subscription=self.subscription_path,
+                    max_messages=self.max_messages,
+                    return_immediately=self.return_immediately,
+                    timeout=self.pull_timeout,
+                )
+            except Exception:
+                LOGGER.info(
+                    "pulling subscription <%s> timed out", self.subscription_path
+                )
+                return
 
             if not response or not response.received_messages:
+                LOGGER.info("done pulling subscription <%s>", self.subscription_path)
                 return
 
             ack_ids = [
