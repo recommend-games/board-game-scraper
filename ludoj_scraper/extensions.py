@@ -247,7 +247,7 @@ class PullQueueExtension(_LoopingExtension):
         interval,
         project,
         subscription,
-        max_messages=100,
+        max_messages=10,
         prevent_rescrape_for=None,
     ):
         try:
@@ -281,13 +281,22 @@ class PullQueueExtension(_LoopingExtension):
 
         while True:
             # pylint: disable=no-member
-            response = self.client.pull(
-                subscription=self.subscription_path,
-                max_messages=self.max_messages,
-                return_immediately=True,
-            )
+            try:
+                response = self.client.pull(
+                    subscription=self.subscription_path,
+                    max_messages=self.max_messages,
+                    return_immediately=False,
+                    timeout=5,
+                )
+            except Exception:
+                LOGGER.info(
+                    "done pulling subscription <%s> after timeout",
+                    self.subscription_path,
+                )
+                return
 
             if not response or not response.received_messages:
+                LOGGER.info("done pulling subscription <%s>", self.subscription_path)
                 return
 
             ack_ids = [
