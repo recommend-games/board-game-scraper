@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" setup """
+"""Setup."""
 
 import io
 import os
@@ -15,7 +15,7 @@ URL = "https://gitlab.com/mshepherd/ludoj-scraper"
 EMAIL = "recommend.ludoj@gmail.com"
 AUTHOR = "Markus Shepherd"
 REQUIRES_PYTHON = ">=3.6.0"
-VERSION = "1.10.12"
+VERSION = "1.10.13"
 
 # What packages are required for this module to be executed?
 REQUIRED = (
@@ -24,6 +24,7 @@ REQUIRED = (
     "dedupe",
     "google-cloud-pubsub",
     "jmespath",
+    "pillow",
     "pympler",
     "pyspark",
     "python-dateutil",
@@ -71,10 +72,11 @@ setup(
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        # 'License :: OSI Approved :: MIT License',
+        "Framework :: Scrapy",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: 3.7",
+        "Topic :: Games/Entertainment :: Board Games",
     ],
 )
