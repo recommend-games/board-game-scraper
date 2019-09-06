@@ -1,1 +1,1 @@
-include README.md fields.yaml
+include LICENSE README.md fields.yaml scrapy.cfg

@@ -17,6 +17,8 @@ else:
     smart_open.smart_open_lib.MULTIPROCESSING = False
     smart_open.smart_open_lib.imap = map
 
+from .__version__ import VERSION, __version__
+
 csv.field_size_limit(sys.maxsize)
 
 # monkey-patching responsetypes to include SPAQRL XML results
