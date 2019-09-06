@@ -229,11 +229,11 @@ class PullQueueExtension(_LoopingExtension):
             raise NotConfigured
 
         interval = crawler.settings.getfloat("PULL_QUEUE_INTERVAL", 60 * 60)
-        max_messages = crawler.settings.getint("PULL_QUEUE_MAX_MESSAGES", 10)
+        max_messages = crawler.settings.getint("PULL_QUEUE_MAX_MESSAGES", 100)
         prevent_rescrape_for = (
             crawler.settings.getfloat("PULL_QUEUE_PREVENT_RESCRAPE_FOR") or None
         )
-        pull_timeout = crawler.settings.getfloat("PULL_QUEUE_PULL_TIMEOUT") or None
+        pull_timeout = crawler.settings.getfloat("PULL_QUEUE_PULL_TIMEOUT", 10)
 
         return cls(
             crawler=crawler,
@@ -251,9 +251,9 @@ class PullQueueExtension(_LoopingExtension):
         interval,
         project,
         subscription,
-        max_messages=10,
+        max_messages=100,
         prevent_rescrape_for=None,
-        pull_timeout=None,
+        pull_timeout=10,
     ):
         try:
             from google.cloud import pubsub
@@ -277,8 +277,7 @@ class PullQueueExtension(_LoopingExtension):
             if isinstance(prevent_rescrape_for, float)
             else prevent_rescrape_for
         )
-        self.pull_timeout = parse_float(pull_timeout)
-        self.return_immediately = not self.pull_timeout
+        self.pull_timeout = parse_float(pull_timeout) or 10
         self.last_scraped = {}
 
         self.setup_looping_task(self._pull_queue, crawler, interval)
@@ -286,35 +285,35 @@ class PullQueueExtension(_LoopingExtension):
     def _pull_queue(self, spider):
         LOGGER.info("pulling subscription <%s>", self.subscription_path)
 
-        while True:
+        try:
             # pylint: disable=no-member
-            try:
-                response = self.client.pull(
-                    subscription=self.subscription_path,
-                    max_messages=self.max_messages,
-                    return_immediately=self.return_immediately,
-                    timeout=self.pull_timeout,
-                )
-            except Exception:
-                LOGGER.info(
-                    "pulling subscription <%s> timed out", self.subscription_path
-                )
-                return
+            response = self.client.pull(
+                subscription=self.subscription_path,
+                max_messages=self.max_messages,
+                return_immediately=False,
+                timeout=self.pull_timeout,
+            )
+        except Exception:
+            LOGGER.info("subscription <%s> timed out", self.subscription_path)
+            return
 
-            if not response or not response.received_messages:
-                LOGGER.info("done pulling subscription <%s>", self.subscription_path)
-                return
+        if not response or not response.received_messages:
+            LOGGER.info(
+                "nothing to be pulled from subscription <%s>", self.subscription_path
+            )
+            return
 
-            ack_ids = [
-                message.ack_id
-                for message in response.received_messages
-                if self.process_message(message.message, spider)
-            ]
+        ack_ids = [
+            message.ack_id
+            for message in response.received_messages
+            if self.process_message(message.message, spider)
+        ]
 
-            if ack_ids:
-                self.client.acknowledge(
-                    subscription=self.subscription_path, ack_ids=ack_ids
-                )
+        if ack_ids:
+            # pylint: disable=no-member
+            self.client.acknowledge(
+                subscription=self.subscription_path, ack_ids=ack_ids
+            )
 
     # pylint: disable=no-self-use
     def process_message(self, message, spider, encoding="utf-8"):
