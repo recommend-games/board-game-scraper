@@ -16,8 +16,14 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data.
 NAME = "ludoj-scraper"
-DESCRIPTION = "Board games data scraping and processing"
-URL = "https://gitlab.com/mshepherd/ludoj-scraper"
+DESCRIPTION = "Board games data scraping and processing from BoardGameGeek and more!"
+KEYWORDS = "board games data scraper BoardGameGeek BGG"
+URL_HOMEPAGE = "https://recommend.games/"
+URL_DOCUMENTATION = "https://gitlab.com/mshepherd/ludoj-scraper/blob/master/README.md"
+URL_FUNDING = None
+URL_THANKS = None
+URL_SOURCE = "https://gitlab.com/mshepherd/ludoj-scraper"
+URL_TRACKER = "https://gitlab.com/mshepherd/ludoj-scraper/issues"
 EMAIL = "recommend.ludoj@gmail.com"
 AUTHOR = "Markus Shepherd"
 REQUIRES_PYTHON = ">=3.6.0"
@@ -119,10 +125,18 @@ setup(
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
+    keywords=KEYWORDS,
     author=AUTHOR,
     author_email=EMAIL,
+    url=URL_HOMEPAGE,
+    project_urls={
+        "Documentation": URL_DOCUMENTATION,
+        "Funding": URL_FUNDING,
+        "Say Thanks!": URL_THANKS,
+        "Source": URL_SOURCE,
+        "Tracker": URL_TRACKER,
+    },
     python_requires=REQUIRES_PYTHON,
-    url=URL,
     packages=find_packages(exclude=("tests", "*.tests", "*.tests.*", "tests.*")),
     # If your package is a single module, use this instead of 'packages':
     # py_modules=("ludoj_scraper",),
