@@ -20,9 +20,12 @@ pipenv shell
 ```
 Run a spider like so:
 ```bash
-scrapy crawl <spider> -o 'feeds/%(name)s/%(time)s/%(class)s.csv'
+JOBDIR="jobs/${SPIDER}/$(date --utc +'%Y-%m-%dT%H-%M-%S')"
+scrapy crawl "${SPIDER}" \
+    --output 'feeds/%(name)s/%(time)s/%(class)s.csv' \
+    --set "JOBDIR=${JOBDIR}"
 ```
-where `<spider>` is one of the IDs above.
+where `$SPIDER` is one of the IDs above.
 
 Run all the spiders with the [`run_all.sh`](run_all.sh) script. Get a list of
 the running scrapers' PIDs with the [`processes.sh`](processes.sh) script. You
