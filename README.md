@@ -1,5 +1,9 @@
 # ludoj-scraper
-Scraping data about board games from the web.
+Scraping data about board games from the web. View the data live at
+[Recommend.Games](https://recommend.games/)! Install via
+```bash
+pip install ludoj-scraper
+```
 
 ## Scraped websites
 * [Board Game Atlas](https://www.boardgameatlas.com/) (`bga`)
