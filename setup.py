@@ -17,7 +17,19 @@ from setuptools import find_packages, setup, Command
 # Package meta-data.
 NAME = "ludoj-scraper"
 DESCRIPTION = "Board games data scraping and processing from BoardGameGeek and more!"
-KEYWORDS = "board games data scraper BoardGameGeek BGG"
+KEYWORDS = (
+    "board games",
+    "tabletop games",
+    "data",
+    "datasets",
+    "scraper",
+    "scrapy",
+    "spider",
+    "boardgamegeek",
+    "bgg",
+    "ludoj",
+    "ludoj-scraper",
+)
 URL_HOMEPAGE = "https://recommend.games/"
 URL_DOCUMENTATION = "https://gitlab.com/mshepherd/ludoj-scraper/blob/master/README.md"
 URL_FUNDING = None
