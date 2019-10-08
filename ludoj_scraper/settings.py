@@ -5,9 +5,9 @@
 import os
 
 try:
-    from dotenv import load_dotenv
+    from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv(verbose=True)
+    load_dotenv(dotenv_path=find_dotenv(), verbose=True)
 except ImportError:
     pass
 
