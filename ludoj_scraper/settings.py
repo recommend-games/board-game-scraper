@@ -7,7 +7,8 @@ import os
 try:
     from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv(dotenv_path=find_dotenv(), verbose=True)
+    DOTENV_PATH = os.getenv("DOTENV_PATH") or find_dotenv(usecwd=True)
+    load_dotenv(dotenv_path=DOTENV_PATH, verbose=True)
 except ImportError:
     pass
 
