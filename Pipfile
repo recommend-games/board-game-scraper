@@ -24,3 +24,6 @@ scrapy = "*"
 smart-open = "<1.6.0"
 twisted = "*"
 "w3lib" = "*"
+
+[dev-packages]
+twine = "*"
