@@ -1,11 +1,11 @@
-# ludoj-scraper
+# board-game-scraper
 Scraping data about board games from the web. View the data live at
 [Recommend.Games](https://recommend.games/)! Install via
 ```bash
 pip install ludoj-scraper
 ```
 
-## Scraped websites
+## Sources
 * [Board Game Atlas](https://www.boardgameatlas.com/) (`bga`)
 * [BoardGameGeek](https://boardgamegeek.com/) (`bgg`)
 * [DBpedia](https://wiki.dbpedia.org/) (`dbpedia`)
@@ -41,15 +41,21 @@ and resume them later.
 
 ## Tests
 You can run `scrapy check` to perform contract tests for all spiders, or
-`scrapy check <spider>` to test one particular spider. If tests fails,
+`scrapy check $SPIDER` to test one particular spider. If tests fails,
 there most likely has been some change on the website and the spider needs
 updating.
 
+## Board game datasets
+If you are interested in using any of the datasets produced by this scraper,
+take a look at the 
+[BoardGameGeek guild](https://boardgamegeek.com/thread/2287371/boardgamegeek-games-and-ratings-datasets).
+
 ## Links
-* [ludoj-scraper](https://gitlab.com/mshepherd/ludoj-scraper): This repository
+* [board-game-scraper](https://gitlab.com/recommend.games/board-game-scraper):
+This repository
 * [Recommend.Games](https://recommend.games/): board game recommender using the
 scraped data
-* [ludoj-server](https://gitlab.com/mshepherd/ludoj-server): Server code for
-[Recommend.Games](https://recommend.games/)
-* [ludoj-recommender](https://gitlab.com/mshepherd/ludoj-recommender):
+* [recommend-games-server](https://gitlab.com/recommend.games/recommend-games-server):
+Server code for [Recommend.Games](https://recommend.games/)
+* [board-game-recommender](https://gitlab.com/recommend.games/board-game-recommender):
 Recommender code for [Recommend.Games](https://recommend.games/)
