@@ -1,5 +1,5 @@
 [ludoj]
-disable=broad-except,protected-access,too-many-arguments,too-many-ancestors,too-many-instance-attributes,too-many-locals,too-many-statements,bad-continuation
+disable=broad-except,protected-access,too-many-arguments,too-many-ancestors,too-many-instance-attributes,too-many-locals,too-many-statements,bad-continuation,import-outside-toplevel
 max-branches=20
 max-returns=10
 min-public-methods=1

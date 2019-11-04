@@ -4,10 +4,13 @@
 
 import os
 
+from pytility import parse_bool
+
 try:
     from dotenv import load_dotenv
 
     load_dotenv(verbose=True)
+
 except ImportError:
     pass
 
@@ -16,7 +19,7 @@ BOT_NAME = "ludoj"
 SPIDER_MODULES = ["ludoj_scraper.spiders"]
 NEWSPIDER_MODULE = "ludoj_scraper.spiders"
 
-LOG_LEVEL = "INFO"
+LOG_LEVEL = os.getenv("LOG_LEVEL") or "INFO"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -120,7 +123,8 @@ MULTI_FEED_EXPORT_FIELDS = {
 #               'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36')
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = parse_bool(os.getenv("ROBOTSTXT_OBEY") or True)
+ROBOTSTXT_PARSER = "scrapy.robotstxt.PythonRobotParser"
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 # CONCURRENT_REQUESTS = 32
