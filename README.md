@@ -2,7 +2,7 @@
 Scraping data about board games from the web. View the data live at
 [Recommend.Games](https://recommend.games/)! Install via
 ```bash
-pip install ludoj-scraper
+pip install board-game-scraper
 ```
 
 ## Sources
@@ -47,7 +47,7 @@ updating.
 
 ## Board game datasets
 If you are interested in using any of the datasets produced by this scraper,
-take a look at the 
+take a look at the
 [BoardGameGeek guild](https://boardgamegeek.com/thread/2287371/boardgamegeek-games-and-ratings-datasets).
 
 ## Links

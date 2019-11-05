@@ -13,7 +13,7 @@ mkdir --parents 'feeds/news' 'feeds/news_hosting'
 
 aws s3 sync "s3://${NEWS_DATA_BUCKET}/" 'feeds/news/'
 
-python3 -m ludoj_scraper.merge \
+python3 -m board_game_scraper.merge \
     'feeds/news/*/*/*.jl' \
     --out-path 'feeds/news_merged.jl' \
     --keys article_id \
@@ -23,7 +23,7 @@ python3 -m ludoj_scraper.merge \
     --sort-latest desc \
     --concat
 
-python3 -m ludoj_scraper.split \
+python3 -m board_game_scraper.split \
     'feeds/news_merged.jl' \
     --outfile 'feeds/news_hosting/news_{number:05d}.json' \
     --batch 25
