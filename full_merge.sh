@@ -9,7 +9,7 @@ mkdir --parents 'logs'
 
 DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/bga/GameItem/*' \
     --out-path "feeds/bga/GameItem/${DATE}_merged.jl" \
     --keys bga_id \
@@ -21,7 +21,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/bga_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bga_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/bgg/GameItem/*' \
     --out-path "feeds/bgg/GameItem/${DATE}_merged.jl" \
     --keys bgg_id \
@@ -33,7 +33,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/bgg_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/dbpedia/GameItem/*' \
     --out-path "feeds/dbpedia/GameItem/${DATE}_merged.jl" \
     --keys dbpedia_id \
@@ -45,7 +45,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/dbpedia_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/dbpedia_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/luding/GameItem/*' \
     --out-path "feeds/luding/GameItem/${DATE}_merged.jl" \
     --keys luding_id \
@@ -57,7 +57,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/luding_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/spielen/GameItem/*' \
     --out-path "feeds/spielen/GameItem/${DATE}_merged.jl" \
     --keys spielen_id \
@@ -69,7 +69,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/spielen_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/spielen_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/wikidata/GameItem/*' \
     --out-path "feeds/wikidata/GameItem/${DATE}_merged.jl" \
     --keys wikidata_id \
@@ -81,7 +81,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/wikidata_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/bgg/UserItem/*' \
     --out-path "feeds/bgg/UserItem/${DATE}_merged.jl" \
     --keys bgg_user_name \
@@ -93,7 +93,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/bgg_users_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_users_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/bga/RatingItem/*' \
     --out-path "feeds/bga/RatingItem/${DATE}_merged.jl" \
     --keys bga_user_id bga_id \
@@ -106,7 +106,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/bga_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bga_ratings_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/bgg/RatingItem/*' \
     --out-path "feeds/bgg/RatingItem/${DATE}_merged.jl" \
     --keys bgg_user_name bgg_id \
@@ -118,7 +118,7 @@ nohup python3 -m ludoj_scraper.merge \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
 
-nohup python3 -m ludoj_scraper.merge \
+nohup python3 -m board_game_scraper.merge \
     'feeds/news/*.jl,feeds/news/*/*/*.jl' \
     --out-path "feeds/news/${DATE}_merged.jl" \
     --keys article_id \

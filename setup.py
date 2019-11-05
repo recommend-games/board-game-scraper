@@ -4,8 +4,6 @@
 """Setup."""
 
 # Template from https://github.com/navdeep-G/setup.py
-# Note: To use the 'upload' functionality of this file, you must:
-#   $ pipenv install twine --dev
 
 import io
 import os
@@ -15,9 +13,29 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = "ludoj-scraper"
-DESCRIPTION = "Board games data scraping and processing"
-URL = "https://gitlab.com/mshepherd/ludoj-scraper"
+NAME = "board-game-scraper"
+DESCRIPTION = "Board games data scraping and processing from BoardGameGeek and more!"
+KEYWORDS = (
+    "board games",
+    "tabletop games",
+    "data",
+    "datasets",
+    "scraper",
+    "scrapy",
+    "spider",
+    "boardgamegeek",
+    "bgg",
+    "ludoj",
+    "ludoj-scraper",
+)
+URL_HOMEPAGE = "https://recommend.games/"
+URL_DOCUMENTATION = (
+    "https://gitlab.com/recommend.games/board-game-scraper/blob/master/README.md"
+)
+URL_FUNDING = None
+URL_THANKS = None
+URL_SOURCE = "https://gitlab.com/recommend.games/board-game-scraper"
+URL_TRACKER = "https://gitlab.com/recommend.games/board-game-scraper/issues"
 EMAIL = "recommend.ludoj@gmail.com"
 AUTHOR = "Markus Shepherd"
 REQUIRES_PYTHON = ">=3.6.0"
@@ -120,30 +138,38 @@ setup(
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
+    keywords=KEYWORDS,
     author=AUTHOR,
     author_email=EMAIL,
+    url=URL_HOMEPAGE,
+    project_urls={
+        "Documentation": URL_DOCUMENTATION,
+        "Funding": URL_FUNDING,
+        "Say Thanks!": URL_THANKS,
+        "Source": URL_SOURCE,
+        "Tracker": URL_TRACKER,
+    },
     python_requires=REQUIRES_PYTHON,
-    url=URL,
     packages=find_packages(exclude=("tests", "*.tests", "*.tests.*", "tests.*")),
     # If your package is a single module, use this instead of 'packages':
-    # py_modules=("ludoj_scraper",),
+    # py_modules=(),
     # entry_points={
     #     'console_scripts': ['mycli=mymodule:cli'],
     # },
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
-    license="GPL-3.0-or-later",
-    classifiers=(
+    license="MIT",
+    classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
         "Framework :: Scrapy",
-        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Topic :: Games/Entertainment :: Board Games",
-    ),
+    ],
     # $ setup.py publish support.
     cmdclass={"upload": UploadCommand},
 )

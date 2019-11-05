@@ -7,17 +7,18 @@ import os
 from pytility import parse_bool
 
 try:
-    from dotenv import load_dotenv
+    from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv(verbose=True)
+    DOTENV_PATH = os.getenv("DOTENV_PATH") or find_dotenv(usecwd=True)
+    load_dotenv(dotenv_path=DOTENV_PATH, verbose=True)
 
 except ImportError:
     pass
 
-BOT_NAME = "ludoj"
+BOT_NAME = "board-games"
 
-SPIDER_MODULES = ["ludoj_scraper.spiders"]
-NEWSPIDER_MODULE = "ludoj_scraper.spiders"
+SPIDER_MODULES = ["board_game_scraper.spiders"]
+NEWSPIDER_MODULE = "board_game_scraper.spiders"
 
 LOG_LEVEL = os.getenv("LOG_LEVEL") or "INFO"
 
@@ -118,7 +119,7 @@ MULTI_FEED_EXPORT_FIELDS = {
 }
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-# USER_AGENT = 'ludoj (+http://www.yourdomain.com)'
+# USER_AGENT = 'board-games (+http://www.yourdomain.com)'
 # USER_AGENT = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) '
 #               'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36')
 
@@ -152,33 +153,33 @@ DEFAULT_REQUEST_HEADERS = {
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 # SPIDER_MIDDLEWARES = {
-#    'ludoj_scraper.middlewares.MyCustomSpiderMiddleware': 543,
+#    'board_game_scraper.middlewares.MyCustomSpiderMiddleware': 543,
 # }
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {"ludoj_scraper.middlewares.DelayedRetry": 555}
+DOWNLOADER_MIDDLEWARES = {"board_game_scraper.middlewares.DelayedRetry": 555}
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
     "scrapy.extensions.feedexport.FeedExporter": None,
-    "ludoj_scraper.extensions.MultiFeedExporter": 0,
+    "board_game_scraper.extensions.MultiFeedExporter": 0,
     "scrapy.extensions.throttle.AutoThrottle": None,
-    "ludoj_scraper.extensions.NicerAutoThrottle": 0,
-    "ludoj_scraper.extensions.StateTag": 0,
-    "ludoj_scraper.extensions.PullQueueExtension": 100,
-    "ludoj_scraper.extensions.MonitorDownloadsExtension": 500,
-    "ludoj_scraper.extensions.DumpStatsExtension": 500,
+    "board_game_scraper.extensions.NicerAutoThrottle": 0,
+    "board_game_scraper.extensions.StateTag": 0,
+    "board_game_scraper.extensions.PullQueueExtension": 100,
+    "board_game_scraper.extensions.MonitorDownloadsExtension": 500,
+    "board_game_scraper.extensions.DumpStatsExtension": 500,
 }
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "ludoj_scraper.pipelines.DataTypePipeline": 100,
-    "ludoj_scraper.pipelines.ValidatePipeline": 200,
-    "ludoj_scraper.pipelines.ResolveLabelPipeline": 300,
-    "ludoj_scraper.pipelines.ResolveImagePipeline": 400,
+    "board_game_scraper.pipelines.DataTypePipeline": 100,
+    "board_game_scraper.pipelines.ValidatePipeline": 200,
+    "board_game_scraper.pipelines.ResolveLabelPipeline": 300,
+    "board_game_scraper.pipelines.ResolveImagePipeline": 400,
     "scrapy.pipelines.images.ImagesPipeline": None,
     "scrapy.pipelines.images.FilesPipeline": None,
 }
