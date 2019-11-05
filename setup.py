@@ -29,11 +29,13 @@ KEYWORDS = (
     "ludoj-scraper",
 )
 URL_HOMEPAGE = "https://recommend.games/"
-URL_DOCUMENTATION = "https://gitlab.com/mshepherd/ludoj-scraper/blob/master/README.md"
+URL_DOCUMENTATION = (
+    "https://gitlab.com/recommend.games/board-game-scraper/blob/master/README.md"
+)
 URL_FUNDING = None
 URL_THANKS = None
-URL_SOURCE = "https://gitlab.com/mshepherd/ludoj-scraper"
-URL_TRACKER = "https://gitlab.com/mshepherd/ludoj-scraper/issues"
+URL_SOURCE = "https://gitlab.com/recommend.games/board-game-scraper"
+URL_TRACKER = "https://gitlab.com/recommend.games/board-game-scraper/issues"
 EMAIL = "recommend.ludoj@gmail.com"
 AUTHOR = "Markus Shepherd"
 REQUIRES_PYTHON = ">=3.6.0"
@@ -158,7 +160,7 @@ setup(
     extras_require=EXTRAS,
     include_package_data=True,
     license="MIT",
-    classifiers=(
+    classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
         "Framework :: Scrapy",
@@ -167,7 +169,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Topic :: Games/Entertainment :: Board Games",
-    ),
+    ],
     # $ setup.py publish support.
     cmdclass={"upload": UploadCommand},
 )
