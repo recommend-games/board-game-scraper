@@ -46,6 +46,9 @@ def _spark_context(log_level=None, **kwargs):
 
         conf = pyspark.SparkConf()
         conf.set("spark.ui.showConsoleProgress", False)
+        conf.set("spark.executor.memory", "16G")
+        conf.set("spark.driver.memory", "16G")
+        conf.set("spark.driver.maxResultSize", "16G")
         kwargs["conf"] = conf
         context = pyspark.SparkContext(**kwargs)
 
