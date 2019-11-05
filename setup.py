@@ -144,8 +144,8 @@ setup(
     url=URL_HOMEPAGE,
     project_urls={
         "Documentation": URL_DOCUMENTATION,
-        "Funding": URL_FUNDING,
-        "Say Thanks!": URL_THANKS,
+        # "Funding": URL_FUNDING,
+        # "Say Thanks!": URL_THANKS,
         "Source": URL_SOURCE,
         "Tracker": URL_TRACKER,
     },
