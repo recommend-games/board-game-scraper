@@ -10,7 +10,7 @@ from urllib.parse import quote, unquote_plus
 
 import jmespath
 
-from pytility import clear_list
+from pytility import clear_list, take_first
 from scrapy import Request
 from scrapy.exceptions import DropItem, NotConfigured
 from scrapy.utils.defer import defer_result
@@ -18,7 +18,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import flatten
 from twisted.internet.defer import DeferredList
 
-from .utils import REGEX_DBPEDIA_DOMAIN, first, parse_json, parse_url
+from .utils import REGEX_DBPEDIA_DOMAIN, parse_json, parse_url
 
 LOGGER = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ class ResolveLabelPipeline:
     def _extract_labels(self, response, value):
         json_obj = parse_json(response.text) if hasattr(response, "text") else {}
 
-        labels = first(jmespath.search(f"entities.{value}.labels", json_obj)) or {}
+        labels = take_first(jmespath.search(f"entities.{value}.labels", json_obj)) or {}
         labels = labels.values()
         labels = sorted(
             labels,

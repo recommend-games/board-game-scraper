@@ -15,7 +15,7 @@ from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
-from pytility import clear_list, normalize_space, to_str, parse_date
+from pytility import clear_list, normalize_space, take_first, to_str, parse_date
 from scrapy.item import BaseItem
 from scrapy.utils.misc import arg_to_iter
 from w3lib.html import replace_entities
@@ -54,14 +54,6 @@ def identity(obj: Any) -> Any:
 def const_true(*args, **kwargs) -> bool:
     """ returns True """
     return True
-
-
-def first(items, default=None):
-    """ return first item """
-    for item in arg_to_iter(items):
-        if item is not None and item != "":
-            return item
-    return default
 
 
 def parse_int(string: Any, base: int = 10) -> Optional[int]:
@@ -586,7 +578,7 @@ def extract_bga_id(url: Union[str, ParseResult, None]) -> Optional[str]:
         return match.group(1)
     ids = extract_query_param(url, "ids")
     ids = ids.split(",") if ids else ()
-    return first(map(normalize_space, ids)) or extract_query_param(url, "game-id")
+    return take_first(map(normalize_space, ids)) or extract_query_param(url, "game-id")
 
 
 def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
