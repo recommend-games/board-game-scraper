@@ -8,7 +8,7 @@ import statistics
 from itertools import repeat
 from urllib.parse import urlencode
 
-from pytility import clear_list, normalize_space
+from pytility import clear_list, normalize_space, parse_int
 from scrapy import signals
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
@@ -22,7 +22,6 @@ from ..utils import (
     extract_bgg_user_name,
     extract_query_param,
     now,
-    parse_int,
 )
 
 DIGITS_REGEX = re.compile(r"^\D*(\d+).*$")

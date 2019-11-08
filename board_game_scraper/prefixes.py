@@ -12,11 +12,11 @@ import sys
 
 from itertools import groupby
 
-from pytility import to_str
+from pytility import parse_int, to_str
 from pytrie import SortedStringTrie as Trie
 from scrapy.utils.misc import arg_to_iter
 
-from .utils import parse_int, parse_json, serialize_json
+from .utils import parse_json, serialize_json
 
 LOGGER = logging.getLogger(__name__)
 NON_WORD_REGEX = re.compile(r"[^a-z]")

@@ -12,16 +12,22 @@ from datetime import datetime, timezone
 from functools import partial
 from itertools import groupby
 from types import GeneratorType
-from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
+from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
-from pytility import clear_list, normalize_space, take_first, to_str, parse_date
+from pytility import (
+    clear_list,
+    normalize_space,
+    parse_int,
+    take_first,
+    to_str,
+    parse_date,
+)
 from scrapy.item import BaseItem
 from scrapy.utils.misc import arg_to_iter
 from w3lib.html import replace_entities
 
 LOGGER = logging.getLogger(__name__)
-TYPE = TypeVar("TYPE")
 
 REGEX_ENTITIES = re.compile(r"(&#(\d+);)+")
 REGEX_SINGLE_ENT = re.compile(r"&#(\d+);")
@@ -54,27 +60,6 @@ def identity(obj: Any) -> Any:
 def const_true(*args, **kwargs) -> bool:
     """ returns True """
     return True
-
-
-def parse_int(string: Any, base: int = 10) -> Optional[int]:
-    """ safely convert an object to int if possible, else return None """
-
-    if isinstance(string, int):
-        return string
-
-    try:
-        return int(string, base=base)
-
-    except Exception:
-        pass
-
-    try:
-        return int(string)
-
-    except Exception:
-        pass
-
-    return None
 
 
 def parse_float(number: Any) -> Optional[float]:

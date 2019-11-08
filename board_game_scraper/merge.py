@@ -13,6 +13,7 @@ from datetime import timedelta
 from functools import lru_cache, partial
 from pathlib import Path
 
+from pytility import parse_int
 from scrapy.utils.misc import arg_to_iter
 
 from .prefixes import split_file
@@ -21,7 +22,6 @@ from .utils import (
     identity,
     now,
     parse_float,
-    parse_int,
     parse_json,
     serialize_json,
     str_to_parser,
