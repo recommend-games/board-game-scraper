@@ -53,7 +53,7 @@ REQUIRED = (
     "pyspark",
     "python-dateutil",
     "python-dotenv",
-    "pytility",
+    "pytility[dates]",
     "pytrie",
     "pyyaml",
     "requests",

@@ -7,7 +7,6 @@ import logging
 import os
 import re
 import shutil
-import string as string_lib
 
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -17,18 +16,13 @@ from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
-import dateutil.parser
-
+from pytility import to_str, parse_date
 from scrapy.item import BaseItem
 from scrapy.utils.misc import arg_to_iter
 from w3lib.html import replace_entities
 
 LOGGER = logging.getLogger(__name__)
 TYPE = TypeVar("T")
-
-PRINTABLE_SET = frozenset(string_lib.printable)
-NON_PRINTABLE_SET = frozenset(chr(i) for i in range(128)) - PRINTABLE_SET
-NON_PRINTABLE_TANSLATE = {ord(character): None for character in NON_PRINTABLE_SET}
 
 REGEX_ENTITIES = re.compile(r"(&#(\d+);)+")
 REGEX_SINGLE_ENT = re.compile(r"&#(\d+);")
@@ -44,18 +38,6 @@ REGEX_SPIELEN_ID = re.compile(
 )
 REGEX_FREEBASE_ID = re.compile(r"^/ns/(g|m)\.([^/]+).*$")
 REGEX_BGA_ID = re.compile(r"^.*/game/([a-zA-Z0-9]+)(/.*)?$")
-
-
-def to_str(string: Any, encoding: str = "utf-8") -> Optional[str]:
-    """ safely returns either string or None """
-    string = (
-        string
-        if isinstance(string, str)
-        else string.decode(encoding)
-        if isinstance(string, bytes)
-        else None
-    )
-    return string.translate(NON_PRINTABLE_TANSLATE) if string is not None else None
 
 
 def to_lower(string):
@@ -189,55 +171,6 @@ def now(tzinfo=None):
 
     result = datetime.utcnow().replace(microsecond=0, tzinfo=timezone.utc)
     return result if tzinfo is None else result.astimezone(tzinfo)
-
-
-def _add_tz(date, tzinfo=None):
-    return (
-        date if not tzinfo or not date or date.tzinfo else date.replace(tzinfo=tzinfo)
-    )
-
-
-def parse_date(date, tzinfo=None, format_str=None):
-    """try to turn input into a datetime object"""
-
-    if not date:
-        return None
-
-    # already a datetime
-    if isinstance(date, datetime):
-        return _add_tz(date, tzinfo)
-
-    # parse as epoch time
-    timestamp = parse_float(date)
-    if timestamp is not None:
-        return datetime.fromtimestamp(timestamp, tzinfo or timezone.utc)
-
-    if format_str:
-        try:
-            # parse as string in given format
-            return _add_tz(datetime.strptime(date, format_str), tzinfo)
-        except Exception:
-            pass
-
-    try:
-        # parse as string
-        return _add_tz(dateutil.parser.parse(date), tzinfo)
-    except Exception:
-        pass
-
-    try:
-        # parse as (year, month, day, hour, minute, second, microsecond, tzinfo)
-        return datetime(*date)
-    except Exception:
-        pass
-
-    try:
-        # parse as time.struct_time
-        return datetime(*date[:6], tzinfo=tzinfo or timezone.utc)
-    except Exception:
-        pass
-
-    return None
 
 
 def serialize_date(date, tzinfo=None):

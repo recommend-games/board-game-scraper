@@ -8,6 +8,7 @@ import logging
 from datetime import date, datetime, timezone
 from functools import partial
 
+from pytility import parse_date
 from scrapy import Field, Item
 from scrapy.loader.processors import Identity, MapCompose
 from scrapy.utils.project import get_project_settings
@@ -19,7 +20,6 @@ from .utils import (
     normalize_space,
     now,
     parse_bool,
-    parse_date,
     parse_float,
     parse_int,
     parse_json,

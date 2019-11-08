@@ -15,9 +15,8 @@ jmespath = "*"
 pillow = "*"
 pympler = "*"
 pyspark = "*"
-python-dateutil = "*"
 python-dotenv = "*"
-pytility = "*"
+pytility = {extras = ["dates"], version = "*"}
 pytrie = "*"
 pyyaml = "*"
 requests = "*"
@@ -27,4 +26,7 @@ twisted = "*"
 "w3lib" = "*"
 
 [dev-packages]
+black = "==19.10b0"
+mypy = "*"
+pylint = "*"
 twine = "*"
