@@ -16,13 +16,13 @@ from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
-from pytility import to_str, parse_date
+from pytility import normalize_space, to_str, parse_date
 from scrapy.item import BaseItem
 from scrapy.utils.misc import arg_to_iter
 from w3lib.html import replace_entities
 
 LOGGER = logging.getLogger(__name__)
-TYPE = TypeVar("T")
+TYPE = TypeVar("TYPE")
 
 REGEX_ENTITIES = re.compile(r"(&#(\d+);)+")
 REGEX_SINGLE_ENT = re.compile(r"&#(\d+);")
@@ -55,28 +55,6 @@ def identity(obj: Any) -> Any:
 def const_true(*args, **kwargs) -> bool:
     """ returns True """
     return True
-
-
-def normalize_space(item: Any, preserve_newline: bool = False) -> str:
-    """ normalize space in a string """
-
-    item = to_str(item)
-
-    if not item:
-        return ""
-
-    if preserve_newline:
-        try:
-            return "\n".join(
-                normalize_space(line) for line in item.splitlines()
-            ).strip()
-        except Exception:
-            return ""
-
-    try:
-        return " ".join(item.split())
-    except Exception:
-        return ""
 
 
 def clear_list(items: Iterable[Optional[TYPE]]) -> List[TYPE]:

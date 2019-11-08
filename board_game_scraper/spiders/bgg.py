@@ -8,6 +8,7 @@ import statistics
 from itertools import repeat
 from urllib.parse import urlencode
 
+from pytility import normalize_space
 from scrapy import signals
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
@@ -21,7 +22,6 @@ from ..utils import (
     extract_bgg_id,
     extract_bgg_user_name,
     extract_query_param,
-    normalize_space,
     now,
     parse_int,
 )

@@ -6,6 +6,7 @@ import json
 
 from urllib.parse import urlencode
 
+from pytility import normalize_space
 from scrapy import Request, Spider
 from scrapy.loader.processors import MapCompose
 
@@ -16,7 +17,6 @@ from ..utils import (
     extract_ids,
     extract_wikidata_id,
     identity,
-    normalize_space,
 )
 
 
