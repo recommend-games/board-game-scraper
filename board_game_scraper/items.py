@@ -8,14 +8,13 @@ import logging
 from datetime import date, datetime, timezone
 from functools import partial
 
-from pytility import normalize_space, parse_date
+from pytility import clear_list, normalize_space, parse_date
 from scrapy import Field, Item
 from scrapy.loader.processors import Identity, MapCompose
 from scrapy.utils.project import get_project_settings
 from w3lib.html import remove_tags
 
 from .utils import (
-    clear_list,
     identity,
     now,
     parse_bool,

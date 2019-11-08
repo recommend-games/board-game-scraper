@@ -15,12 +15,12 @@ from itertools import chain
 import dedupe
 import yaml
 
+from pytility import clear_list
 from scrapy.utils.misc import arg_to_iter, load_object
 from smart_open import smart_open
 
 from .items import GameItem
 from .utils import (
-    clear_list,
     parse_float,
     parse_int,
     parse_json,

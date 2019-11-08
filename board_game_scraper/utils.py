@@ -8,7 +8,6 @@ import os
 import re
 import shutil
 
-from collections import OrderedDict
 from datetime import datetime, timezone
 from functools import partial
 from itertools import groupby
@@ -16,7 +15,7 @@ from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
-from pytility import normalize_space, to_str, parse_date
+from pytility import clear_list, normalize_space, to_str, parse_date
 from scrapy.item import BaseItem
 from scrapy.utils.misc import arg_to_iter
 from w3lib.html import replace_entities
@@ -55,11 +54,6 @@ def identity(obj: Any) -> Any:
 def const_true(*args, **kwargs) -> bool:
     """ returns True """
     return True
-
-
-def clear_list(items: Iterable[Optional[TYPE]]) -> List[TYPE]:
-    """ return unique items in order of first ocurrence """
-    return list(OrderedDict.fromkeys(filter(None, items)))
 
 
 def first(items, default=None):

@@ -4,11 +4,12 @@
 
 import re
 
+from pytility import clear_list
 from scrapy import Spider
 
 from ..items import GameItem
 from ..loaders import GameLoader
-from ..utils import clear_list, extract_spielen_id, now
+from ..utils import extract_spielen_id, now
 
 
 def _parse_interval(text):

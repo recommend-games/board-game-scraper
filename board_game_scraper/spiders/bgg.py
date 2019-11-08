@@ -8,7 +8,7 @@ import statistics
 from itertools import repeat
 from urllib.parse import urlencode
 
-from pytility import normalize_space
+from pytility import clear_list, normalize_space
 from scrapy import signals
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
@@ -18,7 +18,6 @@ from ..items import GameItem, RatingItem, UserItem
 from ..loaders import GameLoader, RatingLoader, UserLoader
 from ..utils import (
     batchify,
-    clear_list,
     extract_bgg_id,
     extract_bgg_user_name,
     extract_query_param,
