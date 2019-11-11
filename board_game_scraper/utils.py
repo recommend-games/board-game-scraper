@@ -172,18 +172,6 @@ def serialize_json(obj, file=None, **kwargs):
     return json.dumps(obj, **kwargs)
 
 
-def parse_bool(item):
-    """ parses an item and converts it to a boolean """
-    if isinstance(item, int):
-        return bool(item)
-    if item in ("True", "true", "Yes", "yes"):
-        return True
-    integer = parse_int(item)
-    if integer is not None:
-        return bool(integer)
-    return False
-
-
 def str_to_parser(string):
     """ parser from key string """
     string = to_lower(string)
