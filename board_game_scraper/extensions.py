@@ -8,6 +8,7 @@ import pprint
 
 from datetime import timedelta
 
+from pytility import parse_float
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import FeedExporter
@@ -17,7 +18,7 @@ from scrapy.utils.misc import load_object
 from twisted.internet.defer import DeferredList, maybeDeferred
 from twisted.internet.task import LoopingCall
 
-from .utils import now, parse_float
+from .utils import now
 
 LOGGER = logging.getLogger(__name__)
 

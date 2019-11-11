@@ -4,12 +4,13 @@
 
 from urllib.parse import urlencode
 
+from pytility import batchify, normalize_space
 from scrapy import Request, Spider
 
 from .wikidata import WikidataSpider
 from ..items import GameItem
 from ..loaders import GameLoader
-from ..utils import batchify, extract_ids, normalize_space
+from ..utils import extract_ids
 
 
 def _sparql_xpath(

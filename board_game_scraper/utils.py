@@ -6,29 +6,26 @@ import json
 import logging
 import os
 import re
-import shutil
-import string as string_lib
 
-from collections import OrderedDict
 from datetime import datetime, timezone
 from functools import partial
-from itertools import groupby
 from types import GeneratorType
-from typing import Any, Dict, Iterable, List, Optional, Pattern, TypeVar, Union
+from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
 
-import dateutil.parser
-
+from pytility import (
+    clear_list,
+    normalize_space,
+    parse_float,
+    parse_int,
+    take_first,
+    to_str,
+    parse_date,
+)
 from scrapy.item import BaseItem
-from scrapy.utils.misc import arg_to_iter
 from w3lib.html import replace_entities
 
 LOGGER = logging.getLogger(__name__)
-TYPE = TypeVar("T")
-
-PRINTABLE_SET = frozenset(string_lib.printable)
-NON_PRINTABLE_SET = frozenset(chr(i) for i in range(128)) - PRINTABLE_SET
-NON_PRINTABLE_TANSLATE = {ord(character): None for character in NON_PRINTABLE_SET}
 
 REGEX_ENTITIES = re.compile(r"(&#(\d+);)+")
 REGEX_SINGLE_ENT = re.compile(r"&#(\d+);")
@@ -46,18 +43,6 @@ REGEX_FREEBASE_ID = re.compile(r"^/ns/(g|m)\.([^/]+).*$")
 REGEX_BGA_ID = re.compile(r"^.*/game/([a-zA-Z0-9]+)(/.*)?$")
 
 
-def to_str(string: Any, encoding: str = "utf-8") -> Optional[str]:
-    """ safely returns either string or None """
-    string = (
-        string
-        if isinstance(string, str)
-        else string.decode(encoding)
-        if isinstance(string, bytes)
-        else None
-    )
-    return string.translate(NON_PRINTABLE_TANSLATE) if string is not None else None
-
-
 def to_lower(string):
     """ safely convert to lower case string, else return None """
     string = to_str(string)
@@ -73,79 +58,6 @@ def identity(obj: Any) -> Any:
 def const_true(*args, **kwargs) -> bool:
     """ returns True """
     return True
-
-
-def normalize_space(item: Any, preserve_newline: bool = False) -> str:
-    """ normalize space in a string """
-
-    item = to_str(item)
-
-    if not item:
-        return ""
-
-    if preserve_newline:
-        try:
-            return "\n".join(
-                normalize_space(line) for line in item.splitlines()
-            ).strip()
-        except Exception:
-            return ""
-
-    try:
-        return " ".join(item.split())
-    except Exception:
-        return ""
-
-
-def clear_list(items: Iterable[Optional[TYPE]]) -> List[TYPE]:
-    """ return unique items in order of first ocurrence """
-    return list(OrderedDict.fromkeys(filter(None, items)))
-
-
-def first(items, default=None):
-    """ return first item """
-    for item in arg_to_iter(items):
-        if item is not None and item != "":
-            return item
-    return default
-
-
-def parse_int(string: Any, base: int = 10) -> Optional[int]:
-    """ safely convert an object to int if possible, else return None """
-
-    if isinstance(string, int):
-        return string
-
-    try:
-        return int(string, base=base)
-
-    except Exception:
-        pass
-
-    try:
-        return int(string)
-
-    except Exception:
-        pass
-
-    return None
-
-
-def parse_float(number: Any) -> Optional[float]:
-    """ safely convert an object to float if possible, else return None """
-    try:
-        return float(number)
-    except Exception:
-        pass
-    return None
-
-
-def batchify(iterable, size, skip=None):
-    """ yields batches of the given size """
-
-    iterable = (x for x in iterable if x not in skip) if skip is not None else iterable
-    for _, group in groupby(enumerate(iterable), key=lambda x: x[0] // size):
-        yield (x[1] for x in group)
 
 
 def _replace_utf_entities(match):
@@ -189,55 +101,6 @@ def now(tzinfo=None):
 
     result = datetime.utcnow().replace(microsecond=0, tzinfo=timezone.utc)
     return result if tzinfo is None else result.astimezone(tzinfo)
-
-
-def _add_tz(date, tzinfo=None):
-    return (
-        date if not tzinfo or not date or date.tzinfo else date.replace(tzinfo=tzinfo)
-    )
-
-
-def parse_date(date, tzinfo=None, format_str=None):
-    """try to turn input into a datetime object"""
-
-    if not date:
-        return None
-
-    # already a datetime
-    if isinstance(date, datetime):
-        return _add_tz(date, tzinfo)
-
-    # parse as epoch time
-    timestamp = parse_float(date)
-    if timestamp is not None:
-        return datetime.fromtimestamp(timestamp, tzinfo or timezone.utc)
-
-    if format_str:
-        try:
-            # parse as string in given format
-            return _add_tz(datetime.strptime(date, format_str), tzinfo)
-        except Exception:
-            pass
-
-    try:
-        # parse as string
-        return _add_tz(dateutil.parser.parse(date), tzinfo)
-    except Exception:
-        pass
-
-    try:
-        # parse as (year, month, day, hour, minute, second, microsecond, tzinfo)
-        return datetime(*date)
-    except Exception:
-        pass
-
-    try:
-        # parse as time.struct_time
-        return datetime(*date[:6], tzinfo=tzinfo or timezone.utc)
-    except Exception:
-        pass
-
-    return None
 
 
 def serialize_date(date, tzinfo=None):
@@ -305,18 +168,6 @@ def serialize_json(obj, file=None, **kwargs):
         return json.dump(obj, file, **kwargs)
 
     return json.dumps(obj, **kwargs)
-
-
-def parse_bool(item):
-    """ parses an item and converts it to a boolean """
-    if isinstance(item, int):
-        return bool(item)
-    if item in ("True", "true", "Yes", "yes"):
-        return True
-    integer = parse_int(item)
-    if integer is not None:
-        return bool(integer)
-    return False
 
 
 def str_to_parser(string):
@@ -531,32 +382,6 @@ def smart_walks(*paths, load=False, raise_exc=False, **kwargs):
                 raise exc
 
 
-def concat(dst, srcs):
-    """ concatenate files """
-
-    if isinstance(dst, (str, bytes, os.PathLike)):
-        LOGGER.info("concatenating files into <%s>", dst)
-        with open(dst, "w") as out_file:
-            return concat(out_file, srcs)
-
-    total = 0
-
-    for src in arg_to_iter(srcs):
-        LOGGER.info("copy data from <%s>", src)
-        with open(src, "r") as in_file:
-            shutil.copyfileobj(in_file, dst)
-            if in_file.tell():
-                total += in_file.tell()
-                in_file.seek(in_file.tell() - 1)
-                if in_file.read(1) != "\n":
-                    out_file.write("\n")
-                    total += 1
-
-    LOGGER.info("done concatenating, %d bytes in total", total)
-
-    return total
-
-
 def _match(string: str, comparison: Union[str, Pattern]):
     return (
         string == comparison
@@ -679,9 +504,9 @@ def extract_bga_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     match = REGEX_BGA_ID.match(url.path)
     if match:
         return match.group(1)
-    ids = extract_query_param(url, "ids")
-    ids = ids.split(",") if ids else ()
-    return first(map(normalize_space, ids)) or extract_query_param(url, "game-id")
+    ids_str = extract_query_param(url, "ids")
+    ids = ids_str.split(",") if ids_str else ()
+    return take_first(map(normalize_space, ids)) or extract_query_param(url, "game-id")
 
 
 def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:

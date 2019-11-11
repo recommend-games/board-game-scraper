@@ -8,6 +8,7 @@ import statistics
 from itertools import repeat
 from urllib.parse import urlencode
 
+from pytility import batchify, clear_list, normalize_space, parse_int
 from scrapy import signals
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
@@ -16,14 +17,10 @@ from scrapy.utils.project import get_project_settings
 from ..items import GameItem, RatingItem, UserItem
 from ..loaders import GameLoader, RatingLoader, UserLoader
 from ..utils import (
-    batchify,
-    clear_list,
     extract_bgg_id,
     extract_bgg_user_name,
     extract_query_param,
-    normalize_space,
     now,
-    parse_int,
 )
 
 DIGITS_REGEX = re.compile(r"^\D*(\d+).*$")
@@ -182,9 +179,13 @@ class BggSpider(Spider):
         if not bgg_ids:
             return
 
-        for batch in batchify(
-            bgg_ids, batch_size, skip=self._ids_seen if page == 1 else None
-        ):
+        bgg_ids = (
+            (bgg_id for bgg_id in bgg_ids if bgg_id not in self._ids_seen)
+            if page == 1
+            else bgg_ids
+        )
+
+        for batch in batchify(bgg_ids, batch_size):
             batch = tuple(batch)
 
             ids = ",".join(map(str, batch))

@@ -13,15 +13,13 @@ from datetime import timedelta
 from functools import lru_cache, partial
 from pathlib import Path
 
+from pytility import concat_files, parse_float, parse_int
 from scrapy.utils.misc import arg_to_iter
 
 from .prefixes import split_file
 from .utils import (
-    concat,
     identity,
     now,
-    parse_float,
-    parse_int,
     parse_json,
     serialize_json,
     str_to_parser,
@@ -198,7 +196,7 @@ def merge_files(
 
             LOGGER.info("concatenate temporary files to <%s>", out_path)
             files = path.glob("part-*")
-            concat(out_path, sorted(files))
+            concat_files(dst=out_path, srcs=sorted(files), ensure_newline=True)
 
     else:
         LOGGER.info("saving output to <%s>", out_path)

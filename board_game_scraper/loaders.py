@@ -4,13 +4,14 @@
 
 import jmespath
 
+from pytility import normalize_space
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import TakeFirst, MapCompose
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import flatten
 from w3lib.html import remove_tags
 
-from .utils import identity, normalize_space, parse_json, replace_all_entities
+from .utils import identity, parse_json, replace_all_entities
 
 
 class JsonLoader(ItemLoader):

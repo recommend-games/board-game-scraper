@@ -9,9 +9,8 @@ import sys
 
 from functools import partial
 
+from pytility import batchify
 from smart_open import smart_open
-
-from .utils import batchify
 
 LOGGER = logging.getLogger(__name__)
 FIELDS = frozenset(
