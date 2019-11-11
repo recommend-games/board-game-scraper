@@ -504,8 +504,8 @@ def extract_bga_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     match = REGEX_BGA_ID.match(url.path)
     if match:
         return match.group(1)
-    ids = extract_query_param(url, "ids")
-    ids = ids.split(",") if ids else ()
+    ids_str = extract_query_param(url, "ids")
+    ids = ids_str.split(",") if ids_str else ()
     return take_first(map(normalize_space, ids)) or extract_query_param(url, "game-id")
 
 

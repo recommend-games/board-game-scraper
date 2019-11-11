@@ -51,7 +51,6 @@ REQUIRED = (
     "pillow",
     "pympler",
     "pyspark",
-    "python-dateutil",
     "python-dotenv",
     "pytility[dates]",
     "pytrie",
