@@ -18,6 +18,7 @@ from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunpar
 from pytility import (
     clear_list,
     normalize_space,
+    parse_float,
     parse_int,
     take_first,
     to_str,
@@ -60,15 +61,6 @@ def identity(obj: Any) -> Any:
 def const_true(*args, **kwargs) -> bool:
     """ returns True """
     return True
-
-
-def parse_float(number: Any) -> Optional[float]:
-    """ safely convert an object to float if possible, else return None """
-    try:
-        return float(number)
-    except Exception:
-        pass
-    return None
 
 
 def batchify(iterable, size, skip=None):

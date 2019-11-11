@@ -6,12 +6,13 @@ from functools import partial
 from itertools import chain
 from urllib.parse import urlencode
 
+from pytility import parse_float
 from scrapy import Request, Spider
 from scrapy.utils.project import get_project_settings
 
 from ..items import GameItem, RatingItem
 from ..loaders import GameJsonLoader, RatingJsonLoader
-from ..utils import extract_bga_id, now, parse_float, parse_json
+from ..utils import extract_bga_id, now, parse_json
 
 API_URL = "https://www.boardgameatlas.com/api"
 
