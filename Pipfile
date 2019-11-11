@@ -28,5 +28,6 @@ twisted = "*"
 [dev-packages]
 black = "==19.10b0"
 mypy = "*"
+psutil = "*"
 pylint = "*"
 twine = "*"
