@@ -6,14 +6,13 @@ import json
 
 from urllib.parse import urlencode
 
-from pytility import normalize_space
+from pytility import batchify, normalize_space
 from scrapy import Request, Spider
 from scrapy.loader.processors import MapCompose
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
 from ..utils import (
-    batchify,
     extract_ids,
     extract_wikidata_id,
     identity,

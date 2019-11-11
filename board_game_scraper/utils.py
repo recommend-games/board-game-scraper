@@ -10,7 +10,6 @@ import shutil
 
 from datetime import datetime, timezone
 from functools import partial
-from itertools import groupby
 from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
@@ -61,14 +60,6 @@ def identity(obj: Any) -> Any:
 def const_true(*args, **kwargs) -> bool:
     """ returns True """
     return True
-
-
-def batchify(iterable, size, skip=None):
-    """ yields batches of the given size """
-
-    iterable = (x for x in iterable if x not in skip) if skip is not None else iterable
-    for _, group in groupby(enumerate(iterable), key=lambda x: x[0] // size):
-        yield (x[1] for x in group)
 
 
 def _replace_utf_entities(match):
