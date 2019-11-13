@@ -11,6 +11,7 @@ import sys
 
 from collections import defaultdict
 from itertools import chain
+from pkg_resources import resource_stream
 
 import dedupe
 import yaml
@@ -37,10 +38,9 @@ def abs_comp(field_1, field_2):
     return math.inf if field_1 is None or field_2 is None else abs(field_1 - field_2)
 
 
-def _fields(file=os.path.join(BASE_DIR, "fields.yaml")):
-    LOGGER.info("loading dedupe fields from <%s>", file)
-    with smart_open(file) as file_obj:
-        fields = yaml.safe_load(file_obj)
+def _fields(resource="fields.yaml"):
+    LOGGER.info("loading dedupe fields from <%s>", resource)
+    fields = yaml.safe_load(resource_stream(__name__, resource))
 
     for field in fields:
         if field.get("comparator"):
