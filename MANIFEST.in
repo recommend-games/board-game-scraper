@@ -1,1 +1,1 @@
-include LICENSE README.md fields.yaml scrapy.cfg
+include LICENSE README.md board_game_scraper/fields.yaml scrapy.cfg
