@@ -86,18 +86,19 @@ def _extract_date(url, tzinfo=timezone.utc, format_str="%Y%m%d%H%M%S"):
 class BggSpider(Spider):
     """ BoardGameGeek spider """
 
-    name = "bgg-rankings"
+    name = "bgg_rankings"
     allowed_domains = ["boardgamegeek.com", "archive.org"]
     start_urls = (
-        "https://web.archive.org/web/20090225235227/http://www.boardgamegeek.com/browse/boardgame",
+        # start scraping from 2000-01-01T00:00:00 in order to catch first capture
+        "https://web.archive.org/web/20000101000000/http://www.boardgamegeek.com/browse/boardgame",
         "https://boardgamegeek.com/browse/boardgame",
     )
     item_classes = (GameItem,)
 
     custom_settings = {
-        "DOWNLOAD_DELAY": 1,
-        "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
-        "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+        "DOWNLOAD_DELAY": 0.5,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
         "DELAYED_RETRY_ENABLED": True,
         "DELAYED_RETRY_HTTP_CODES": (202,),
         "DELAYED_RETRY_DELAY": 5.0,
