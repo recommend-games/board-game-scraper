@@ -168,6 +168,33 @@ class BggSpider(Spider):
 
             yield ldr.load_item()
 
+        for row in response.css("div.simplebox table tr"):
+            cells = row.xpath("td")
+
+            if len(cells) != 3:
+                continue
+
+            link = cells[1].xpath("a/@href").extract_first()
+            link = response.urljoin(link)
+            bgg_id = _extract_bgg_id(link)
+
+            if not bgg_id:
+                continue
+
+            ldr = GameLoader(
+                item=GameItem(
+                    bgg_id=bgg_id, published_at=published_at, scraped_at=scraped_at,
+                ),
+                selector=row,
+                response=response,
+            )
+
+            ldr.add_xpath("rank", "td[1]")
+            ldr.add_xpath("name", "td[2]")
+            ldr.add_xpath("bayes_rating", "td[3]")
+
+            yield ldr.load_item()
+
         for next_capture in response.xpath(
             "//div[@id = 'wm-ipp']//table//a[img[@alt = 'Next capture']]/@href"
         ).extract():
