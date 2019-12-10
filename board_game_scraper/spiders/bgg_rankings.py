@@ -90,6 +90,7 @@ class BggSpider(Spider):
     allowed_domains = ["boardgamegeek.com", "archive.org"]
     start_urls = (
         # start scraping from 2000-01-01T00:00:00 in order to catch first capture
+        "https://web.archive.org/web/20000101000000/http://www.boardgamegeek.com/rankbrowse.php3",
         "https://web.archive.org/web/20000101000000/http://www.boardgamegeek.com/browse/boardgame",
         "https://boardgamegeek.com/browse/boardgame",
     )
