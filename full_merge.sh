@@ -119,6 +119,17 @@ nohup python3 -m board_game_scraper.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
+    'feeds/bgg_rankings/GameItem/*' \
+    --out-path "feeds/bgg_rankings/GameItem/${DATE}_merged.jl" \
+    --keys published_at bgg_id \
+    --key-types date int \
+    --latest scraped_at \
+    --latest-types date \
+    --concat \
+    >> 'logs/bgg_rankings_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/bgg_rankings_merge.log>.\\n"
+
+nohup python3 -m board_game_scraper.merge \
     'feeds/news/*.jl,feeds/news/*/*/*.jl' \
     --out-path "feeds/news/${DATE}_merged.jl" \
     --keys article_id \

@@ -144,6 +144,20 @@ nohup python3 -m board_game_scraper.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
+    'feeds/bgg_rankings/GameItem/*' \
+    --out-path '../ludoj-data/scraped/bgg_rankings_GameItem.jl' \
+    --keys published_at bgg_id \
+    --key-types date int \
+    --latest scraped_at \
+    --latest-types date \
+    --fields published_at bgg_id rank name year num_votes \
+        bayes_rating avg_rating image_url \
+    --sort-output \
+    --concat \
+    >> 'logs/bgg_rankings_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/bgg_rankings_merge.log>.\\n"
+
+nohup python3 -m board_game_scraper.merge \
     'feeds/news/*.jl,feeds/news/*/*/*.jl' \
     --out-path '../ludoj-data/scraped/news_ArticleItem.jl' \
     --keys article_id \
