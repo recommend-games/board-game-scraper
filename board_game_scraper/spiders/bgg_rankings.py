@@ -90,6 +90,7 @@ class BggSpider(Spider):
     allowed_domains = ["boardgamegeek.com", "archive.org"]
     start_urls = (
         "https://web.archive.org/web/20090225235227/http://www.boardgamegeek.com/browse/boardgame",
+        "https://boardgamegeek.com/browse/boardgame",
     )
     item_classes = (GameItem,)
 
@@ -107,7 +108,7 @@ class BggSpider(Spider):
         """
         @url https://boardgamegeek.com/browse/boardgame
         @returns items 100 100
-        @returns requests 1 1
+        @returns requests 2 2
         """
 
         scraped_at = now()
@@ -117,8 +118,7 @@ class BggSpider(Spider):
             or scraped_at
         )
 
-        next_page = response.xpath('//a[@title = "next page"]/@href').extract_first()
-        if next_page:
+        for next_page in response.xpath('//a[@title = "next page"]/@href').extract():
             yield response.follow(
                 url=next_page,
                 callback=self.parse,
@@ -129,11 +129,9 @@ class BggSpider(Spider):
         for row in response.css("table#collectionitems tr"):
             link = row.css("td.collection_objectname a").xpath("@href").extract_first()
             link = response.urljoin(link)
-
             bgg_id = _extract_bgg_id(link)
 
             if not bgg_id:
-                self.logger.warning("Found invalid link: %s", link)
                 continue
 
             year = _parse_int(
@@ -169,4 +167,12 @@ class BggSpider(Spider):
 
             yield ldr.load_item()
 
-        # TODO extract next date if first page on web archive
+        for next_capture in response.xpath(
+            "//div[@id = 'wm-ipp']//table//a[img[@alt = 'Next capture']]/@href"
+        ).extract():
+            yield response.follow(
+                url=next_capture,
+                callback=self.parse,
+                priority=-1,
+                meta={"max_retry_times": 10},
+            )
