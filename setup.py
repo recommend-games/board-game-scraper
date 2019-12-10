@@ -36,7 +36,7 @@ URL_FUNDING = None
 URL_THANKS = None
 URL_SOURCE = "https://gitlab.com/recommend.games/board-game-scraper"
 URL_TRACKER = "https://gitlab.com/recommend.games/board-game-scraper/issues"
-EMAIL = "recommend.ludoj@gmail.com"
+EMAIL = "markus@recommend.games"
 AUTHOR = "Markus Shepherd"
 REQUIRES_PYTHON = ">=3.6.0"
 VERSION = None  # will be read from __version__.py
