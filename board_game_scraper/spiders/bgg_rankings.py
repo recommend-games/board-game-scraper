@@ -5,9 +5,10 @@
 import re
 
 from datetime import datetime, timezone
+from random import randint
 
 from pytility import normalize_space, parse_date, parse_int
-from scrapy import Spider
+from scrapy import Request, Spider
 
 from ..items import GameItem
 from ..loaders import GameLoader
@@ -16,6 +17,7 @@ from ..utils import extract_bgg_id, now, parse_url
 DIGITS_REGEX = re.compile(r"^\D*(\d+).*$")
 BGG_URL_REGEX = re.compile(r"^.*(https?://(www\.)?boardgamegeek\.com.*)$")
 DATE_PATH_REGEX = re.compile(r"^/[^/]+/(\d+).*$")
+WEB_ARCHIVE_DATE_FORMAT = "%Y%m%d%H%M%S"
 
 
 def _parse_int(element, xpath=None, css=None, default=None, lenient=False):
@@ -57,7 +59,7 @@ def _extract_bgg_id(url):
     return extract_bgg_id(match.group(1)) if match else None
 
 
-def _parse_date(date, tzinfo=timezone.utc, format_str="%Y%m%d%H%M%S"):
+def _parse_date(date, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
     try:
         date = datetime.strptime(date, format_str)
         return date.replace(tzinfo=tzinfo)
@@ -72,7 +74,7 @@ def _parse_date(date, tzinfo=timezone.utc, format_str="%Y%m%d%H%M%S"):
     return None
 
 
-def _extract_date(url, tzinfo=timezone.utc, format_str="%Y%m%d%H%M%S"):
+def _extract_date(url, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
     url = parse_url(url, ("archive.org", "web.archive.org",),)
 
     if not url:
@@ -89,12 +91,12 @@ class BggSpider(Spider):
     name = "bgg_rankings"
     allowed_domains = ["boardgamegeek.com", "archive.org"]
     start_urls = (
-        # start scraping from 2000-01-01T00:00:00 in order to catch first capture
-        "https://web.archive.org/web/20000101000000/http://www.boardgamegeek.com/rankbrowse.php3",
-        "https://web.archive.org/web/20000101000000/http://www.boardgamegeek.com/browse/boardgame",
+        "https://web.archive.org/web/{date}/http://www.boardgamegeek.com/rankbrowse.php3",
+        "https://web.archive.org/web/{date}/http://www.boardgamegeek.com/browse/boardgame",
         "https://boardgamegeek.com/browse/boardgame",
     )
     item_classes = (GameItem,)
+    earliest_date = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
     custom_settings = {
         "DOWNLOAD_DELAY": 0.5,
@@ -105,6 +107,21 @@ class BggSpider(Spider):
         "DELAYED_RETRY_DELAY": 5.0,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
     }
+
+    def start_requests(self):
+        """Generate start requests."""
+
+        latest_date = now()
+        start_date_ts = randint(self.earliest_date.timestamp(), latest_date.timestamp())
+        start_date = datetime.fromtimestamp(start_date_ts, tz=timezone.utc)
+        start_date_str = start_date.strftime(WEB_ARCHIVE_DATE_FORMAT)
+
+        self.logger.info("Start date: %s", start_date)
+
+        for start_url in self.start_urls:
+            yield Request(
+                url=start_url.format(date=start_date_str), callback=self.parse
+            )
 
     def parse(self, response):
         """
@@ -196,12 +213,13 @@ class BggSpider(Spider):
 
             yield ldr.load_item()
 
-        for next_capture in response.xpath(
-            "//div[@id = 'wm-ipp']//table//a[img[@alt = 'Next capture']]/@href"
-        ).extract():
-            yield response.follow(
-                url=next_capture,
-                callback=self.parse,
-                priority=-1,
-                meta={"max_retry_times": 10},
-            )
+        for anchor in response.xpath(
+            "//div[@id = 'wm-ipp']//table//a[@title and @href]"
+        ):
+            if parse_date(anchor.xpath("@title").extract_first()):
+                yield response.follow(
+                    url=anchor.xpath("@href").extract_first(),
+                    callback=self.parse,
+                    priority=-1,
+                    meta={"max_retry_times": 10},
+                )
