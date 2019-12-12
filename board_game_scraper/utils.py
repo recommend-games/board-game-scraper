@@ -37,7 +37,7 @@ REGEX_DBPEDIA_DOMAIN = re.compile(r"^[a-z]{2}\.dbpedia\.org$")
 REGEX_DBPEDIA_ID = re.compile(r"^/(resource|page)/(.+)$")
 REGEX_LUDING_ID = re.compile(r"^.*gameid/(\d+).*$")
 REGEX_SPIELEN_ID = re.compile(
-    r"^/(alle-brettspiele|messeneuheiten|ausgezeichnet-\d+)/([^/\d][^/]*).*$"
+    r"^/(alle-brettspiele|messeneuheiten|ausgezeichnet-\d+)/(\w[^/]*).*$"
 )
 REGEX_FREEBASE_ID = re.compile(r"^/ns/(g|m)\.([^/]+).*$")
 REGEX_BGA_ID = re.compile(r"^.*/game/([a-zA-Z0-9]+)(/.*)?$")
@@ -480,7 +480,10 @@ def extract_spielen_id(url: Union[str, ParseResult, None]) -> Optional[str]:
     if not url:
         return None
     match = REGEX_SPIELEN_ID.match(url.path)
-    return unquote_plus(match.group(2)) if match else extract_query_param(url, "id")
+    spielen_id = unquote_plus(match.group(2)) if match else None
+    return (
+        spielen_id if parse_int(spielen_id) is None else extract_query_param(url, "id")
+    )
 
 
 def extract_freebase_id(url: Union[str, ParseResult, None]) -> Optional[str]:
