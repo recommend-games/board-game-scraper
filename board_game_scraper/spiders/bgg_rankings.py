@@ -90,10 +90,20 @@ class BggSpider(Spider):
 
     name = "bgg_rankings"
     allowed_domains = ["boardgamegeek.com", "archive.org"]
+    bgg_paths = (
+        "browser.php?itemtype=game&sortby=rank",
+        "rankbrowse.php3",
+        "browse/boardgame",
+    )
+    bgg_urls = (
+        tuple(f"http://boardgamegeek.com/{path}" for path in bgg_paths)
+        + tuple(f"https://boardgamegeek.com/{path}" for path in bgg_paths)
+        + tuple(f"http://www.boardgamegeek.com/{path}" for path in bgg_paths)
+        + tuple(f"https://www.boardgamegeek.com/{path}" for path in bgg_paths)
+    )
     start_urls = (
-        "https://web.archive.org/web/{date}/http://www.boardgamegeek.com/rankbrowse.php3",
-        "https://web.archive.org/web/{date}/http://www.boardgamegeek.com/browse/boardgame",
-        "https://boardgamegeek.com/browse/boardgame",
+        tuple(f"https://web.archive.org/web/{{date}}/{url}" for url in bgg_urls)
+        + bgg_urls
     )
     item_classes = (GameItem,)
     earliest_date = datetime(2000, 1, 1, tzinfo=timezone.utc)
@@ -210,6 +220,40 @@ class BggSpider(Spider):
             ldr.add_xpath("rank", "td[1]")
             ldr.add_xpath("name", "td[2]")
             ldr.add_xpath("bayes_rating", "td[3]")
+
+            yield ldr.load_item()
+
+        for row in response.css("table.gamebrowser_table tr"):
+            cells = row.xpath("td")
+
+            if len(cells) < 5:
+                continue
+
+            link = cells[2].xpath("a/@href").extract_first()
+            link = response.urljoin(link)
+            bgg_id = _extract_bgg_id(link)
+
+            if not bgg_id:
+                continue
+
+            image_url = row.xpath("td[2]//img/@src").extract_first()
+            image_url = [response.urljoin(image_url)] if image_url else None
+
+            ldr = GameLoader(
+                item=GameItem(
+                    bgg_id=bgg_id,
+                    image_url=image_url,
+                    published_at=published_at,
+                    scraped_at=scraped_at,
+                ),
+                selector=row,
+                response=response,
+            )
+
+            ldr.add_xpath("rank", "td[1]")
+            ldr.add_xpath("name", "td[3]")
+            ldr.add_xpath("bayes_rating", "td[4]")
+            ldr.add_xpath("num_votes", "td[5]")
 
             yield ldr.load_item()
 
