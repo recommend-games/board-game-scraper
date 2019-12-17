@@ -137,7 +137,7 @@ class BggSpider(Spider):
         """
         @url https://boardgamegeek.com/browse/boardgame
         @returns items 100 100
-        @returns requests 2 2
+        @returns requests 12 12
         """
 
         scraped_at = now()
@@ -147,7 +147,9 @@ class BggSpider(Spider):
             or scraped_at
         )
 
-        for next_page in response.xpath('//a[@title = "next page"]/@href').extract():
+        for next_page in response.xpath(
+            "//a[contains(@title, 'page')]/@href"
+        ).extract():
             yield response.follow(
                 url=next_page,
                 callback=self.parse,
@@ -156,7 +158,7 @@ class BggSpider(Spider):
             )
 
         for row in response.css("table#collectionitems tr"):
-            link = row.css("td.collection_objectname a").xpath("@href").extract_first()
+            link = row.css("td.collection_objectname a::attr(href)").extract_first()
             link = response.urljoin(link)
             bgg_id = _extract_bgg_id(link)
 
@@ -168,9 +170,9 @@ class BggSpider(Spider):
                 css="td.collection_objectname span.smallerfont.dull",
                 lenient=True,
             )
-            image_url = (
-                row.css("td.collection_thumbnail img").xpath("@src").extract_first()
-            )
+            image_url = row.css(
+                "td.collection_thumbnail img::attr(src)"
+            ).extract_first()
             image_url = [response.urljoin(image_url)] if image_url else None
 
             ldr = GameLoader(
