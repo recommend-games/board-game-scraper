@@ -15,7 +15,8 @@ from ..loaders import GameLoader
 from ..utils import extract_bgg_id, now, parse_url
 
 DIGITS_REGEX = re.compile(r"^\D*(\d+).*$")
-BGG_URL_REGEX = re.compile(r"^.*(https?://(www\.)?boardgamegeek\.com.*)$")
+BGG_URL_REGEX = re.compile(r"^.*(https?://?(www\.)?boardgamegeek\.com.*)$")
+HTTP_REGEX = re.compile(r"^(https?):/([^/])")
 DATE_PATH_REGEX = re.compile(r"^/[^/]+/(\d+).*$")
 WEB_ARCHIVE_DATE_FORMAT = "%Y%m%d%H%M%S"
 
@@ -56,7 +57,11 @@ def _extract_bgg_id(url):
 
     match = BGG_URL_REGEX.match(url.path)
 
-    return extract_bgg_id(match.group(1)) if match else None
+    if not match:
+        return None
+
+    url = HTTP_REGEX.sub(r"\1://\2", match.group(1))
+    return extract_bgg_id(url)
 
 
 def _parse_date(date, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
@@ -94,6 +99,9 @@ class BggSpider(Spider):
         "browser.php?itemtype=game&sortby=rank",
         "rankbrowse.php3",
         "browse/boardgame",
+        "top50.htm",
+        "top50.php3",
+        "topn.php3?count=50",
     )
     bgg_urls = (
         tuple(f"http://boardgamegeek.com/{path}" for path in bgg_paths)
@@ -256,6 +264,40 @@ class BggSpider(Spider):
             ldr.add_xpath("name", "td[3]")
             ldr.add_xpath("bayes_rating", "td[4]")
             ldr.add_xpath("num_votes", "td[5]")
+
+            yield ldr.load_item()
+
+        # Parse Top 50 page: top50.htm, top50.php3, topn.php3?count=50
+        for row in response.xpath(
+            "//table[tr/td[h3 and contains(., 'Bayesian Average')]]/tr"
+        ):
+            cells = row.xpath("td")
+
+            if len(cells) < 4:
+                continue
+
+            link = cells[1].xpath("a/@href").extract_first()
+            link = response.urljoin(link)
+            bgg_id = _extract_bgg_id(link)
+            rank = _parse_int(cells[0], xpath="text()", lenient=True)
+
+            if not bgg_id or not rank:
+                continue
+
+            ldr = GameLoader(
+                item=GameItem(
+                    bgg_id=bgg_id,
+                    rank=rank,
+                    published_at=published_at,
+                    scraped_at=scraped_at,
+                ),
+                selector=row,
+                response=response,
+            )
+
+            ldr.add_xpath("name", "td[2]")
+            ldr.add_xpath("bayes_rating", "td[3]")
+            ldr.add_xpath("num_votes", "td[4]")
 
             yield ldr.load_item()
 
