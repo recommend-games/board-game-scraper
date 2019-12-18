@@ -2,6 +2,7 @@
 
 """BoardGameGeek rankings spider."""
 
+import os
 import re
 
 from datetime import datetime, timezone
@@ -114,7 +115,6 @@ class BggSpider(Spider):
         + bgg_urls
     )
     item_classes = (GameItem,)
-    earliest_date = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
     custom_settings = {
         "DOWNLOAD_DELAY": 0.5,
@@ -124,17 +124,32 @@ class BggSpider(Spider):
         "DELAYED_RETRY_HTTP_CODES": (202,),
         "DELAYED_RETRY_DELAY": 5.0,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
+        "START_DATE": parse_date(os.getenv("START_DATE"), tzinfo=timezone.utc),
+        "EARLIEST_DATE": parse_date(os.getenv("EARLIEST_DATE"), tzinfo=timezone.utc)
+        or datetime(2000, 1, 1, tzinfo=timezone.utc),
+        "LATEST_DATE": parse_date(os.getenv("LATEST_DATE"), tzinfo=timezone.utc),
     }
 
     def start_requests(self):
         """Generate start requests."""
 
-        latest_date = now()
-        start_date_ts = randint(self.earliest_date.timestamp(), latest_date.timestamp())
-        start_date = datetime.fromtimestamp(start_date_ts, tz=timezone.utc)
-        start_date_str = start_date.strftime(WEB_ARCHIVE_DATE_FORMAT)
+        start_date = parse_date(self.settings.get("START_DATE"), tzinfo=timezone.utc)
+
+        if not start_date:
+            earliest_date = (
+                parse_date(self.settings.get("EARLIEST_DATE"), tzinfo=timezone.utc)
+                or now()
+            )
+            latest_date = (
+                parse_date(self.settings.get("LATEST_DATE"), tzinfo=timezone.utc)
+                or now()
+            )
+            start_date_ts = randint(earliest_date.timestamp(), latest_date.timestamp())
+            start_date = datetime.fromtimestamp(start_date_ts, tz=timezone.utc)
 
         self.logger.info("Start date: %s", start_date)
+
+        start_date_str = start_date.strftime(WEB_ARCHIVE_DATE_FORMAT)
 
         for start_url in self.start_urls:
             yield Request(
