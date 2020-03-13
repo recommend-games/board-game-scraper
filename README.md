@@ -61,6 +61,7 @@ updating.
 If you are interested in using any of the datasets produced by this scraper,
 take a look at the
 [BoardGameGeek guild](https://boardgamegeek.com/thread/2287371/boardgamegeek-games-and-ratings-datasets).
+A subset of the data can also be found on [Kaggle](https://www.kaggle.com/mshepherd/board-games).
 
 ## Links
 
