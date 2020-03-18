@@ -72,8 +72,8 @@ class BgaSpider(Spider):
     allowed_domains = ("boardgameatlas.com",)
     item_classes = (GameItem, RatingItem)
     api_url = API_URL
-    expected_items = 75_000
-    expected_reviews = 125_000
+    expected_items = 100_000
+    expected_reviews = 150_000
 
     custom_settings = {
         "IMAGES_URLS_FIELD": None,
@@ -272,7 +272,7 @@ class BgaSpider(Spider):
         @url https://www.boardgameatlas.com/api/reviews?client_id=SB1VGnDv7M&limit=100
         @returns items 100 100
         @returns requests 0 0
-        @scrapes bga_id bga_user_id bga_user_name
+        @scrapes item_id bga_id bga_user_id bga_user_name
         """
 
         result = _json_from_response(response)
@@ -285,6 +285,8 @@ class BgaSpider(Spider):
                 json_obj=review,
                 response=response,
             )
+
+            ldr.add_jmes("item_id", "id")
 
             ldr.add_jmes("bga_id", "game.id.objectId")
             ldr.add_jmes("bga_user_id", "user.id")
