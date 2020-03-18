@@ -72,8 +72,8 @@ class BgaSpider(Spider):
     allowed_domains = ("boardgameatlas.com",)
     item_classes = (GameItem, RatingItem)
     api_url = API_URL
-    expected_items = 75_000
-    expected_reviews = 125_000
+    expected_items = 100_000
+    expected_reviews = 150_000
 
     custom_settings = {
         "IMAGES_URLS_FIELD": None,
