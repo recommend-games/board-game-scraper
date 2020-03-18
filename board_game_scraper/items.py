@@ -564,6 +564,8 @@ class RatingItem(TypedItem):
     JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
     BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool
 
+    item_id = Field(input_processor=IDENTITY)
+
     bgg_id = Field(dtype=int, dtype_convert=parse_int)
     bgg_user_name = Field(
         dtype=str, input_processor=MapCompose(identity, str, str.lower)

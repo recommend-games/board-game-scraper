@@ -583,6 +583,8 @@ class BggSpider(Spider):
                 response=response,
             )
 
+            ldr.add_value("item_id", parse_int(game.xpath("@collid").extract_first()))
+
             ldr.add_xpath("bgg_user_rating", "stats/rating/@value")
             ldr.add_xpath("bgg_user_owned", "status/@own")
             ldr.add_xpath("bgg_user_prev_owned", "status/@prevowned")
