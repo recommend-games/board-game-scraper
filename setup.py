@@ -45,7 +45,7 @@ VERSION = None  # will be read from __version__.py
 REQUIRED = (
     "awscli",
     "boto",
-    "dedupe",
+    "dedupe<2.0.0",
     "google-cloud-pubsub",
     "jmespath",
     "pillow",
