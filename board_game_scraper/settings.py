@@ -97,6 +97,7 @@ MULTI_FEED_EXPORT_FIELDS = {
     "GameItem": FEED_EXPORT_FIELDS,
     "UserItem": ("bgg_user_name", "published_at", "updated_at", "scraped_at"),
     "RatingItem": (
+        "item_id",
         "bgg_id",
         "bgg_user_name",
         "bgg_user_rating",
