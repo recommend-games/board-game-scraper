@@ -44,9 +44,9 @@ class SpielenSpider(Spider):
     game_url = "https://gesellschaftsspiele.spielen.de/alle-brettspiele/{}/"
     item_classes = (GameItem,)
     custom_settings = {
-        "DOWNLOAD_DELAY": 0.5,
-        "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
-        "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+        "DOWNLOAD_DELAY": 10,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 1,
     }
 
     def parse(self, response):
