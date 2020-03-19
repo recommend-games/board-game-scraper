@@ -373,7 +373,9 @@ class BggSpider(Spider):
         scraped_at = now()
 
         for game in response.xpath("/items/item"):
-            bgg_id = game.xpath("@id").extract_first() or response.meta.get("bgg_id")
+            bgg_id = parse_int(
+                game.xpath("@id").extract_first() or response.meta.get("bgg_id")
+            )
             page = parse_int(
                 game.xpath("comments/@page").extract_first()
                 or response.meta.get("page")
@@ -416,7 +418,10 @@ class BggSpider(Spider):
 
                 ldr = RatingLoader(
                     item=RatingItem(
-                        bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at,
+                        item_id=f"{user_name}:{bgg_id}",
+                        bgg_id=bgg_id,
+                        bgg_user_name=user_name,
+                        scraped_at=scraped_at,
                     ),
                     selector=comment,
                     response=response,
@@ -593,7 +598,7 @@ class BggSpider(Spider):
         yield from self._game_requests(*bgg_ids)
 
         for game in games:
-            bgg_id = game.xpath("@objectid").extract_first()
+            bgg_id = parse_int(game.xpath("@objectid").extract_first())
 
             if not bgg_id:
                 self.logger.warning("no BGG ID found, cannot process rating")
@@ -608,6 +613,7 @@ class BggSpider(Spider):
             )
 
             ldr.add_value("item_id", parse_int(game.xpath("@collid").extract_first()))
+            ldr.add_value("item_id", f"{user_name}:{bgg_id}")
 
             ldr.add_xpath("bgg_user_rating", "stats/rating/@value")
             ldr.add_xpath("bgg_user_owned", "status/@own")
