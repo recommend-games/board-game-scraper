@@ -634,7 +634,8 @@ class BggSpider(Spider):
         @url https://www.boardgamegeek.com/xmlapi2/user?name=Markus+Shepherd
         @returns items 1 1
         @returns requests 0 0
-        @scrapes item_id bgg_user_name scraped_at
+        @scrapes item_id bgg_user_name first_name last_name registered last_login \
+            country external_link image_url scraped_at
         """
 
         item = extract_item(item, response, UserItem)
@@ -642,7 +643,20 @@ class BggSpider(Spider):
         ldr = UserLoader(item=item, selector=response.xpath("/user"))
 
         ldr.add_xpath("item_id", "@id")
+
         ldr.add_xpath("bgg_user_name", "@name")
+        ldr.add_xpath("first_name", "firstname/@value")
+        ldr.add_xpath("last_name", "lastname/@value")
+
+        ldr.add_xpath("registered", "yearregistered/@value")
+        ldr.add_xpath("last_login", "lastlogin/@value")
+
+        ldr.add_xpath("country", "country/@value")
+        ldr.add_xpath("region", "stateorprovince/@value")
+
+        ldr.add_xpath("external_link", "webaddress/@value")
+        ldr.add_xpath("image_url", "avatarlink/@value")
+
         ldr.replace_value("scraped_at", now())
 
         return ldr.load_item()
