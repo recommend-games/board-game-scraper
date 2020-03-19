@@ -190,7 +190,7 @@ class BgaSpider(Spider):
         @scrapes image_url
         """
 
-        item = extract_item(item, response)
+        item = extract_item(item, response, GameItem)
         result = json_from_response(response)
 
         ldr = GameJsonLoader(item=item, json_obj=result, response=response)
@@ -210,7 +210,7 @@ class BgaSpider(Spider):
         @scrapes video_url
         """
 
-        item = extract_item(item, response)
+        item = extract_item(item, response, GameItem)
         result = json_from_response(response)
 
         ldr = GameJsonLoader(item=item, json_obj=result, response=response)
@@ -230,7 +230,7 @@ class BgaSpider(Spider):
         @scrapes review_url
         """
 
-        item = extract_item(item, response)
+        item = extract_item(item, response, GameItem)
         result = json_from_response(response)
 
         ldr = GameJsonLoader(item=item, json_obj=result, response=response)
