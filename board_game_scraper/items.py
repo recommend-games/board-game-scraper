@@ -532,9 +532,52 @@ class GameItem(TypedItem):
 class UserItem(TypedItem):
     """ item representing a user """
 
+    JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
+    JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
+
+    item_id = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
+    )
+
     bgg_user_name = Field(
         dtype=str, required=True, input_processor=MapCompose(identity, str, str.lower)
     )
+    first_name = Field(dtype=str)
+    last_name = Field(dtype=str)
+
+    registered = Field(
+        dtype=int,
+        dtype_convert=parse_int,
+        input_processor=MapCompose(
+            identity,
+            parse_int,
+            partial(validate_range, lower=1999, upper=date.today().year),
+        ),
+    )
+    last_login = Field(
+        dtype=datetime,
+        input_processor=DATE_PROCESSOR,
+        serializer=serialize_date,
+        parser=parse_date,
+    )
+
+    country = Field(dtype=str)
+    region = Field(dtype=str)
+    city = Field(dtype=str)
+
+    external_link = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
+    image_url = Field(
+        dtype=list,
+        output_processor=clear_list,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
+    image_file = Field(serializer=JSON_SERIALIZER, parser=parse_json)
 
     published_at = Field(
         dtype=datetime,

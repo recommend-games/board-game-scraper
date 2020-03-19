@@ -5,6 +5,7 @@
 import re
 import statistics
 
+from functools import partial
 from itertools import repeat
 from urllib.parse import urlencode
 
@@ -19,6 +20,7 @@ from ..loaders import GameLoader, RatingLoader, UserLoader
 from ..utils import (
     extract_bgg_id,
     extract_bgg_user_name,
+    extract_item,
     extract_query_param,
     now,
 )
@@ -122,6 +124,7 @@ class BggSpider(Spider):
 
     scrape_ratings = False
     scrape_collections = False
+    scrape_users = False
     min_votes = 20
 
     @classmethod
@@ -146,10 +149,12 @@ class BggSpider(Spider):
         self.scrape_collections = self.scrape_ratings and settings.getbool(
             "SCRAPE_BGG_COLLECTIONS"
         )
+        self.scrape_users = self.scrape_ratings and settings.getbool("SCRAPE_BGG_USERS")
         self.min_votes = settings.getint("MIN_VOTES", self.min_votes)
 
         self.logger.info("scrape ratings: %r", self.scrape_ratings)
         self.logger.info("scrape collections: %r", self.scrape_collections)
+        self.logger.info("scrape users: %r", self.scrape_users)
 
     def _spider_opened(self):
         state = getattr(self, "state", None)
@@ -217,8 +222,6 @@ class BggSpider(Spider):
 
             if page == 1:
                 self._ids_seen.update(batch)
-
-        self.logger.debug("seen %d games in total", len(self._ids_seen))
 
     def _game_request(self, bgg_id, default=None, **kwargs):
         return next(self._game_requests(bgg_id, **kwargs), default)
@@ -296,6 +299,26 @@ class BggSpider(Spider):
 
         return default
 
+    def _user_item_or_request(self, user_name, **kwargs):
+        if not user_name:
+            return None
+
+        user_name = user_name.lower()
+        kwargs.setdefault("scraped_at", now())
+
+        ldr = UserLoader(item=UserItem(bgg_user_name=user_name))
+        for field_name, value in kwargs.items():
+            ldr.add_value(field_name, value)
+        item = ldr.load_item()
+
+        if not self.scrape_users:
+            return item
+
+        url = self._api_url(action="user", name=user_name)
+        return Request(
+            url, callback=partial(self.parse_user, item=item), meta={"item": item}
+        )
+
     def parse(self, response):
         """
         @url https://boardgamegeek.com/browse/boardgame/
@@ -316,12 +339,15 @@ class BggSpider(Spider):
         bgg_ids = filter(None, map(extract_bgg_id, map(response.urljoin, urls)))
         yield from self._game_requests(*bgg_ids)
 
-        if not self.scrape_collections:
-            return
-
         user_names = filter(None, map(extract_bgg_user_name, urls))
+        scraped_at = now()
+
         for user_name in clear_list(user_names):
-            yield self.collection_request(user_name)
+            yield self.collection_request(
+                user_name
+            ) if self.scrape_collections else self._user_item_or_request(
+                user_name, scraped_at=scraped_at
+            )
 
     def parse_game(self, response):
         # pylint: disable=line-too-long
@@ -365,17 +391,13 @@ class BggSpider(Spider):
                 and page * self.page_size < total_items
             ):
                 # pylint: disable=invalid-unary-operand-type
-                request = self._game_request(
+                yield self._game_request(
                     bgg_id,
                     page=page + 1,
                     priority=-page,
                     skip_game_item=True,
                     profile_url=profile_url,
                 )
-                self.logger.debug(
-                    "scraping more ratings from page %d: %r", page + 1, request
-                )
-                yield request
 
             for comment in comments:
                 user_name = comment.xpath("@username").extract_first()
@@ -384,22 +406,24 @@ class BggSpider(Spider):
                     self.logger.warning("no user name found, cannot process rating")
                     continue
 
+                user_name = user_name.lower()
+
                 if self.scrape_collections:
                     yield self.collection_request(user_name)
+                    continue
 
-                else:
-                    ldr = RatingLoader(
-                        item=RatingItem(
-                            bgg_id=bgg_id,
-                            bgg_user_name=user_name.lower(),
-                            scraped_at=scraped_at,
-                        ),
-                        selector=comment,
-                        response=response,
-                    )
-                    ldr.add_xpath("bgg_user_rating", "@rating")
-                    ldr.add_xpath("comment", "@value")
-                    yield ldr.load_item()
+                yield self._user_item_or_request(user_name, scraped_at=scraped_at)
+
+                ldr = RatingLoader(
+                    item=RatingItem(
+                        bgg_id=bgg_id, bgg_user_name=user_name, scraped_at=scraped_at,
+                    ),
+                    selector=comment,
+                    response=response,
+                )
+                ldr.add_xpath("bgg_user_rating", "@rating")
+                ldr.add_xpath("comment", "@value")
+                yield ldr.load_item()
 
             if response.meta.get("skip_game_item"):
                 continue
@@ -538,8 +562,10 @@ class BggSpider(Spider):
         """
         @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&stats=1&version=0
         @returns items 1000
-        @returns requests 90
-        @scrapes bgg_user_name scraped_at
+        @returns requests 100
+        @scrapes item_id bgg_id bgg_user_name bgg_user_owned bgg_user_prev_owned \
+            bgg_user_for_trade bgg_user_want_to_play bgg_user_want_to_buy \
+            bgg_user_preordered bgg_user_play_count updated_at scraped_at
         """
 
         user_name = response.meta.get("bgg_user_name") or extract_bgg_user_name(
@@ -554,12 +580,10 @@ class BggSpider(Spider):
         user_name = user_name.lower()
 
         if not extract_query_param(response.url, "played"):
-            ldr = UserLoader(
-                item=UserItem(bgg_user_name=user_name, scraped_at=scraped_at),
-                response=response,
+            updated_at = response.xpath("/items/@pubdate").extract_first()
+            yield self._user_item_or_request(
+                user_name, updated_at=updated_at, scraped_at=scraped_at
             )
-            ldr.add_xpath("updated_at", "/items/@pubdate")
-            yield ldr.load_item()
 
             # explicitly fetch played games (not part of collection by default)
             yield self.collection_request(user_name, played=1, priority=1)
@@ -603,3 +627,36 @@ class BggSpider(Spider):
             ldr.add_xpath("updated_at", "status/@lastmodified")
 
             yield ldr.load_item()
+
+    # pylint: disable=no-self-use
+    def parse_user(self, response, item=None):
+        """
+        @url https://www.boardgamegeek.com/xmlapi2/user?name=Markus+Shepherd
+        @returns items 1 1
+        @returns requests 0 0
+        @scrapes item_id bgg_user_name first_name last_name registered last_login \
+            country external_link image_url scraped_at
+        """
+
+        item = extract_item(item, response, UserItem)
+
+        ldr = UserLoader(item=item, selector=response.xpath("/user"))
+
+        ldr.add_xpath("item_id", "@id")
+
+        ldr.add_xpath("bgg_user_name", "@name")
+        ldr.add_xpath("first_name", "firstname/@value")
+        ldr.add_xpath("last_name", "lastname/@value")
+
+        ldr.add_xpath("registered", "yearregistered/@value")
+        ldr.add_xpath("last_login", "lastlogin/@value")
+
+        ldr.add_xpath("country", "country/@value")
+        ldr.add_xpath("region", "stateorprovince/@value")
+
+        ldr.add_xpath("external_link", "webaddress/@value")
+        ldr.add_xpath("image_url", "avatarlink/@value")
+
+        ldr.replace_value("scraped_at", now())
+
+        return ldr.load_item()

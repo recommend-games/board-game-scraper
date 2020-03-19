@@ -12,56 +12,30 @@ from scrapy.utils.project import get_project_settings
 
 from ..items import GameItem, RatingItem
 from ..loaders import GameJsonLoader, RatingJsonLoader
-from ..utils import extract_bga_id, now, parse_json
+from ..utils import (
+    extract_bga_id,
+    extract_meta,
+    extract_item,
+    extract_url,
+    json_from_response,
+    now,
+)
 
 API_URL = "https://www.boardgameatlas.com/api"
-
-
-def _json_from_response(response):
-    result = parse_json(response.text) if hasattr(response, "text") else None
-    return result or {}
-
-
-def _extract_meta(response=None):
-    if hasattr(response, "meta") and response.meta:
-        return response.meta
-    if hasattr(response, "request") and hasattr(response.request, "meta"):
-        return response.request.meta or {}
-    return {}
-
-
-def _extract_item(item=None, response=None, item_cls=GameItem):
-    if item:
-        return item
-    meta = _extract_meta(response)
-    return meta.get("item") or item_cls()
-
-
-def _extract_url(item=None, response=None, default=None):
-    if item and item.get("url"):
-        return item["url"]
-    meta = _extract_meta(response)
-    if meta.get("url"):
-        return meta["url"]
-    if hasattr(response, "url") and response.url:
-        return response.url
-    if hasattr(response, "request") and hasattr(response.request, "url"):
-        return response.request.url
-    return default
 
 
 def _extract_bga_id(item=None, response=None):
     if item and item.get("bga_id"):
         return item["bga_id"]
-    meta = _extract_meta(response)
+    meta = extract_meta(response)
     if meta.get("bga_id"):
         return meta["bga_id"]
-    url = _extract_url(item, response)
+    url = extract_url(item, response)
     return extract_bga_id(url)
 
 
 def _extract_requests(response=None):
-    meta = _extract_meta(response)
+    meta = extract_meta(response)
     return meta.get("game_requests")
 
 
@@ -152,7 +126,7 @@ class BgaSpider(Spider):
         @scrapes name description url image_url bga_id scraped_at worst_rating best_rating
         """
 
-        result = _json_from_response(response)
+        result = json_from_response(response)
         games = result.get("games") or ()
         scraped_at = now()
 
@@ -216,8 +190,8 @@ class BgaSpider(Spider):
         @scrapes image_url
         """
 
-        item = _extract_item(item, response)
-        result = _json_from_response(response)
+        item = extract_item(item, response, GameItem)
+        result = json_from_response(response)
 
         ldr = GameJsonLoader(item=item, json_obj=result, response=response)
         ldr.add_value("image_url", item.get("image_url"))
@@ -236,8 +210,8 @@ class BgaSpider(Spider):
         @scrapes video_url
         """
 
-        item = _extract_item(item, response)
-        result = _json_from_response(response)
+        item = extract_item(item, response, GameItem)
+        result = json_from_response(response)
 
         ldr = GameJsonLoader(item=item, json_obj=result, response=response)
         ldr.add_value("video_url", item.get("video_url"))
@@ -256,8 +230,8 @@ class BgaSpider(Spider):
         @scrapes review_url
         """
 
-        item = _extract_item(item, response)
-        result = _json_from_response(response)
+        item = extract_item(item, response, GameItem)
+        result = json_from_response(response)
 
         ldr = GameJsonLoader(item=item, json_obj=result, response=response)
         ldr.add_value("review_url", item.get("review_url"))
@@ -275,7 +249,7 @@ class BgaSpider(Spider):
         @scrapes item_id bga_id bga_user_id bga_user_name
         """
 
-        result = _json_from_response(response)
+        result = json_from_response(response)
         reviews = result.get("reviews") or ()
         scraped_at = now()
 

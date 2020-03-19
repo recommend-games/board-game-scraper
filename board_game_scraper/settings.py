@@ -95,7 +95,23 @@ FEED_EXPORT_FIELDS = (
 MULTI_FEED_ENABLED = True
 MULTI_FEED_EXPORT_FIELDS = {
     "GameItem": FEED_EXPORT_FIELDS,
-    "UserItem": ("bgg_user_name", "published_at", "updated_at", "scraped_at"),
+    "UserItem": (
+        "item_id",
+        "bgg_user_name",
+        "first_name",
+        "last_name",
+        "registered",
+        "last_login",
+        "country",
+        "region",
+        "city",
+        "external_link",
+        "image_url",
+        "image_file",
+        "published_at",
+        "updated_at",
+        "scraped_at",
+    ),
     "RatingItem": (
         "item_id",
         "bgg_id",
@@ -230,6 +246,7 @@ DUMP_STATS_INTERVAL = 5 * 60
 # Spider settings
 SCRAPE_BGG_RATINGS = True
 SCRAPE_BGG_COLLECTIONS = True
+SCRAPE_BGG_USERS = True
 
 # State tags
 STATE_TAG_FILE = ".state"
