@@ -22,7 +22,7 @@ from pytility import (
     to_str,
     parse_date,
 )
-from scrapy.item import BaseItem
+from scrapy.item import BaseItem, Item
 from w3lib.html import replace_entities
 
 LOGGER = logging.getLogger(__name__)
@@ -380,6 +380,43 @@ def smart_walks(*paths, load=False, raise_exc=False, **kwargs):
             LOGGER.exception(exc)
             if raise_exc:
                 raise exc
+
+
+def json_from_response(response):
+    """Parse JSON from respose if possible."""
+    result = parse_json(response.text) if hasattr(response, "text") else None
+    return result or {}
+
+
+def extract_meta(response=None):
+    """Extract meta object from response if possible."""
+    if hasattr(response, "meta") and response.meta:
+        return response.meta
+    if hasattr(response, "request") and hasattr(response.request, "meta"):
+        return response.request.meta or {}
+    return {}
+
+
+def extract_item(item=None, response=None, item_cls=Item):
+    """Extract item from response if possible."""
+    if item:
+        return item
+    meta = extract_meta(response)
+    return meta.get("item") or item_cls()
+
+
+def extract_url(item=None, response=None, default=None):
+    """Extract URL from response if possible."""
+    if item and item.get("url"):
+        return item["url"]
+    meta = extract_meta(response)
+    if meta.get("url"):
+        return meta["url"]
+    if hasattr(response, "url") and response.url:
+        return response.url
+    if hasattr(response, "request") and hasattr(response.request, "url"):
+        return response.request.url
+    return default
 
 
 def _match(string: str, comparison: Union[str, Pattern]):
