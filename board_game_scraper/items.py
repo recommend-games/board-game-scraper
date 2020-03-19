@@ -536,10 +536,7 @@ class UserItem(TypedItem):
     JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
 
     item_id = Field(
-        required=True,
-        dtype=int,
-        dtype_convert=parse_int,
-        input_processor=POS_INT_PROCESSOR,
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
     )
 
     bgg_user_name = Field(
@@ -610,7 +607,7 @@ class RatingItem(TypedItem):
     JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
     BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool
 
-    item_id = Field(required=True, input_processor=IDENTITY)
+    item_id = Field(input_processor=IDENTITY)
 
     bgg_id = Field(dtype=int, dtype_convert=parse_int)
     bgg_user_name = Field(
