@@ -33,7 +33,7 @@ class BggHotnessSpider(Spider):
         @url https://www.boardgamegeek.com/xmlapi2/hot?type=boardgame
         @returns items 50 50
         @returns requests 0 0
-        @scrapes bgg_id name year rank image_url published_at scraped_at
+        @scrapes published_at rank bgg_id name year image_url scraped_at
         """
 
         scraped_at = now()
@@ -47,9 +47,9 @@ class BggHotnessSpider(Spider):
             )
 
             ldr.add_xpath("bgg_id", "@id")
+            ldr.add_xpath("rank", "@rank")
             ldr.add_xpath("name", "name/@value")
             ldr.add_xpath("year", "yearpublished/@value")
-            ldr.add_xpath("rank", "@rank")
             ldr.add_xpath("image_url", "thumbnail/@value")
 
             yield ldr.load_item()
