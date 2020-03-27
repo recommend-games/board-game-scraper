@@ -5,14 +5,14 @@ set -euo pipefail
 SAVEDIR="$(pwd)"
 cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 
-rm --recursive --force ../ludoj-data/scraped
-mkdir --parents 'logs' '../ludoj-data/scraped'
+rm --recursive --force '../board-game-data/scraped'
+mkdir --parents 'logs' '../board-game-data/scraped'
 
 # TODO remove num_votes once they're clear from scrape results
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/bga/GameItem/*' \
-    --out-path '../ludoj-data/scraped/bga_GameItem.jl' \
+    --out-path '../board-game-data/scraped/bga_GameItem.jl' \
     --keys bga_id \
     --key-types string \
     --latest scraped_at \
@@ -27,7 +27,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/bga_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/bgg/GameItem/*' \
-    --out-path '../ludoj-data/scraped/bgg_GameItem.jl' \
+    --out-path '../board-game-data/scraped/bgg_GameItem.jl' \
     --keys bgg_id \
     --key-types int \
     --latest scraped_at \
@@ -42,7 +42,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/bgg_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/dbpedia/GameItem/*' \
-    --out-path '../ludoj-data/scraped/dbpedia_GameItem.jl' \
+    --out-path '../board-game-data/scraped/dbpedia_GameItem.jl' \
     --keys dbpedia_id \
     --key-types string \
     --latest scraped_at \
@@ -57,7 +57,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/dbpedia_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/luding/GameItem/*' \
-    --out-path '../ludoj-data/scraped/luding_GameItem.jl' \
+    --out-path '../board-game-data/scraped/luding_GameItem.jl' \
     --keys luding_id \
     --key-types int \
     --latest scraped_at \
@@ -72,7 +72,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/spielen/GameItem/*' \
-    --out-path '../ludoj-data/scraped/spielen_GameItem.jl' \
+    --out-path '../board-game-data/scraped/spielen_GameItem.jl' \
     --keys spielen_id \
     --key-types string \
     --latest scraped_at \
@@ -87,7 +87,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/spielen_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/wikidata/GameItem/*' \
-    --out-path '../ludoj-data/scraped/wikidata_GameItem.jl' \
+    --out-path '../board-game-data/scraped/wikidata_GameItem.jl' \
     --keys wikidata_id \
     --key-types string \
     --latest scraped_at \
@@ -102,7 +102,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/bgg/UserItem/*' \
-    --out-path '../ludoj-data/scraped/bgg_UserItem.jl' \
+    --out-path '../board-game-data/scraped/bgg_UserItem.jl' \
     --keys bgg_user_name \
     --key-types istring \
     --latest scraped_at \
@@ -116,7 +116,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/bgg_users_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/bga/RatingItem/*' \
-    --out-path '../ludoj-data/scraped/bga_RatingItem.jl' \
+    --out-path '../board-game-data/scraped/bga_RatingItem.jl' \
     --keys bga_user_id bga_id \
     --key-types string string \
     --latest scraped_at \
@@ -130,7 +130,7 @@ echo -e "Started! Follow logs from <$(pwd)/logs/bga_ratings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/bgg/RatingItem/*' \
-    --out-path '../ludoj-data/scraped/bgg_RatingItem/{prefix}.jl' \
+    --out-path '../board-game-data/scraped/bgg_RatingItem/{prefix}.jl' \
     --keys bgg_user_name bgg_id \
     --key-types istring int \
     --latest scraped_at \
@@ -139,13 +139,13 @@ nohup python3 -m board_game_scraper.merge \
     --fields-exclude published_at updated_at scraped_at \
     --split \
     --split-limit 300_000 \
-    --trie-path '../ludoj-data/prefixes.txt' \
+    --trie-path '../board-game-data/prefixes.txt' \
     >> 'logs/bgg_ratings_merge.log' 2>&1 &
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     'feeds/bgg_rankings/GameItem/*' \
-    --out-path '../ludoj-data/scraped/bgg_rankings_GameItem.jl' \
+    --out-path '../board-game-data/scraped/bgg_rankings_GameItem.jl' \
     --keys published_at bgg_id \
     --key-types date int \
     --latest scraped_at \
@@ -158,8 +158,21 @@ nohup python3 -m board_game_scraper.merge \
 echo -e "Started! Follow logs from <$(pwd)/logs/bgg_rankings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
+    'feeds/bgg_hotness/GameItem/*' \
+    --out-path '../board-game-data/scraped/bgg_hotness_GameItem.jl' \
+    --keys published_at bgg_id \
+    --key-types date int \
+    --latest scraped_at \
+    --latest-types date \
+    --fields published_at rank bgg_id name year image_url \
+    --sort-output \
+    --concat \
+    >> 'logs/bgg_hotness_merge.log' 2>&1 &
+echo -e "Started! Follow logs from <$(pwd)/logs/bgg_hotness_merge.log>.\\n"
+
+nohup python3 -m board_game_scraper.merge \
     'feeds/news/*.jl,feeds/news/*/*/*.jl' \
-    --out-path '../ludoj-data/scraped/news_ArticleItem.jl' \
+    --out-path '../board-game-data/scraped/news_ArticleItem.jl' \
     --keys article_id \
     --key-types string \
     --latest published_at scraped_at \
