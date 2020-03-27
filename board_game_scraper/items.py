@@ -79,6 +79,10 @@ URL_PROCESSOR = MapCompose(
 )
 
 
+def _clear_list(items):
+    return clear_list(items) or None
+
+
 def _json_output():
     return SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
 
@@ -183,7 +187,7 @@ class GameItem(TypedItem):
     name = Field(dtype=str, required=True)
     alt_name = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
@@ -204,7 +208,7 @@ class GameItem(TypedItem):
     )
     game_type = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
@@ -221,19 +225,19 @@ class GameItem(TypedItem):
 
     designer = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     artist = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     publisher = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
@@ -242,14 +246,14 @@ class GameItem(TypedItem):
     official_url = Field(
         dtype=list,
         input_processor=URL_PROCESSOR,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     image_url = Field(
         dtype=list,
         input_processor=URL_PROCESSOR,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
@@ -257,14 +261,14 @@ class GameItem(TypedItem):
     video_url = Field(
         dtype=list,
         input_processor=URL_PROCESSOR,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     rules_url = Field(
         dtype=list,
         input_processor=URL_PROCESSOR,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
@@ -272,14 +276,14 @@ class GameItem(TypedItem):
     review_url = Field(
         dtype=list,
         input_processor=URL_PROCESSOR,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     external_link = Field(
         dtype=list,
         input_processor=URL_PROCESSOR,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
@@ -360,13 +364,13 @@ class GameItem(TypedItem):
 
     category = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     mechanic = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
@@ -387,33 +391,33 @@ class GameItem(TypedItem):
     compilation_of = Field(
         dtype=list,
         input_processor=MapCompose(parse_int),
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     family = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     expansion = Field(
         dtype=list,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     implementation = Field(
         dtype=list,
         input_processor=MapCompose(parse_int),
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     integration = Field(
         dtype=list,
         input_processor=MapCompose(parse_int),
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
@@ -578,14 +582,14 @@ class UserItem(TypedItem):
     external_link = Field(
         dtype=list,
         input_processor=URL_PROCESSOR,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     image_url = Field(
         dtype=list,
         input_processor=URL_PROCESSOR,
-        output_processor=clear_list,
+        output_processor=_clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
