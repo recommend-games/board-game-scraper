@@ -453,7 +453,7 @@ def validate_url(
     hostnames: Optional[Iterable[Union[str, Pattern]]] = None,
     schemes: Optional[Iterable[Union[str, Pattern]]] = None,
 ) -> Optional[str]:
-    """Returns True iff valid URL with scheme, hostname, and path."""
+    """Returns cleaned up URL iff valid with scheme, hostname, and path."""
     url = parse_url(url=url, hostnames=hostnames)
     schemes = frozenset(arg_to_iter(schemes))
     return (
