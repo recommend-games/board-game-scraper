@@ -30,6 +30,7 @@ from .utils import (
     serialize_json,
     smart_walks,
     validate_range,
+    validate_url,
 )
 
 IDENTITY = Identity()
@@ -73,6 +74,9 @@ NN_FLOAT_PROCESSOR = MapCompose(
     partial(validate_range, lower=0),
 )
 DATE_PROCESSOR = MapCompose(partial(parse_date, tzinfo=timezone.utc))
+URL_PROCESSOR = MapCompose(
+    IDENTITY, str, partial(validate_url, schemes=frozenset(("http", "https")))
+)
 
 
 def _json_output():
@@ -234,15 +238,17 @@ class GameItem(TypedItem):
         parser=parse_json,
     )
 
-    url = Field(dtype=str)
+    url = Field(dtype=str, input_processor=URL_PROCESSOR)
     official_url = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     image_url = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
@@ -250,12 +256,14 @@ class GameItem(TypedItem):
     image_file = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     video_url = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     rules_url = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
@@ -263,12 +271,14 @@ class GameItem(TypedItem):
     rules_file = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     review_url = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     external_link = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
@@ -567,12 +577,14 @@ class UserItem(TypedItem):
 
     external_link = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     image_url = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
