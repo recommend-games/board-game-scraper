@@ -91,11 +91,11 @@ def _extract_date(url, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
     return _parse_date(match.group(1), tzinfo, format_str) if match else None
 
 
-class BggSpider(Spider):
-    """ BoardGameGeek spider """
+class BggRankingsSpider(Spider):
+    """BoardGameGeek rankings spider."""
 
     name = "bgg_rankings"
-    allowed_domains = ["boardgamegeek.com", "archive.org"]
+    allowed_domains = ("boardgamegeek.com", "archive.org")
     bgg_paths = (
         "browser.php?itemtype=game&sortby=rank",
         "rankbrowse.php3",
