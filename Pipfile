@@ -16,7 +16,7 @@ pillow = "*"
 pympler = "*"
 pyspark = "*"
 python-dotenv = "*"
-pytility = {extras = ["dates"],version = "*"}
+pytility = {extras = ["dates"], version = "*"}
 pytrie = "*"
 pyyaml = "*"
 requests = "*"
@@ -24,7 +24,7 @@ scrapy = "*"
 smart-open = "<1.6.0"
 twisted = "*"
 "w3lib" = "*"
-scrapy-extensions = {editable = true,path = "./../scrapy-extensions"}
+scrapy-extensions = {editable = true, path = "./../scrapy-extensions"}
 
 [dev-packages]
 black = "==19.10b0"
