@@ -24,7 +24,8 @@ scrapy = "*"
 smart-open = "<1.6.0"
 twisted = "*"
 "w3lib" = "*"
-scrapy-extensions = {editable = true, path = "./../scrapy-extensions"}
+# scrapy-extensions = {editable = true, path = "./../scrapy-extensions"}
+scrapy-extensions = {editable = true, git = "https://gitlab.com/mshepherd/scrapy-extensions.git", ref = "website-spider"}
 
 [dev-packages]
 black = "==19.10b0"
