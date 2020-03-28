@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1eeb3e35bb275d2d24372390849a1489dec4290f63aa7650f7c2db548a7378c5"
+            "sha256": "c02f77ef1373fd1b0036817c1ea6d96db3ca3bce9577773d8fee9df2f8853de3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -928,6 +928,10 @@
             ],
             "index": "pypi",
             "version": "==2.0.1"
+        },
+        "scrapy-extensions": {
+            "editable": true,
+            "path": "./../scrapy-extensions"
         },
         "service-identity": {
             "hashes": [
