@@ -27,6 +27,7 @@ class ReviewSpider(WebsiteSpider):
 
         item = self.parse_page(response)
 
+        item.pop("full_html", None)
         print(item)
 
         yield item

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "fc4cb09fba9cf831436b36552b55d5178d000fac9d8d7481666306afcfc0f5d1"
+            "sha256": "eefa2cd370221ddb09cae8364c2f0e3698947683e20c2c1943300991f62290e9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -63,6 +63,7 @@
         },
         "boto3": {
             "hashes": [
+                "sha256:8bf7e3611d46e8214bf225169ac55de762d9d341514f81ebae885dd601138fcf",
                 "sha256:913fc7bbb9df147ed6fa0bd2b391469652ee8cad3e26ca2355e6ff774d9516fb"
             ],
             "version": "==1.12.31"
@@ -892,6 +893,12 @@
             ],
             "version": "==1.5.0"
         },
+        "readability-lxml": {
+            "hashes": [
+                "sha256:87cb722e53a4a5749effe37fb1236abc52a856ce71113324d06b25d96b48147b"
+            ],
+            "version": "==0.7.1"
+        },
         "requests": {
             "hashes": [
                 "sha256:43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee",
@@ -931,8 +938,10 @@
         },
         "scrapy-extensions": {
             "editable": true,
-            "git": "https://gitlab.com/mshepherd/scrapy-extensions.git",
-            "ref": "0326f11cfd63cd94af07b38b82cc973e04565538"
+            "extras": [
+                "articles"
+            ],
+            "path": "./../scrapy-extensions"
         },
         "service-identity": {
             "hashes": [
@@ -1364,10 +1373,10 @@
         },
         "tqdm": {
             "hashes": [
-                "sha256:0d8b5afb66e23d80433102e9bd8b5c8b65d34c2a2255b2de58d97bd2ea8170fd",
-                "sha256:f35fb121bafa030bd94e74fcfd44f3c2830039a2ddef7fc87ef1c2d205237b24"
+                "sha256:4f882b23c492e7060f50d83af86f163b67e4cfbe35dfe12077e748c56282f438",
+                "sha256:f0fc945df434e5e612fb7eb93bf29e924940913590450c3760f198dd75a2cd19"
             ],
-            "version": "==4.43.0"
+            "version": "==4.44.0"
         },
         "twine": {
             "hashes": [
