@@ -317,7 +317,8 @@ class BggSpider(Spider):
         url = self._api_url(action="user", name=user_name)
         return Request(
             url=url,
-            callback=partial(self.parse_user, item=item), meta={"item": item},
+            callback=partial(self.parse_user, item=item),
+            meta={"item": item},
             priority=1,
         )
 
