@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+    bgg:
+        image: bg-scraper:latest
+        container_name: bg-scraper-bgg
+        build: '.'
+        command: ['bash', 'run_scraper.sh', 'bgg_hotness']
+        env_file: .env
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
