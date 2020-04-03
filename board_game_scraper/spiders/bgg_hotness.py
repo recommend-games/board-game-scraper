@@ -25,18 +25,32 @@ class BggHotnessSpider(Spider):
         "DOWNLOAD_DELAY": 0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1024,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 1024,
-        "DELAYED_RETRY_ENABLED": True,
-        "DELAYED_RETRY_HTTP_CODES": (202,),
-        "DELAYED_RETRY_DELAY": 5.0,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
     }
 
+    def _local_requests(self, path_dir="."):
+        path_dir = Path(path_dir).resolve()
+
+        for path_file in path_dir.iterdir():
+            if not path_file.is_file():
+                continue
+
+            self.logger.info("Processing <%s>", path_file)
+
+            date = parse_date(path_file.stem, tzinfo=timezone.utc)
+
+            yield Request(
+                url=path_file.as_uri(), callback=self.parse, meta={"published_at": date}
+            )
+
     def start_requests(self):
+        """Initial requests, either locally or from BGG."""
+
         hotness_dir = self.settings.get("BGG_HOTNESS_DIR")
 
         if hotness_dir:
             self.logger.info("Loading local files from <%s>", hotness_dir)
-            yield from self.local_requests(hotness_dir)
+            yield from self._local_requests(hotness_dir)
 
         else:
             yield from super().start_requests()
@@ -65,20 +79,3 @@ class BggHotnessSpider(Spider):
             ldr.add_value("scraped_at", scraped_at)
 
             yield ldr.load_item()
-
-    def local_requests(self, path_dir="."):
-        """TODO."""
-
-        path_dir = Path(path_dir).resolve()
-
-        for path_file in path_dir.iterdir():
-            if not path_file.is_file():
-                continue
-
-            self.logger.info("Processing <%s>", path_file)
-
-            date = parse_date(path_file.stem, tzinfo=timezone.utc)
-
-            yield Request(
-                url=path_file.as_uri(), callback=self.parse, meta={"published_at": date}
-            )
