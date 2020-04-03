@@ -6,7 +6,7 @@ from functools import partial
 from itertools import chain
 from urllib.parse import urlencode
 
-from pytility import parse_float
+from pytility import parse_float, parse_int
 from scrapy import Request, Spider
 from scrapy.utils.project import get_project_settings
 
@@ -16,6 +16,7 @@ from ..utils import (
     extract_bga_id,
     extract_meta,
     extract_item,
+    extract_query_param,
     extract_url,
     json_from_response,
     now,
@@ -46,12 +47,10 @@ class BgaSpider(Spider):
     allowed_domains = ("boardgameatlas.com",)
     item_classes = (GameItem, RatingItem)
     api_url = API_URL
-    expected_items = 100_000
-    expected_reviews = 150_000
 
     custom_settings = {
         "IMAGES_URLS_FIELD": None,
-        "DOWNLOAD_DELAY": 10,
+        "DOWNLOAD_DELAY": 20,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 1,
     }
@@ -106,29 +105,37 @@ class BgaSpider(Spider):
     def start_requests(self):
         """ generate start requests """
 
-        for page in range(self.expected_items * 21 // 2000):
-            query = {"order-by": "popularity", "skip": page * 100}
-            yield Request(self._api_url(query=query), callback=self.parse)
-
-        for page in range(self.expected_reviews * 21 // 2000):
-            query = {"skip": page * 100}
-            yield Request(
-                self._api_url(path="reviews", query=query),
-                callback=self.parse_user_reviews,
-            )
+        yield Request(
+            url=self._api_url(query={"order-by": "popularity"}),
+            callback=self.parse,
+            priority=2,
+        )
+        yield Request(
+            url=self._api_url(path="reviews"),
+            callback=self.parse_user_reviews,
+            priority=1,
+        )
 
     # pylint: disable=line-too-long
     def parse(self, response):
         """
         @url https://www.boardgameatlas.com/api/search?client_id=SB1VGnDv7M&order-by=popularity&limit=100
         @returns items 100 100
-        @returns requests 0 0
+        @returns requests 1 1
         @scrapes name description url image_url bga_id scraped_at worst_rating best_rating
         """
 
         result = json_from_response(response)
         games = result.get("games") or ()
         scraped_at = now()
+
+        if games:
+            skip = parse_int(extract_query_param(response.url, "skip")) or 0
+            limit = parse_int(extract_query_param(response.url, "limit")) or 100
+            query = {"order-by": "popularity", "skip": skip + limit, "limit": limit}
+            yield Request(
+                url=self._api_url(query=query), callback=self.parse, priority=2
+            )
 
         for game in games:
             bga_id = game.get("id") or extract_bga_id(game.get("url"))
@@ -245,13 +252,23 @@ class BgaSpider(Spider):
         """
         @url https://www.boardgameatlas.com/api/reviews?client_id=SB1VGnDv7M&limit=100
         @returns items 100 100
-        @returns requests 0 0
+        @returns requests 1 1
         @scrapes item_id bga_id bga_user_id bga_user_name
         """
 
         result = json_from_response(response)
         reviews = result.get("reviews") or ()
         scraped_at = now()
+
+        if reviews:
+            skip = parse_int(extract_query_param(response.url, "skip")) or 0
+            limit = parse_int(extract_query_param(response.url, "limit")) or 100
+            query = {"skip": skip + limit, "limit": limit}
+            yield Request(
+                url=self._api_url(path="reviews", query=query),
+                callback=self.parse_user_reviews,
+                priority=1,
+            )
 
         for review in reviews:
             ldr = RatingJsonLoader(
