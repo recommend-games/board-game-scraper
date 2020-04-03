@@ -46,7 +46,7 @@
 **/.coverage
 **/.coverage.*
 **/.dockerignore
-**/.gitignore
+**/.git*
 **/.pylintrc
 **/.cache
 **/nosetests.xml
@@ -89,7 +89,7 @@
 **/*.sage.py
 
 # dotenv
-**/.env
+**/.env*
 
 # virtualenv
 **/.venv
