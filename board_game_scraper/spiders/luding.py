@@ -6,6 +6,7 @@ import re
 import string
 
 from scrapy import Spider, Request
+from scrapy.utils.misc import arg_to_iter
 
 from ..items import GameItem
 from ..loaders import GameLoader
@@ -86,6 +87,9 @@ class LudingSpider(Spider):
         age = re.match(r"^.*?(\d+).*$", age) if age else None
         ldr.add_value("min_age", age.group(1) if age else None)
 
-        ldr.add_value(None, extract_ids(response.url, *links, *review_urls))
+        ldr.add_value(
+            None,
+            extract_ids(response.url, *arg_to_iter(links), *arg_to_iter(review_urls)),
+        )
 
         return ldr.load_item()
