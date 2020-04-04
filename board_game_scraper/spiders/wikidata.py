@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 from pytility import batchify, normalize_space
 from scrapy import Request, Spider
 from scrapy.loader.processors import MapCompose
+from scrapy.utils.misc import arg_to_iter
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
@@ -87,7 +88,7 @@ class WikidataSpider(Spider):
 
         if not batch_size:
             query = query_tmpl.format(" ".join(types))
-            self.logger.debug(query)
+            # self.logger.debug(query)
             yield Request(
                 self.sparql_api_url,
                 method="POST",
@@ -98,7 +99,7 @@ class WikidataSpider(Spider):
 
         for batch in batchify(types, batch_size):
             query = query_tmpl.format(" ".join(batch))
-            self.logger.debug(query)
+            # self.logger.debug(query)
             yield Request(self._api_url(query), callback=self.parse_games)
 
     def start_requests(self):
@@ -119,7 +120,7 @@ class WikidataSpider(Spider):
                       <http://www.wikidata.org/prop/direct/P31> ?type .
             }"""
         )
-        self.logger.debug(query)
+        # self.logger.debug(query)
         yield Request(self._api_url(query), callback=self.parse)
 
     def parse(self, response):
@@ -238,8 +239,8 @@ class WikidataSpider(Spider):
                 None,
                 extract_ids(
                     response.url,
-                    *ldr.get_output_value("external_link"),
-                    *ldr.get_output_value("official_url")
+                    *arg_to_iter(ldr.get_output_value("external_link")),
+                    *arg_to_iter(ldr.get_output_value("official_url")),
                 ),
             )
 
