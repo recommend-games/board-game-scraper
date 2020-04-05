@@ -17,12 +17,18 @@ class LudingSpider(Spider):
     """ Luding spider """
 
     name = "luding"
-    allowed_domains = ["luding.org"]
-    start_urls = [
+    allowed_domains = ("luding.org",)
+    start_urls = tuple(
         "http://luding.org/cgi-bin/GameFirstLetter.py?letter={}".format(letter)
         for letter in string.ascii_uppercase + "0"
-    ]
+    )
     item_classes = (GameItem,)
+
+    custom_settings = {
+        "DOWNLOAD_DELAY": 2,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
+    }
 
     def parse(self, response):
         """
