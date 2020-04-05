@@ -3,6 +3,11 @@
 set -euo pipefail
 
 SCRAPER="${1:-}"
+FEEDS_DIR="${2:-feeds}"
+JOBS_DIR="${3:-jobs}"
+JOB_DIR="${JOBS_DIR}/${SCRAPER}"
+STATE_FILE='.state'
+DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
 if [[ -z "${SCRAPER}" ]]; then
     echo 'Scraper is required, aborting...'
@@ -10,12 +15,10 @@ if [[ -z "${SCRAPER}" ]]; then
 fi
 
 echo "Running scraper <${SCRAPER}>"
+echo "Saving feeds to <${FEEDS_DIR}> and job data to <${JOB_DIR}>"
 
 SAVEDIR="$(pwd)"
 cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
-
-JOBSDIR='jobs'
-STATE_FILE='.state'
 
 function find_state() {
     DELETE=${3:-''}
@@ -30,27 +33,24 @@ function find_state() {
     done
 }
 
-mkdir --parents '.scrapy/httpcache' "${JOBSDIR}" "feeds/${SCRAPER}"
+mkdir --parents '.scrapy/httpcache' "${FEEDS_DIR}/${SCRAPER}" "${JOB_DIR}"
 
-DATE=$(date --utc +'%Y-%m-%dT%H-%M-%S')
-
-JOBDIR="${JOBSDIR}/${SCRAPER}"
-
-DELETED=$(find_state "${JOBDIR}" 'finished' 'true')
+DELETED=$(find_state "${JOB_DIR}" 'finished' 'true')
 
 if [[ -n "${DELETED}" ]]; then
-    echo "Deleted finished jobs in <${JOBDIR}>: ${DELETED}."
+    echo "Deleted finished jobs in <${JOB_DIR}>: ${DELETED}."
 fi
 
-RUNNING=$(find_state "${JOBDIR}" 'running')
+RUNNING=$(find_state "${JOB_DIR}" 'running')
 
 if [[ -n "${RUNNING}" ]]; then
     echo "Found a running job <$(echo "${RUNNING}" | tr -d '[:space:]')>, skipping <${SCRAPER}>..."
+    cd "${SAVEDIR}"
     exit 0
 fi
 
 JOBTAG="${DATE}"
-SHUT_DOWN="$(find_state "${JOBDIR}" 'shutdown')"
+SHUT_DOWN="$(find_state "${JOB_DIR}" 'shutdown')"
 
 if [[ -n "${SHUT_DOWN}" ]]; then
     JOBTAG="$(echo "${SHUT_DOWN}" | tr -d '[:space:]')"
@@ -59,10 +59,12 @@ else
     echo "Starting new job for spider <${SCRAPER}>."
 fi
 
-CURR_JOB="jobs/${SCRAPER}/${JOBTAG}"
+CURR_JOB="${JOB_DIR}/${JOBTAG}"
 
 scrapy crawl "${SCRAPER}" \
-    --output 'feeds/%(name)s/%(class)s/%(time)s.jl' \
+    --output "${FEEDS_DIR}/%(name)s/%(class)s/%(time)s.jl" \
     --set "JOBDIR=${CURR_JOB}"
+
+echo 'Done.'
 
 cd "${SAVEDIR}"
