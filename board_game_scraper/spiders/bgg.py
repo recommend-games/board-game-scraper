@@ -98,7 +98,7 @@ class BggSpider(Spider):
     """ BoardGameGeek spider """
 
     name = "bgg"
-    allowed_domains = ["boardgamegeek.com"]
+    allowed_domains = ("boardgamegeek.com",)
     start_urls = (
         "https://boardgamegeek.com/browse/boardgame/",
         "https://boardgamegeek.com/browse/user/numreviews",

@@ -42,10 +42,15 @@ class DBpediaSpider(Spider):
     """ DBpedia spider """
 
     name = "dbpedia"
-    allowed_domains = ["dbpedia.org"]
+    allowed_domains = ("dbpedia.org",)
     item_classes = (GameItem,)
-
     sparql_api_url = "http://dbpedia.org/sparql"
+
+    custom_settings = {
+        "DOWNLOAD_DELAY": 20,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+    }
 
     game_types = (
         "http://dbpedia.org/ontology/BoardGame",
