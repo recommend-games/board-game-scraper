@@ -21,7 +21,7 @@ SPIDER_MODULES = ["board_game_scraper.spiders"]
 NEWSPIDER_MODULE = "board_game_scraper.spiders"
 
 LOG_LEVEL = os.getenv("LOG_LEVEL") or "INFO"
-LOG_FORMATTER = "board_game_scraper.loggers.QuietLogFormatter"
+LOG_FORMATTER = "scrapy_extensions.QuietLogFormatter"
 LOG_SCRAPED_ITEMS = parse_bool(os.getenv("LOG_SCRAPED_ITEMS"))
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
