@@ -24,13 +24,19 @@ class WikidataSpider(Spider):
     """ Wikidata spider """
 
     name = "wikidata"
-    allowed_domains = ["wikidata.org"]
+    allowed_domains = ("wikidata.org",)
     item_classes = (GameItem,)
 
     sparql_api_url = "https://query.wikidata.org/sparql"
     entity_data_url = (
         "https://www.wikidata.org/wiki/Special:EntityData/{wikidata_id}.{fformat}"
     )
+
+    custom_settings = {
+        "DOWNLOAD_DELAY": 10,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+    }
 
     game_types = (
         "Q131436",  # board game
