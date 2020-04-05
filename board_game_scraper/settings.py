@@ -177,7 +177,7 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {"board_game_scraper.middlewares.DelayedRetry": 555}
+DOWNLOADER_MIDDLEWARES = {"scrapy_extensions.DelayedRetry": 555}
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
