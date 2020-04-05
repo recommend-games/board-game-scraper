@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from functools import partial
 from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
-from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse, urlunparse
+from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse
 
 from pytility import (
     arg_to_iter,
@@ -53,12 +53,6 @@ def to_lower(string):
 def identity(obj: Any) -> Any:
     """ do nothing """
     return obj
-
-
-# pylint: disable=unused-argument
-def const_true(*args, **kwargs) -> bool:
-    """ returns True """
-    return True
 
 
 def _replace_utf_entities(match):
@@ -197,191 +191,6 @@ def validate_range(value, lower=None, upper=None):
     except TypeError:
         pass
     return None
-
-
-def smart_url(scheme=None, hostname=None, path=None):
-    """ S3 URL """
-
-    return urlunparse((scheme, hostname, path, None, None, None))
-
-
-def smart_exists(path, raise_exc=False):
-    """ returns True if given path exists """
-
-    url = urlparse(path)
-
-    if url.scheme == "s3":
-        try:
-            import boto
-        except ImportError as exc:
-            LOGGER.error("<boto> library must be importable: %s", exc)
-            if raise_exc:
-                raise exc
-            return False
-
-        try:
-            bucket = boto.connect_s3().get_bucket(url.hostname, validate=True)
-            key = bucket.new_key(url.path[1:])
-            return key.exists()
-
-        except Exception as exc:
-            LOGGER.error(exc)
-            if raise_exc:
-                raise exc
-
-        return False
-
-    try:
-        return os.path.exists(url.path)
-
-    except Exception as exc:
-        LOGGER.error(exc)
-        if raise_exc:
-            raise exc
-
-    return False
-
-
-def smart_walk(path, load=False, raise_exc=False, accept_path=const_true, **s3_args):
-    """ walk a directory """
-
-    # TODO spaghetti code - disentangle!
-
-    url = urlparse(to_str(path)) if isinstance(path, (bytes, str)) else path
-    path = url.path if url.path.endswith(os.path.sep) else url.path + os.path.sep
-
-    if url.scheme == "s3":
-        try:
-            import boto
-
-            bucket = boto.connect_s3().get_bucket(url.hostname, validate=True)
-        except Exception as exc:
-            LOGGER.exception(exc)
-            if raise_exc:
-                raise exc
-            return
-
-        path = path[1:]
-
-        if not load:
-            try:
-                for obj in bucket.list(prefix=path):
-                    if accept_path(obj.key):
-                        yield smart_url(
-                            scheme="s3", hostname=url.hostname, path=obj.key
-                        ), None
-
-            except Exception as exc:
-                LOGGER.exception(exc)
-                if raise_exc:
-                    raise exc
-
-            return
-
-        try:
-            from smart_open import s3_iter_bucket
-        except ImportError as exc:
-            LOGGER.error("<smart_open> library must be importable")
-            LOGGER.exception(exc)
-            if raise_exc:
-                raise exc
-            return
-
-        try:
-            for key, content in s3_iter_bucket(
-                bucket, prefix=path, accept_key=accept_path, **s3_args
-            ):
-                yield smart_url(
-                    scheme="s3", hostname=bucket.name, path=key.key
-                ), content
-
-        except Exception as exc:
-            LOGGER.exception(exc)
-            if raise_exc:
-                raise exc
-
-        return
-
-    path = os.path.abspath(path)
-
-    for sub_dir, _, file_paths in os.walk(path):
-        for file_path in file_paths:
-            file_path = os.path.join(sub_dir, file_path)
-
-            if not accept_path(file_path):
-                continue
-
-            url = smart_url(scheme="file", path=file_path)
-
-            if not load:
-                yield url, None
-                continue
-
-            try:
-                with open(file_path, "rb") as file_obj:
-                    yield url, file_obj.read()
-
-            except Exception as exc:
-                LOGGER.exception(exc)
-                if raise_exc:
-                    raise exc
-
-
-# TODO no longer needed – remove
-def smart_walks(*paths, load=False, raise_exc=False, **kwargs):
-    """ walk all paths """
-
-    for path in paths:
-        url = urlparse(to_str(path)) if isinstance(path, (bytes, str)) else path
-
-        if url.path.endswith("/"):
-            yield from smart_walk(url, load=load, raise_exc=raise_exc, **kwargs)
-            continue
-
-        if url.scheme == "s3":
-            if not load:
-                if smart_exists(path):
-                    yield url.geturl(), None
-                else:
-                    yield from smart_walk(
-                        url, load=False, raise_exc=raise_exc, **kwargs
-                    )
-                continue
-
-            try:
-                from smart_open import smart_open
-
-                with smart_open(url.geturl(), "rb") as file_obj:
-                    yield url.geturl(), file_obj.read()
-                continue
-
-            except Exception:
-                pass
-
-            yield from smart_walk(url, load=True, raise_exc=raise_exc, **kwargs)
-            continue
-
-        path = os.path.abspath(url.path)
-
-        if os.path.isdir(path):
-            yield from smart_walk(path, load=load, raise_exc=raise_exc, **kwargs)
-            continue
-
-        if not smart_exists(path):
-            continue
-
-        if not load:
-            yield smart_url(scheme="file", path=path), None
-            continue
-
-        try:
-            with open(path, "rb") as file_obj:
-                yield smart_url(scheme="file", path=path), file_obj.read()
-
-        except Exception as exc:
-            LOGGER.exception(exc)
-            if raise_exc:
-                raise exc
 
 
 def json_from_response(response):
