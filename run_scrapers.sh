@@ -7,7 +7,7 @@ cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 
 mkdir --parents 'logs'
 
-if [ $# -eq 0 ]; then
+if [ $# -eq 0 ] || [[ "${1}" == 'all' ]]; then
     SCRAPERS=($(scrapy list))
 else
     SCRAPERS=("$@")
