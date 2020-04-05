@@ -41,8 +41,9 @@ class SpielenSpider(Spider):
         f"https://gesellschaftsspiele.spielen.de/ausgezeichnet-{year}/"
         for year in range(2017, now().year + 1)
     )
-    game_url = "https://gesellschaftsspiele.spielen.de/alle-brettspiele/{}/"
     item_classes = (GameItem,)
+    game_url = "https://gesellschaftsspiele.spielen.de/alle-brettspiele/{}/"
+
     custom_settings = {
         "DOWNLOAD_DELAY": 10,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
