@@ -327,6 +327,7 @@ def smart_walk(path, load=False, raise_exc=False, accept_path=const_true, **s3_a
                     raise exc
 
 
+# TODO no longer needed – remove
 def smart_walks(*paths, load=False, raise_exc=False, **kwargs):
     """ walk all paths """
 
