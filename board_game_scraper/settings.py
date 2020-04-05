@@ -183,13 +183,13 @@ DOWNLOADER_MIDDLEWARES = {"scrapy_extensions.DelayedRetry": 555}
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
     "scrapy.extensions.feedexport.FeedExporter": None,
-    "board_game_scraper.extensions.MultiFeedExporter": 0,
+    "scrapy_extensions.MultiFeedExporter": 0,
     "scrapy.extensions.throttle.AutoThrottle": None,
-    "board_game_scraper.extensions.NicerAutoThrottle": 0,
+    "scrapy_extensions.NicerAutoThrottle": 0,
     "board_game_scraper.extensions.StateTag": 0,
     "board_game_scraper.extensions.PullQueueExtension": 100,
-    "board_game_scraper.extensions.MonitorDownloadsExtension": 500,
-    "board_game_scraper.extensions.DumpStatsExtension": 500,
+    "scrapy_extensions.MonitorDownloadsExtension": 500,
+    "scrapy_extensions.DumpStatsExtension": 500,
 }
 
 # Configure item pipelines
