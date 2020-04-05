@@ -50,9 +50,9 @@ class BgaSpider(Spider):
 
     custom_settings = {
         "IMAGES_URLS_FIELD": None,
-        "DOWNLOAD_DELAY": 20,
-        "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
-        "AUTOTHROTTLE_TARGET_CONCURRENCY": 1,
+        "DOWNLOAD_DELAY": 30,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
     }
 
     @classmethod
