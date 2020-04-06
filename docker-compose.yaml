@@ -1,13 +1,26 @@
 version: '3.7'
 
 services:
-    bgg:
+    bgg-hotness:
         image: bg-scraper:latest
-        container_name: bg-scraper-bgg
+        container_name: bg-scraper-bgg-hotness
         build: '.'
         command: ['bash', 'run_scraper.sh', 'bgg_hotness']
         env_file: .env
         volumes:
             - ./feeds:/app/feeds
-        restart: always
+        restart: on-failure
         stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    luding:
+        image: bg-scraper:latest
+        container_name: bg-scraper-luding
+        build: '.'
+        command: ['bash', 'run_scraper.sh', 'luding']
+        env_file: .env
+        volumes:
+            - ./feeds:/app/feeds
+        restart: on-failure
+        stop_grace_period: 15m
+        stop_signal: SIGINT
