@@ -11,6 +11,7 @@ import sys
 
 from collections import defaultdict
 from itertools import chain
+from urllib.parse import urlparse
 from pkg_resources import resource_stream
 
 import dedupe
@@ -21,11 +22,7 @@ from scrapy.utils.misc import arg_to_iter, load_object
 from smart_open import smart_open
 
 from .items import GameItem
-from .utils import (
-    parse_json,
-    serialize_json,
-    smart_exists,
-)
+from .utils import parse_json, serialize_json
 
 LOGGER = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -53,6 +50,43 @@ DEDUPE_FIELDS = tuple(_fields())
 
 VALUE_ID_REGEX = re.compile(r"^(.*?)(:(\d+))?$")
 VALUE_ID_FIELDS = ("designer", "artist", "publisher")
+
+
+def smart_exists(path, raise_exc=False):
+    """ returns True if given path exists """
+
+    url = urlparse(path)
+
+    if url.scheme == "s3":
+        try:
+            import boto
+        except ImportError as exc:
+            LOGGER.error("<boto> library must be importable: %s", exc)
+            if raise_exc:
+                raise exc
+            return False
+
+        try:
+            bucket = boto.connect_s3().get_bucket(url.hostname, validate=True)
+            key = bucket.new_key(url.path[1:])
+            return key.exists()
+
+        except Exception as exc:
+            LOGGER.error(exc)
+            if raise_exc:
+                raise exc
+
+        return False
+
+    try:
+        return os.path.exists(url.path)
+
+    except Exception as exc:
+        LOGGER.error(exc)
+        if raise_exc:
+            raise exc
+
+    return False
 
 
 def _parse_value_id(string, regex=VALUE_ID_REGEX):

@@ -2,7 +2,6 @@
 
 """ Scrapy items """
 
-import csv
 import logging
 
 from datetime import date, datetime, timezone
@@ -16,9 +15,10 @@ from pytility import (
     parse_float,
     parse_int,
 )
-from scrapy import Field, Item
+from scrapy import Field
 from scrapy.loader.processors import Identity, MapCompose
 from scrapy.utils.project import get_project_settings
+from scrapy_extensions import TypedItem
 from w3lib.html import remove_tags
 
 from .utils import (
@@ -28,7 +28,6 @@ from .utils import (
     replace_all_entities,
     serialize_date,
     serialize_json,
-    smart_walks,
     validate_range,
     validate_url,
 )
@@ -89,92 +88,6 @@ def _json_output():
 
 def _serialize_bool(item):
     return int(item) if isinstance(item, bool) else None
-
-
-class TypedItem(Item):
-    """ Item with typed fields """
-
-    def __setitem__(self, key, value):
-        field = self.fields.get(key) or {}
-        setter = field.get("setter", IDENTITY)
-
-        super().__setitem__(key, setter(value))
-
-        dtype = field.get("dtype")
-        convert = field.get("dtype_convert")
-
-        if self[key] is None or dtype is None or isinstance(self[key], dtype):
-            return
-
-        if not convert:
-            raise ValueError(
-                f"field <{key}> requires type {dtype} but found type {type(self[key])}"
-            )
-
-        convert = (
-            convert
-            if callable(convert)
-            else dtype[0]
-            if isinstance(dtype, tuple)
-            else dtype
-        )
-        value = convert(self[key])
-
-        assert isinstance(value, dtype) or value is None
-
-        super().__setitem__(key, setter(value))
-
-    @classmethod
-    def parse(cls, item):
-        """ parses the fields in a dict-like item and returns a TypedItem """
-
-        article = cls()
-
-        for key, properties in cls.fields.items():
-            value = item.get(key)
-
-            if value is None or value == "":
-                continue
-
-            try:
-                article[key] = value
-                continue
-
-            except ValueError:
-                pass
-
-            parser = properties.get("parser", IDENTITY)
-            article[key] = parser(value)
-
-        return article
-
-    @classmethod
-    def clean(cls, item):
-        """ cleans the fields in a dict-like item and returns a TypedItem """
-
-        return cls({k: v for k, v in item.items() if v and k in cls.fields})
-
-    @classmethod
-    def from_csv(cls, *paths, **kwargs):
-        """ find CSV files and and parse contents to items """
-
-        try:
-            from smart_open import smart_open
-        except ImportError:
-            LOGGER.exception("<smart_open> needs to be importable")
-            return
-
-        kwargs["load"] = False
-        kwargs.setdefault(
-            "accept_path", lambda path: path and path.lower().endswith(".csv")
-        )
-
-        for path, _ in smart_walks(*paths, **kwargs):
-            LOGGER.info("parsing items from %s...", path)
-
-            with smart_open(path, "r") as csv_file:
-                reader = csv.DictReader(csv_file)
-                yield from map(cls.parse, reader)
 
 
 class GameItem(TypedItem):

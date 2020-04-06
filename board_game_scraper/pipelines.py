@@ -23,23 +23,6 @@ from .utils import REGEX_DBPEDIA_DOMAIN, parse_json, parse_url
 LOGGER = logging.getLogger(__name__)
 
 
-class ValidatePipeline:
-    """ validate items """
-
-    # pylint: disable=no-self-use,unused-argument
-    def process_item(self, item, spider):
-        """ verify if all required fields are present """
-
-        if all(
-            item.get(field)
-            for field in item.fields
-            if item.fields[field].get("required")
-        ):
-            return item
-
-        raise DropItem("Missing required field in {}".format(item))
-
-
 class DataTypePipeline:
     """ convert fields to their required data type """
 
