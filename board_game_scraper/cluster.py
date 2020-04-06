@@ -11,6 +11,7 @@ import sys
 
 from collections import defaultdict
 from itertools import chain
+from pathlib import Path
 from urllib.parse import urlparse
 from pkg_resources import resource_stream
 
@@ -188,8 +189,9 @@ def _train_gazetteer(
     return gazetteer
 
 
-def _filename(path):
-    return os.path.splitext(os.path.basename(path))[0] or None
+def _extract_site(path):
+    path = Path(path)
+    return path.stem.split("_")[0] or None
 
 
 def link_games(
@@ -200,7 +202,6 @@ def link_games(
     training_file=None,
     manual_labelling=False,
     threshold=None,
-    recall_weight=1,
     output=None,
     pretty_print=True,
 ):
@@ -211,7 +212,7 @@ def link_games(
         raise ValueError(f"need at least 2 files to link games, but received {paths}")
 
     id_prefixes = tuple(arg_to_iter(id_prefixes))
-    id_prefixes = id_prefixes + tuple(map(_filename, paths[len(id_prefixes) :]))
+    id_prefixes = id_prefixes + tuple(map(_extract_site, paths[len(id_prefixes) :]))
     id_fields = tuple(arg_to_iter(id_fields))
     id_fields = id_fields + tuple(
         f"{prefix}_id" for prefix in id_prefixes[len(id_fields) :]
@@ -259,19 +260,19 @@ def link_games(
 
     LOGGER.info("using gazetteer model %r", gazetteer)
 
-    threshold = threshold or gazetteer.threshold(data_link, recall_weight=recall_weight)
+    threshold = threshold or 0.5  # TODO estimate threshold based on recall
 
     LOGGER.info("using threshold %.3f", threshold)
 
-    clusters = gazetteer.match(
-        messy_data=data_link, threshold=threshold, n_matches=None, generator=True
+    clusters = gazetteer.search(
+        data=data_link, threshold=threshold, n_matches=None, generator=True
     )
-    links = defaultdict(set)
     del gazetteer
 
-    for cluster in clusters:
-        for (id_link, id_canonical), _ in cluster:
-            links[id_canonical].add(id_link)
+    links = defaultdict(set)
+    for link_id, canonical_ids in clusters:
+        for canonical_id, _ in canonical_ids:
+            links[canonical_id].add(link_id)
     del clusters
 
     LOGGER.info("found links for %d items", len(links))
@@ -315,13 +316,6 @@ def _parse_args():
         help="gazetteer model file",
     )
     parser.add_argument("--threshold", "-r", type=float, help="clustering threshold")
-    parser.add_argument(
-        "--recall",
-        "-R",
-        type=float,
-        default=1,
-        help="threshold estimation recall weight",
-    )
     parser.add_argument("--output", "-o", help="output location")
     parser.add_argument(
         "--verbose",
@@ -353,7 +347,6 @@ def _main():
         training_file=args.training_file if args.train else None,
         manual_labelling=args.train,
         threshold=args.threshold,
-        recall_weight=args.recall,
         output=args.output or "-",
     )
 
