@@ -156,21 +156,22 @@ def _train_gazetteer(
     LOGGER.info("training gazetteer with fields: %r", fields)
 
     gazetteer = dedupe.Gazetteer(fields)
-    gazetteer.sample(data_1, data_2, 50_000)
 
     if training_file and smart_exists(training_file):
         LOGGER.info("reading existing training from <%s>", training_file)
         with smart_open(training_file, "r") as file_obj:
-            gazetteer.readTraining(file_obj)
+            gazetteer.prepare_training(
+                data_1=data_1, data_2=data_2, training_file=file_obj, sample_size=50_000
+            )
 
     if manual_labelling:
         LOGGER.info("start interactive labelling")
-        dedupe.convenience.consoleLabel(gazetteer)
+        dedupe.convenience.console_label(gazetteer)
 
     if training_file:
         LOGGER.info("write training data back to <%s>", training_file)
         with smart_open(training_file, "w") as file_obj:
-            gazetteer.writeTraining(file_obj)
+            gazetteer.write_training(file_obj)
         if pretty_print:
             with smart_open(training_file, "r") as file_obj:
                 training = parse_json(file_obj)
@@ -180,7 +181,7 @@ def _train_gazetteer(
     LOGGER.info("done labelling, begin training")
     gazetteer.train(recall=0.9, index_predicates=True)
 
-    gazetteer.cleanupTraining()
+    gazetteer.cleanup_training()
 
     return gazetteer
 
@@ -242,7 +243,7 @@ def link_games(
         if isinstance(gazetteer, str):
             LOGGER.info("saving gazetteer model to <%s>", gazetteer)
             with smart_open(gazetteer, "wb") as file_obj:
-                gazetteer_trained.writeSettings(file_obj)
+                gazetteer_trained.write_settings(file_obj)
 
         gazetteer = gazetteer_trained
         del gazetteer_trained
