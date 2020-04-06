@@ -163,6 +163,8 @@ def _train_gazetteer(
             gazetteer.prepare_training(
                 data_1=data_1, data_2=data_2, training_file=file_obj, sample_size=50_000
             )
+    else:
+        gazetteer.prepare_training(data_1=data_1, data_2=data_2, sample_size=50_000)
 
     if manual_labelling:
         LOGGER.info("start interactive labelling")
