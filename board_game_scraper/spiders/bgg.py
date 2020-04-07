@@ -319,7 +319,7 @@ class BggSpider(Spider):
             url=url,
             callback=partial(self.parse_user, item=item),
             meta={"item": item},
-            priority=1,
+            priority=2,
         )
 
     def parse(self, response):
