@@ -5,7 +5,7 @@
 import re
 import string
 
-from scrapy import Spider, Request
+from scrapy import Spider
 from scrapy.utils.misc import arg_to_iter
 
 from ..items import GameItem
