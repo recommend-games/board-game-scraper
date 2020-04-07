@@ -40,7 +40,7 @@ class LudingSpider(Spider):
         for game in response.css("table.game-list > tr"):
             url = game.xpath("td[1]//a/@href").extract_first()
             if url:
-                yield Request(response.urljoin(url), callback=self.parse_game)
+                yield response.follow(url, callback=self.parse_game)
 
     # pylint: disable=no-self-use
     def parse_game(self, response):
