@@ -153,7 +153,9 @@ class BggRankingsSpider(Spider):
 
         for start_url in self.start_urls:
             yield Request(
-                url=start_url.format(date=start_date_str), callback=self.parse
+                url=start_url.format(date=start_date_str),
+                callback=self.parse,
+                priority=1,
             )
 
     def parse(self, response):

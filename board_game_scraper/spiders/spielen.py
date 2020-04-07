@@ -59,7 +59,7 @@ class SpielenSpider(Spider):
 
         pagination = response.css(".listPagination a::attr(href)").extract()
         for page in clear_list(pagination):
-            yield response.follow(page, callback=self.parse)
+            yield response.follow(page, callback=self.parse, priority=1)
 
         urls = response.xpath("//@href").extract()
         spielen_ids = map(extract_spielen_id, map(response.urljoin, urls))

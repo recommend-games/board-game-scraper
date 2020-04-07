@@ -100,13 +100,14 @@ class WikidataSpider(Spider):
                 method="POST",
                 body=urlencode({"query": query}),
                 callback=self.parse_games,
+                priority=1,
             )
             return
 
         for batch in batchify(types, batch_size):
             query = query_tmpl.format(" ".join(batch))
             # self.logger.debug(query)
-            yield Request(self._api_url(query), callback=self.parse_games)
+            yield Request(self._api_url(query), callback=self.parse_games, priority=1)
 
     def start_requests(self):
         """ generate start requests """
@@ -127,7 +128,7 @@ class WikidataSpider(Spider):
             }"""
         )
         # self.logger.debug(query)
-        yield Request(self._api_url(query), callback=self.parse)
+        yield Request(self._api_url(query), callback=self.parse, priority=2)
 
     def parse(self, response):
         # pylint: disable=line-too-long
