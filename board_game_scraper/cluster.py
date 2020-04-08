@@ -161,7 +161,16 @@ def _process_item(item):
     return item
 
 
+def _process_game(game, fields=DEDUPE_FIELDS):
+    return {field["field"]: game.get(field["field"]) for field in fields}
+
+
 def _process_training(training):
+    # training = {"distinct": [(item_1, item_2), ...], "match": [(item_1, item_2), ...]}
+    training = {
+        key: [[_process_game(game) for game in pair] for pair in pairs]
+        for key, pairs in training.items()
+    }
     return _process_item(training)
 
 
