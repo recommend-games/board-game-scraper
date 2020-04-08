@@ -3,6 +3,7 @@
 """ merge different sources """
 
 import argparse
+import json
 import logging
 import math
 import os
@@ -10,6 +11,7 @@ import re
 import sys
 
 from collections import defaultdict
+from functools import lru_cache
 from itertools import chain
 from pathlib import Path
 from urllib.parse import urlparse
@@ -36,6 +38,7 @@ def abs_comp(field_1, field_2):
     return math.inf if field_1 is None or field_2 is None else abs(field_1 - field_2)
 
 
+@lru_cache(8)
 def _fields(resource="fields.yaml"):
     LOGGER.info("loading dedupe fields from <%s>", resource)
     fields = yaml.safe_load(resource_stream(__name__, resource))
@@ -146,6 +149,27 @@ def _make_data(games, id_field="id", id_prefix=None):
     return {_make_id(game, id_field, id_prefix): game for game in games}
 
 
+def _process_item(item):
+    if isinstance(item, dict):
+        return {k: _process_item(v) for k, v in item.items()}
+    if isinstance(item, (frozenset, list, set, tuple)):
+        item = type(item)(_process_item(v) for v in item)
+    try:
+        return dedupe.serializer._to_json(item)
+    except TypeError:
+        pass
+    return item
+
+
+def _process_training(training):
+    return _process_item(training)
+
+
+def _write_training(model, file_obj, **json_kwargs):
+    training_pairs = _process_training(model.training_pairs)
+    json.dump(obj=training_pairs, fp=file_obj, **json_kwargs)
+
+
 def _train_gazetteer(
     data_1,
     data_2,
@@ -174,12 +198,17 @@ def _train_gazetteer(
     if training_file:
         LOGGER.info("write training data back to <%s>", training_file)
         with smart_open(training_file, "w") as file_obj:
-            gazetteer.write_training(file_obj)
-        if pretty_print:
-            with smart_open(training_file, "r") as file_obj:
-                training = parse_json(file_obj)
-            with smart_open(training_file, "w") as file_obj:
-                serialize_json(obj=training, file=file_obj, sort_keys=True, indent=4)
+            # bug in dedupe preventing training from being serialized correctly
+            # gazetteer.write_training(file_obj)
+            if pretty_print:
+                _write_training(gazetteer, file_obj, sort_keys=True, indent=4)
+            else:
+                _write_training(gazetteer, file_obj)
+        # if pretty_print:
+        #     with smart_open(training_file, "r") as file_obj:
+        #         training = parse_json(file_obj)
+        #     with smart_open(training_file, "w") as file_obj:
+        #         serialize_json(obj=training, file=file_obj, sort_keys=True, indent=4)
 
     LOGGER.info("done labelling, begin training")
     gazetteer.train(recall=0.9, index_predicates=True)
