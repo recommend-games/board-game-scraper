@@ -8,5 +8,5 @@ python -m board_game_scraper.cluster \
     ../board-game-data/scraped/bga_GameItem.jl \
     ../board-game-data/scraped/spielen_GameItem.jl \
     ../board-game-data/scraped/luding_GameItem.jl \
-    ../board-game-data/scraped/wikidata_GameItem.jl
+    ../board-game-data/scraped/wikidata_GameItem.jl \
     "$@"

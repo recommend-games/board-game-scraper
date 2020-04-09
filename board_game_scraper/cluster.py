@@ -184,6 +184,7 @@ def _train_gazetteer(
     data_2,
     fields=DEDUPE_FIELDS,
     training_file=None,
+    add_bgg_labels=False,
     manual_labelling=False,
     pretty_print=False,
 ):
@@ -200,9 +201,17 @@ def _train_gazetteer(
     else:
         gazetteer.prepare_training(data_1=data_1, data_2=data_2, sample_size=50_000)
 
+    if add_bgg_labels:
+        labeled_pairs = dedupe.training_data_link(data_1, data_2, common_key="bgg_id")
+        labeled_pairs["distinct"] = []
+        LOGGER.info(
+            "Adding %d matches obtained via their BGG ID", len(labeled_pairs["match"])
+        )
+        gazetteer.mark_pairs(labeled_pairs)
+
     if manual_labelling:
         LOGGER.info("start interactive labelling")
-        dedupe.convenience.console_label(gazetteer)
+        dedupe.console_label(gazetteer)
 
     if training_file:
         LOGGER.info("write training data back to <%s>", training_file)
@@ -238,6 +247,7 @@ def link_games(
     id_prefixes=None,
     id_fields=None,
     training_file=None,
+    add_bgg_labels=False,
     manual_labelling=False,
     threshold=None,
     output=None,
@@ -277,6 +287,7 @@ def link_games(
             data_canonical,
             data_link,
             training_file=training_file,
+            add_bgg_labels=add_bgg_labels,
             manual_labelling=manual_labelling,
             pretty_print=pretty_print,
         )
@@ -353,6 +364,12 @@ def _parse_args():
         default=os.path.join(BASE_DIR, "cluster", "gazetteer.pickle"),
         help="gazetteer model file",
     )
+    parser.add_argument(
+        "--bgg-labels",
+        "-b",
+        action="store_true",
+        help="add labels based on matching BGG IDs",
+    )
     parser.add_argument("--threshold", "-r", type=float, help="clustering threshold")
     parser.add_argument("--output", "-o", help="output location")
     parser.add_argument(
@@ -383,6 +400,7 @@ def _main():
         id_prefixes=args.id_prefixes,
         id_fields=args.id_fields,
         training_file=args.training_file if args.train else None,
+        add_bgg_labels=args.bgg_labels,
         manual_labelling=args.train,
         threshold=args.threshold,
         output=args.output or "-",
