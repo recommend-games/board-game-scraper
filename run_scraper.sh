@@ -17,7 +17,6 @@ fi
 echo "Running scraper <${SCRAPER}>"
 echo "Saving feeds to <${FEEDS_DIR}> and job data to <${JOB_DIR}>"
 
-SAVEDIR="$(pwd)"
 cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 
 function find_state() {
@@ -45,7 +44,6 @@ RUNNING=$(find_state "${JOB_DIR}" 'running')
 
 if [[ -n "${RUNNING}" ]]; then
     echo "Found a running job <$(echo "${RUNNING}" | tr -d '[:space:]')>, skipping <${SCRAPER}>..."
-    cd "${SAVEDIR}"
     exit 0
 fi
 
@@ -61,10 +59,6 @@ fi
 
 CURR_JOB="${JOB_DIR}/${JOBTAG}"
 
-scrapy crawl "${SCRAPER}" \
+exec scrapy crawl "${SCRAPER}" \
     --output "${FEEDS_DIR}/%(name)s/%(class)s/%(time)s.jl" \
     --set "JOBDIR=${CURR_JOB}"
-
-echo 'Done.'
-
-cd "${SAVEDIR}"
