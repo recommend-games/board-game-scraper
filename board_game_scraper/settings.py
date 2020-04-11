@@ -21,7 +21,7 @@ SPIDER_MODULES = ["board_game_scraper.spiders"]
 NEWSPIDER_MODULE = "board_game_scraper.spiders"
 
 LOG_LEVEL = os.getenv("LOG_LEVEL") or "INFO"
-LOG_FORMATTER = "board_game_scraper.loggers.QuietLogFormatter"
+LOG_FORMATTER = "scrapy_extensions.QuietLogFormatter"
 LOG_SCRAPED_ITEMS = parse_bool(os.getenv("LOG_SCRAPED_ITEMS"))
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -177,26 +177,26 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {"board_game_scraper.middlewares.DelayedRetry": 555}
+DOWNLOADER_MIDDLEWARES = {"scrapy_extensions.DelayedRetry": 555}
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
     "scrapy.extensions.feedexport.FeedExporter": None,
-    "board_game_scraper.extensions.MultiFeedExporter": 0,
+    "scrapy_extensions.MultiFeedExporter": 0,
     "scrapy.extensions.throttle.AutoThrottle": None,
-    "board_game_scraper.extensions.NicerAutoThrottle": 0,
+    "scrapy_extensions.NicerAutoThrottle": 0,
     "board_game_scraper.extensions.StateTag": 0,
     "board_game_scraper.extensions.PullQueueExtension": 100,
-    "board_game_scraper.extensions.MonitorDownloadsExtension": 500,
-    "board_game_scraper.extensions.DumpStatsExtension": 500,
+    "scrapy_extensions.MonitorDownloadsExtension": 500,
+    "scrapy_extensions.DumpStatsExtension": 500,
 }
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     "board_game_scraper.pipelines.DataTypePipeline": 100,
-    "board_game_scraper.pipelines.ValidatePipeline": 200,
+    "scrapy_extensions.ValidatePipeline": 200,
     "board_game_scraper.pipelines.ResolveLabelPipeline": 300,
     "board_game_scraper.pipelines.ResolveImagePipeline": 400,
     "scrapy.pipelines.images.ImagesPipeline": None,

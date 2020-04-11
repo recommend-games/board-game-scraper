@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 from pytility import batchify, normalize_space
 from scrapy import Request, Spider
+from scrapy.utils.misc import arg_to_iter
 
 from .wikidata import WikidataSpider
 from ..items import GameItem
@@ -41,10 +42,15 @@ class DBpediaSpider(Spider):
     """ DBpedia spider """
 
     name = "dbpedia"
-    allowed_domains = ["dbpedia.org"]
+    allowed_domains = ("dbpedia.org",)
     item_classes = (GameItem,)
-
     sparql_api_url = "http://dbpedia.org/sparql"
+
+    custom_settings = {
+        "DOWNLOAD_DELAY": 20,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+    }
 
     game_types = (
         "http://dbpedia.org/ontology/BoardGame",
@@ -284,8 +290,8 @@ class DBpediaSpider(Spider):
 
         for batch in batchify(types, batch_size):
             query = query_tmpl.format(" ".join(batch))
-            self.logger.debug(query)
-            yield Request(self._api_url(query), callback=self.parse_games)
+            # self.logger.debug(query)
+            yield Request(self._api_url(query), callback=self.parse_games, priority=1)
 
     def start_requests(self):
         """ generate start requests """
@@ -307,8 +313,8 @@ class DBpediaSpider(Spider):
                       a ?type .
             }"""
         )
-        self.logger.debug(query)
-        yield Request(self._api_url(query), callback=self.parse)
+        # self.logger.debug(query)
+        yield Request(self._api_url(query), callback=self.parse, priority=2)
 
     def parse(self, response):
         # pylint: disable=line-too-long
@@ -353,7 +359,7 @@ class DBpediaSpider(Spider):
             # dbpedia_id = game.split('/')[-1]
             # http://dbpedia.org/resource/{dbpedia_id}
             query = query_tmpl.format(game=game)
-            self.logger.debug(query)
+            # self.logger.debug(query)
             yield Request(
                 self._api_url(query),
                 callback=self.parse_game,
@@ -501,8 +507,8 @@ class DBpediaSpider(Spider):
             None,
             extract_ids(
                 uri,
-                *ldr.get_output_value("external_link"),
-                *ldr.get_output_value("official_url"),
+                *arg_to_iter(ldr.get_output_value("external_link")),
+                *arg_to_iter(ldr.get_output_value("official_url")),
             ),
         )
 

@@ -104,10 +104,12 @@ share/
 pip-selfcheck.json
 
 .tc/
-cluster/
+analytics/
+cluster
 crawls/
 feeds*/
 images/
 jobs/
 recommender/
+results
 rules/

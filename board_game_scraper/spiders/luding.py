@@ -5,7 +5,8 @@
 import re
 import string
 
-from scrapy import Spider, Request
+from scrapy import Spider
+from scrapy.utils.misc import arg_to_iter
 
 from ..items import GameItem
 from ..loaders import GameLoader
@@ -16,12 +17,18 @@ class LudingSpider(Spider):
     """ Luding spider """
 
     name = "luding"
-    allowed_domains = ["luding.org"]
-    start_urls = [
+    allowed_domains = ("luding.org",)
+    start_urls = tuple(
         "http://luding.org/cgi-bin/GameFirstLetter.py?letter={}".format(letter)
         for letter in string.ascii_uppercase + "0"
-    ]
+    )
     item_classes = (GameItem,)
+
+    custom_settings = {
+        "DOWNLOAD_DELAY": 2,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
+    }
 
     def parse(self, response):
         """
@@ -33,7 +40,7 @@ class LudingSpider(Spider):
         for game in response.css("table.game-list > tr"):
             url = game.xpath("td[1]//a/@href").extract_first()
             if url:
-                yield Request(response.urljoin(url), callback=self.parse_game)
+                yield response.follow(url, callback=self.parse_game)
 
     # pylint: disable=no-self-use
     def parse_game(self, response):
@@ -86,6 +93,9 @@ class LudingSpider(Spider):
         age = re.match(r"^.*?(\d+).*$", age) if age else None
         ldr.add_value("min_age", age.group(1) if age else None)
 
-        ldr.add_value(None, extract_ids(response.url, *links, *review_urls))
+        ldr.add_value(
+            None,
+            extract_ids(response.url, *arg_to_iter(links), *arg_to_iter(review_urls)),
+        )
 
         return ldr.load_item()
