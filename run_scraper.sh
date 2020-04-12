@@ -19,15 +19,19 @@ echo "Running scraper <${SCRAPER}>"
 echo "Saving feeds to <${FEEDS_DIR}> and job data to <${JOB_DIR}>"
 
 function find_state() {
-    DELETE=${3:-''}
+    BASE_DIR="${1}"
+    STATES="${2}"
+    DELETE="${3:-''}"
 
-    for DIR in "${1}"/*; do
-        if [[ -d "${DIR}" && -f "${DIR}/${STATE_FILE}" && "$(cat "${DIR}/${STATE_FILE}")" == "${2}" ]]; then
-            basename "${DIR}"
-            if [[ -n "${DELETE}" ]]; then
-                rm --recursive --force "${DIR}"
+    for DIR in "${BASE_DIR}"/*; do
+        for STATE in ${STATES}; do
+            if [[ -d "${DIR}" && -f "${DIR}/${STATE_FILE}" && "$(cat "${DIR}/${STATE_FILE}")" == "${STATE}" ]]; then
+                basename "${DIR}"
+                if [[ -n "${DELETE}" ]]; then
+                    rm --recursive --force "${DIR}"
+                fi
             fi
-        fi
+        done
     done
 }
 
@@ -47,7 +51,7 @@ if [[ -n "${RUNNING}" ]]; then
 fi
 
 JOBTAG="${DATE}"
-SHUT_DOWN="$(find_state "${JOB_DIR}" 'shutdown')"
+SHUT_DOWN="$(find_state "${JOB_DIR}" 'shutdown closespider_timeout')"
 
 if [[ -n "${SHUT_DOWN}" ]]; then
     JOBTAG="$(echo "${SHUT_DOWN}" | tr -d '[:space:]')"

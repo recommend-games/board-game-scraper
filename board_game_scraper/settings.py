@@ -182,6 +182,7 @@ DOWNLOADER_MIDDLEWARES = {"scrapy_extensions.DelayedRetry": 555}
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
+    "scrapy.extensions.closespider.CloseSpider": 0,
     "scrapy.extensions.feedexport.FeedExporter": None,
     "scrapy_extensions.MultiFeedExporter": 0,
     "scrapy.extensions.throttle.AutoThrottle": None,
@@ -202,6 +203,9 @@ ITEM_PIPELINES = {
     "scrapy.pipelines.images.ImagesPipeline": None,
     "scrapy.pipelines.images.FilesPipeline": None,
 }
+
+# See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
+CLOSESPIDER_TIMEOUT = os.getenv("CLOSESPIDER_TIMEOUT")
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
