@@ -7,20 +7,11 @@ services:
         build: '.'
         command: ['bash', 'run_scraper.sh', 'bgg_hotness']
         env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 21600 # 6 hours
+            DONT_RUN_BEFORE_SEC: 10800 # 3 hours
         volumes:
             - ./feeds:/app/feeds
-        restart: on-failure
-        stop_grace_period: 15m
-        stop_signal: SIGINT
-
-    luding:
-        image: bg-scraper:latest
-        container_name: bg-scraper-luding
-        build: '.'
-        command: ['bash', 'run_scraper.sh', 'luding']
-        env_file: .env
-        volumes:
-            - ./feeds:/app/feeds
-        restart: on-failure
+        restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
