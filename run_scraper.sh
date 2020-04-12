@@ -7,6 +7,7 @@ SCRAPER="${1:-}"
 FEEDS_DIR="${2:-${BASE_DIR}/feeds}"
 JOBS_DIR="${3:-${BASE_DIR}/jobs}"
 JOB_DIR="${JOBS_DIR}/${SCRAPER}"
+DONT_RUN_BEFORE_FILE="${JOB_DIR}/.dont_run_before"
 STATE_FILE='.state'
 DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
@@ -21,7 +22,7 @@ echo "Saving feeds to <${FEEDS_DIR}> and job data to <${JOB_DIR}>"
 function find_state() {
     BASE_DIR="${1}"
     STATES="${2}"
-    DELETE="${3:-''}"
+    DELETE="${3:-}"
 
     for DIR in "${BASE_DIR}"/*; do
         for STATE in ${STATES}; do
@@ -67,4 +68,5 @@ cd "${BASE_DIR}"
 
 exec scrapy crawl "${SCRAPER}" \
     --output "${FEEDS_DIR}/%(name)s/%(class)s/%(time)s.jl" \
-    --set "JOBDIR=${CURR_JOB}"
+    --set "JOBDIR=${CURR_JOB}" \
+    --set "DONT_RUN_BEFORE_FILE=${DONT_RUN_BEFORE_FILE}"

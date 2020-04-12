@@ -188,6 +188,7 @@ EXTENSIONS = {
     "scrapy.extensions.throttle.AutoThrottle": None,
     "scrapy_extensions.NicerAutoThrottle": 0,
     "board_game_scraper.extensions.StateTag": 0,
+    "board_game_scraper.extensions.DontRunBeforeTag": 0,
     "board_game_scraper.extensions.PullQueueExtension": 100,
     "scrapy_extensions.MonitorDownloadsExtension": 500,
     "scrapy_extensions.DumpStatsExtension": 500,
@@ -255,6 +256,11 @@ SCRAPE_BGG_USERS = True
 # State tags
 STATE_TAG_FILE = ".state"
 PID_TAG_FILE = ".pid"
+
+# "Don't run before" settings
+DONT_RUN_BEFORE_FILE = os.getenv("DONT_RUN_BEFORE_FILE")
+DONT_RUN_BEFORE_SEC = os.getenv("DONT_RUN_BEFORE_SEC")
+DONT_RUN_BEFORE_DATE = os.getenv("DONT_RUN_BEFORE_DATE")
 
 MEDIA_ALLOW_REDIRECTS = True
 
