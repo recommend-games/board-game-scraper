@@ -2,9 +2,10 @@
 
 set -euo pipefail
 
+BASE_DIR="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 SCRAPER="${1:-}"
-FEEDS_DIR="${2:-feeds}"
-JOBS_DIR="${3:-jobs}"
+FEEDS_DIR="${2:-${BASE_DIR}/feeds}"
+JOBS_DIR="${3:-${BASE_DIR}/jobs}"
 JOB_DIR="${JOBS_DIR}/${SCRAPER}"
 STATE_FILE='.state'
 DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
@@ -16,8 +17,6 @@ fi
 
 echo "Running scraper <${SCRAPER}>"
 echo "Saving feeds to <${FEEDS_DIR}> and job data to <${JOB_DIR}>"
-
-cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 
 function find_state() {
     DELETE=${3:-''}
@@ -32,7 +31,7 @@ function find_state() {
     done
 }
 
-mkdir --parents '.scrapy/httpcache' "${FEEDS_DIR}/${SCRAPER}" "${JOB_DIR}"
+mkdir --parents "${BASE_DIR}/.scrapy/httpcache" "${FEEDS_DIR}/${SCRAPER}" "${JOB_DIR}"
 
 DELETED=$(find_state "${JOB_DIR}" 'finished' 'true')
 
@@ -58,6 +57,9 @@ else
 fi
 
 CURR_JOB="${JOB_DIR}/${JOBTAG}"
+
+# Scrapy insists on reading scrapy.cfg from the current dir, so we need to cd
+cd "${BASE_DIR}"
 
 exec scrapy crawl "${SCRAPER}" \
     --output "${FEEDS_DIR}/%(name)s/%(class)s/%(time)s.jl" \
