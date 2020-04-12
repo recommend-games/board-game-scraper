@@ -9,7 +9,6 @@ JOBS_DIR="${3:-${BASE_DIR}/jobs}"
 JOB_DIR="${JOBS_DIR}/${SCRAPER}"
 DONT_RUN_BEFORE_FILE="${JOB_DIR}/.dont_run_before"
 STATE_FILE='.state'
-DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
 if [[ -z "${SCRAPER}" ]]; then
     echo 'Scraper is required, aborting...'
@@ -38,6 +37,20 @@ function find_state() {
 
 mkdir --parents "${BASE_DIR}/.scrapy/httpcache" "${FEEDS_DIR}/${SCRAPER}" "${JOB_DIR}"
 
+if [[ -s "${DONT_RUN_BEFORE_FILE}" ]]; then
+    DONT_RUN_BEFORE="$(tr -d '[:space:]' < "${DONT_RUN_BEFORE_FILE}")"
+    echo "Don't run before <${DONT_RUN_BEFORE}>!"
+
+    CURRENT_EPOCH="$(date --utc +%s)"
+    TARGET_EPOCH="$(date --date "${DONT_RUN_BEFORE}" +%s)"
+    SLEEP_SECONDS="$(( TARGET_EPOCH - CURRENT_EPOCH ))"
+
+    if (( SLEEP_SECONDS > 0 )); then
+        echo "Going to sleep for <${SLEEP_SECONDS}> seconds..."
+        sleep "${SLEEP_SECONDS}"
+    fi
+fi
+
 DELETED=$(find_state "${JOB_DIR}" 'finished' 'true')
 
 if [[ -n "${DELETED}" ]]; then
@@ -51,7 +64,7 @@ if [[ -n "${RUNNING}" ]]; then
     exit 0
 fi
 
-JOBTAG="${DATE}"
+JOBTAG="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 SHUT_DOWN="$(find_state "${JOB_DIR}" 'shutdown closespider_timeout')"
 
 if [[ -n "${SHUT_DOWN}" ]]; then
