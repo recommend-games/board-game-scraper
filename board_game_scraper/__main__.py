@@ -33,6 +33,8 @@ def _find_states(
         LOGGER.warning("<%s> is not an existing dir", path_dir)
         return result
 
+    LOGGER.info("Finding jobs and their states in <%s>", path_dir)
+
     for sub_dir in path_dir.iterdir():
         state_path = sub_dir / state_file
 
@@ -45,6 +47,9 @@ def _find_states(
         except Exception:
             LOGGER.exeception("Unable to read a state from <%s>", state_path)
             state = None
+
+        if not state:
+            LOGGER.warning("No valid state file in <%s>", sub_dir)
 
         if state in delete or (delete_non_state and not state):
             LOGGER.info("Deleting <%s> with state <%s>", sub_dir, state)
@@ -106,6 +111,7 @@ def main():
 
     # TODO sleep if don't run before
 
+    # TODO read STATE_FILE from settings
     states = _find_states(job_dir)
 
     running = sorted(sub_dir for sub_dir, state in states.items() if state == "running")
