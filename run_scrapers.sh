@@ -14,7 +14,7 @@ else
 fi
 
 for SCRAPER in "${SCRAPERS[@]}"; do
-    nohup bash run_scraper.sh "${SCRAPER}" >> "logs/${SCRAPER}.log" 2>&1 &
+    nohup pipenv run python -m board_game_scraper "${SCRAPER}" >> "logs/${SCRAPER}.log" 2>&1 &
     echo "Follow logs from <$(pwd)/logs/${SCRAPER}.log>"
 done
 
