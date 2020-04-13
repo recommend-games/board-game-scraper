@@ -5,7 +5,7 @@ services:
         image: bg-scraper:latest
         container_name: bg-scraper-bgg-hotness
         build: '.'
-        command: ['bash', 'run_scraper.sh', 'bgg_hotness']
+        command: ['python', '-m', 'board_game_scraper', 'bgg_hotness']
         env_file: .env
         environment:
             CLOSESPIDER_TIMEOUT: 21600 # 6 hours
