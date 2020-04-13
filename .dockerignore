@@ -1,5 +1,5 @@
-.git/
 # General
+**/.git/
 **/.DS_Store
 **/.~*
 
@@ -123,6 +123,10 @@
 **/docker-compose.yaml
 **/requirements*
 **/tox.ini
-**/feeds/
-**/jobs/
-**/test/
+**/_config.ya?ml
+analytics
+cluster
+feeds
+jobs
+result
+test
