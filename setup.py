@@ -153,9 +153,12 @@ setup(
     packages=find_packages(exclude=("tests", "*.tests", "*.tests.*", "tests.*")),
     # If your package is a single module, use this instead of 'packages':
     # py_modules=(),
-    # entry_points={
-    #     'console_scripts': ['mycli=mymodule:cli'],
-    # },
+    entry_points={
+        "console_scripts": (
+            "bg-scraper=board_game_scraper.__main__:main",
+            "bg-merge=board_game_scraper.merge:main",
+        ),
+    },
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
