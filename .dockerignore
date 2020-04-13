@@ -123,10 +123,10 @@
 **/docker-compose.yaml
 **/requirements*
 **/tox.ini
-**/_config.ya?ml
+**/_config.*
 analytics
 cluster
 feeds
 jobs
-result
+results
 test
