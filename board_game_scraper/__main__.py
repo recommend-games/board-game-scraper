@@ -61,6 +61,8 @@ def _parse_args():
     parser = argparse.ArgumentParser(description="TODO")
     parser.add_argument("spider", help="TODO")
     parser.add_argument("--job-dir", "-j", help="TODO")
+    parser.add_argument("--feeds-dir", "-f", help="TODO")
+    parser.add_argument("--dont-run-before", "-d", help="TODO")
     parser.add_argument(
         "--verbose",
         "-v",
@@ -88,6 +90,10 @@ def main():
     settings = get_project_settings()
 
     base_dir = Path(settings["BASE_DIR"]).resolve()
+    feeds_dir = Path(args.feeds_dir) if args.feeds_dir else base_dir / "feeds"
+    feeds_dir = feeds_dir.resolve()
+    out_file = feeds_dir / "%(name)s" / "%(class)s" / "%(time)s.jl"
+
     from_settings = job_dir_from_settings(settings)
     job_dir = (
         Path(args.job_dir)
@@ -97,6 +103,8 @@ def main():
         else base_dir / "jobs" / args.spider
     )
     job_dir = job_dir.resolve()
+
+    # TODO sleep if don't run before
 
     states = _find_states(job_dir)
 
@@ -130,10 +138,23 @@ def main():
     job_tag = resumable[0] if resumable else now().strftime(DATE_FORMAT)
     curr_job = job_dir / job_tag
 
-    # try:
-    #     execute()
-    # finally:
-    #     garbage_collect()
+    command = [
+        "scrapy",
+        "crawl",
+        args.spider,
+        "--output",
+        str(out_file),
+        "--set",
+        f"JOBDIR={curr_job}",
+    ]
+
+    if args.dont_run_before:
+        command += ["--set", f"DONT_RUN_BEFORE_FILE=${args.dont_run_before}"]
+
+    try:
+        execute(argv=command)
+    finally:
+        garbage_collect()
 
 
 if __name__ == "__main__":
