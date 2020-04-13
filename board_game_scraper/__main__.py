@@ -7,8 +7,9 @@ import logging
 import sys
 
 from pathlib import Path
+from time import sleep
 
-from pytility import normalize_space
+from pytility import normalize_space, parse_date
 from scrapy.cmdline import execute
 from scrapy.utils.job import job_dir as job_dir_from_settings
 from scrapy.utils.misc import arg_to_iter
@@ -62,6 +63,17 @@ def _find_states(
     return result
 
 
+def _date_from_file(path):
+    path = Path(path).resolve()
+    LOGGER.info("Reading date from path <%s>", path)
+    try:
+        with path.open() as file_obj:
+            date = normalize_space(next(file_obj, None))
+    except Exception:
+        date = None
+    return parse_date(date)
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description="TODO")
     parser.add_argument("spider", help="TODO")
@@ -109,7 +121,17 @@ def main():
     )
     job_dir = job_dir.resolve()
 
-    # TODO sleep if don't run before
+    dont_run_before_file = job_dir / ".dont_run_before"
+    dont_run_before = parse_date(args.dont_run_before) or _date_from_file(
+        dont_run_before_file
+    )
+
+    if dont_run_before:
+        LOGGER.info("Don't run before %s", dont_run_before.isoformat())
+        sleep_seconds = dont_run_before.timestamp() - now().timestamp()
+        if sleep_seconds > 0:
+            LOGGER.info("Going to sleep for %.1f seconds", sleep_seconds)
+            sleep(sleep_seconds)
 
     # TODO read STATE_FILE from settings
     states = _find_states(job_dir)
@@ -152,10 +174,9 @@ def main():
         str(out_file),
         "--set",
         f"JOBDIR={curr_job}",
+        "--set",
+        f"DONT_RUN_BEFORE_FILE={dont_run_before_file}",
     ]
-
-    if args.dont_run_before:
-        command += ["--set", f"DONT_RUN_BEFORE_FILE=${args.dont_run_before}"]
 
     try:
         execute(argv=command)
