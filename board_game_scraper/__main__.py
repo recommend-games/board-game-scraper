@@ -4,7 +4,6 @@
 
 import argparse
 import logging
-import sys
 
 from pathlib import Path
 from time import sleep
@@ -13,6 +12,7 @@ from shutil import rmtree
 from pytility import normalize_space, parse_date
 from scrapy.cmdline import execute
 from scrapy.utils.job import job_dir as job_dir_from_settings
+from scrapy.utils.log import configure_logging
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.project import get_project_settings
 from scrapy.utils.python import garbage_collect
@@ -93,21 +93,17 @@ def _parse_args():
 def main():
     """Command line entry point."""
 
+    settings = get_project_settings()
+    configure_logging(settings)
+
     args = _parse_args()
-
-    logging.basicConfig(
-        stream=sys.stderr,
-        level=logging.DEBUG if args.verbose > 0 else logging.INFO,
-        format="%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s",
-    )
-
     LOGGER.info(args)
 
-    settings = get_project_settings()
-
     base_dir = Path(settings["BASE_DIR"]).resolve()
+    cache_dir = base_dir / ".scrapy" / "httpcache"
     feeds_dir = Path(args.feeds_dir) if args.feeds_dir else base_dir / "feeds"
     feeds_dir = feeds_dir.resolve()
+    feeds_dir_scraper = feeds_dir / args.spider
     out_file = feeds_dir / "%(name)s" / "%(class)s" / "%(time)s.jl"
 
     from_settings = job_dir_from_settings(settings)
@@ -119,6 +115,10 @@ def main():
         else base_dir / "jobs" / args.spider
     )
     job_dir = job_dir.resolve()
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    feeds_dir_scraper.mkdir(parents=True, exist_ok=True)
+    job_dir.mkdir(parents=True, exist_ok=True)
 
     dont_run_before_file = job_dir / ".dont_run_before"
     dont_run_before = parse_date(args.dont_run_before) or _date_from_file(

@@ -73,7 +73,7 @@ services:
         volumes:
             - ./feeds:/app/feeds
         restart: always
-        stop_grace_period: 15m
+        stop_grace_period: 30m
         stop_signal: SIGINT
 
     luding:
@@ -103,7 +103,7 @@ services:
         volumes:
             - ./feeds:/app/feeds
         restart: always
-        stop_grace_period: 15m
+        stop_grace_period: 30m
         stop_signal: SIGINT
 
     wikidata:
