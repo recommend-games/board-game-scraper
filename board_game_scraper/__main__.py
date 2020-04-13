@@ -8,6 +8,7 @@ import sys
 
 from pathlib import Path
 from time import sleep
+from shutil import rmtree
 
 from pytility import normalize_space, parse_date
 from scrapy.cmdline import execute
@@ -54,10 +55,8 @@ def _find_states(
 
         if state in delete or (delete_non_state and not state):
             LOGGER.info("Deleting <%s> with state <%s>", sub_dir, state)
-            # TODO delete
-            continue
-
-        if state:
+            rmtree(sub_dir, ignore_errors=True)
+        elif state:
             result[sub_dir.name] = state
 
     return result
@@ -133,8 +132,9 @@ def main():
             LOGGER.info("Going to sleep for %.1f seconds", sleep_seconds)
             sleep(sleep_seconds)
 
-    # TODO read STATE_FILE from settings
-    states = _find_states(job_dir)
+    states = _find_states(
+        job_dir, state_file=settings.get("STATE_TAG_FILE") or ".state"
+    )
 
     running = sorted(sub_dir for sub_dir, state in states.items() if state == "running")
 
