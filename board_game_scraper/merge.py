@@ -279,7 +279,9 @@ def _parse_args():
     return parser.parse_args()
 
 
-def _main():
+def main():
+    """Command line entry point."""
+
     args = _parse_args()
 
     logging.basicConfig(
@@ -365,4 +367,4 @@ def _main():
 
 
 if __name__ == "__main__":
-    _main()
+    main()

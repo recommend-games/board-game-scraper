@@ -5,9 +5,10 @@
 import logging
 import os
 
-from datetime import timedelta
+from datetime import timedelta, timezone
+from pathlib import Path
 
-from pytility import parse_float
+from pytility import parse_date, parse_float
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.job import job_dir
@@ -211,3 +212,46 @@ class StateTag:
     def _spider_closed(self, spider, reason):
         self._write("state", reason)
         self._delete("pid")
+
+
+class DontRunBeforeTag:
+    """Writes a tag when to start the next run."""
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        """ init from crawler """
+
+        tag_file = crawler.settings.get("DONT_RUN_BEFORE_FILE")
+        date = parse_date(
+            crawler.settings.get("DONT_RUN_BEFORE_DATE"), tzinfo=timezone.utc
+        )
+        seconds = crawler.settings.getfloat("DONT_RUN_BEFORE_SEC")
+
+        if not tag_file or not (seconds or date):
+            raise NotConfigured
+
+        obj = cls(tag_file, date, seconds)
+
+        crawler.signals.connect(obj._spider_opened, signals.spider_opened)
+
+        return obj
+
+    def __init__(self, tag_file, date=None, seconds=None):
+        date = parse_date(date, tzinfo=timezone.utc)
+        seconds = parse_float(seconds)
+
+        if not date and not seconds:
+            raise NotConfigured
+
+        self.tag_file = Path(tag_file).resolve()
+        self.tag_file.parent.mkdir(parents=True, exist_ok=True)
+        self.date = date
+        self.seconds = seconds
+
+    def _spider_opened(self):
+        date = self.date or now() + timedelta(seconds=self.seconds)
+
+        LOGGER.info("Writing don't run before <%s> tag to <%s>", date, self.tag_file)
+
+        with self.tag_file.open("w") as file_obj:
+            file_obj.write(date.isoformat())

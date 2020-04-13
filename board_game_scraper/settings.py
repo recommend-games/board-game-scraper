@@ -182,11 +182,13 @@ DOWNLOADER_MIDDLEWARES = {"scrapy_extensions.DelayedRetry": 555}
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
+    "scrapy.extensions.closespider.CloseSpider": 0,
     "scrapy.extensions.feedexport.FeedExporter": None,
     "scrapy_extensions.MultiFeedExporter": 0,
     "scrapy.extensions.throttle.AutoThrottle": None,
     "scrapy_extensions.NicerAutoThrottle": 0,
     "board_game_scraper.extensions.StateTag": 0,
+    "board_game_scraper.extensions.DontRunBeforeTag": 0,
     "board_game_scraper.extensions.PullQueueExtension": 100,
     "scrapy_extensions.MonitorDownloadsExtension": 500,
     "scrapy_extensions.DumpStatsExtension": 500,
@@ -202,6 +204,9 @@ ITEM_PIPELINES = {
     "scrapy.pipelines.images.ImagesPipeline": None,
     "scrapy.pipelines.images.FilesPipeline": None,
 }
+
+# See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
+CLOSESPIDER_TIMEOUT = os.getenv("CLOSESPIDER_TIMEOUT")
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -251,6 +256,11 @@ SCRAPE_BGG_USERS = True
 # State tags
 STATE_TAG_FILE = ".state"
 PID_TAG_FILE = ".pid"
+
+# "Don't run before" settings
+DONT_RUN_BEFORE_FILE = os.getenv("DONT_RUN_BEFORE_FILE")
+DONT_RUN_BEFORE_SEC = os.getenv("DONT_RUN_BEFORE_SEC")
+DONT_RUN_BEFORE_DATE = os.getenv("DONT_RUN_BEFORE_DATE")
 
 MEDIA_ALLOW_REDIRECTS = True
 
