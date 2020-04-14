@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 from pytility import batchify, normalize_space
 from scrapy import Request, Spider
 from scrapy.loader.processors import MapCompose
+from scrapy.utils.misc import arg_to_iter
 
 from ..items import GameItem
 from ..loaders import GameJsonLoader
@@ -23,13 +24,19 @@ class WikidataSpider(Spider):
     """ Wikidata spider """
 
     name = "wikidata"
-    allowed_domains = ["wikidata.org"]
+    allowed_domains = ("wikidata.org",)
     item_classes = (GameItem,)
 
     sparql_api_url = "https://query.wikidata.org/sparql"
     entity_data_url = (
         "https://www.wikidata.org/wiki/Special:EntityData/{wikidata_id}.{fformat}"
     )
+
+    custom_settings = {
+        "DOWNLOAD_DELAY": 10,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+    }
 
     game_types = (
         "Q131436",  # board game
@@ -87,19 +94,20 @@ class WikidataSpider(Spider):
 
         if not batch_size:
             query = query_tmpl.format(" ".join(types))
-            self.logger.debug(query)
+            # self.logger.debug(query)
             yield Request(
                 self.sparql_api_url,
                 method="POST",
                 body=urlencode({"query": query}),
                 callback=self.parse_games,
+                priority=1,
             )
             return
 
         for batch in batchify(types, batch_size):
             query = query_tmpl.format(" ".join(batch))
-            self.logger.debug(query)
-            yield Request(self._api_url(query), callback=self.parse_games)
+            # self.logger.debug(query)
+            yield Request(self._api_url(query), callback=self.parse_games, priority=1)
 
     def start_requests(self):
         """ generate start requests """
@@ -119,8 +127,8 @@ class WikidataSpider(Spider):
                       <http://www.wikidata.org/prop/direct/P31> ?type .
             }"""
         )
-        self.logger.debug(query)
-        yield Request(self._api_url(query), callback=self.parse)
+        # self.logger.debug(query)
+        yield Request(self._api_url(query), callback=self.parse, priority=2)
 
     def parse(self, response):
         # pylint: disable=line-too-long
@@ -238,8 +246,8 @@ class WikidataSpider(Spider):
                 None,
                 extract_ids(
                     response.url,
-                    *ldr.get_output_value("external_link"),
-                    *ldr.get_output_value("official_url")
+                    *arg_to_iter(ldr.get_output_value("external_link")),
+                    *arg_to_iter(ldr.get_output_value("official_url")),
                 ),
             )
 

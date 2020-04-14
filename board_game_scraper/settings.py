@@ -21,7 +21,7 @@ SPIDER_MODULES = ["board_game_scraper.spiders"]
 NEWSPIDER_MODULE = "board_game_scraper.spiders"
 
 LOG_LEVEL = os.getenv("LOG_LEVEL") or "INFO"
-LOG_FORMATTER = "board_game_scraper.loggers.QuietLogFormatter"
+LOG_FORMATTER = "scrapy_extensions.QuietLogFormatter"
 LOG_SCRAPED_ITEMS = parse_bool(os.getenv("LOG_SCRAPED_ITEMS"))
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -177,31 +177,36 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {"board_game_scraper.middlewares.DelayedRetry": 555}
+DOWNLOADER_MIDDLEWARES = {"scrapy_extensions.DelayedRetry": 555}
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
+    "scrapy.extensions.closespider.CloseSpider": 0,
     "scrapy.extensions.feedexport.FeedExporter": None,
-    "board_game_scraper.extensions.MultiFeedExporter": 0,
+    "scrapy_extensions.MultiFeedExporter": 0,
     "scrapy.extensions.throttle.AutoThrottle": None,
-    "board_game_scraper.extensions.NicerAutoThrottle": 0,
+    "scrapy_extensions.NicerAutoThrottle": 0,
     "board_game_scraper.extensions.StateTag": 0,
+    "board_game_scraper.extensions.DontRunBeforeTag": 0,
     "board_game_scraper.extensions.PullQueueExtension": 100,
-    "board_game_scraper.extensions.MonitorDownloadsExtension": 500,
-    "board_game_scraper.extensions.DumpStatsExtension": 500,
+    "scrapy_extensions.MonitorDownloadsExtension": 500,
+    "scrapy_extensions.DumpStatsExtension": 500,
 }
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     "board_game_scraper.pipelines.DataTypePipeline": 100,
-    "board_game_scraper.pipelines.ValidatePipeline": 200,
+    "scrapy_extensions.ValidatePipeline": 200,
     "board_game_scraper.pipelines.ResolveLabelPipeline": 300,
     "board_game_scraper.pipelines.ResolveImagePipeline": 400,
     "scrapy.pipelines.images.ImagesPipeline": None,
     "scrapy.pipelines.images.FilesPipeline": None,
 }
+
+# See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
+CLOSESPIDER_TIMEOUT = os.getenv("CLOSESPIDER_TIMEOUT")
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -251,6 +256,11 @@ SCRAPE_BGG_USERS = True
 # State tags
 STATE_TAG_FILE = ".state"
 PID_TAG_FILE = ".pid"
+
+# "Don't run before" settings
+DONT_RUN_BEFORE_FILE = os.getenv("DONT_RUN_BEFORE_FILE")
+DONT_RUN_BEFORE_SEC = os.getenv("DONT_RUN_BEFORE_SEC")
+DONT_RUN_BEFORE_DATE = os.getenv("DONT_RUN_BEFORE_DATE")
 
 MEDIA_ALLOW_REDIRECTS = True
 

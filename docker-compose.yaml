@@ -1,0 +1,124 @@
+version: '3.7'
+
+services:
+    bga:
+        image: bg-scraper:latest
+        container_name: bg-scraper-bga
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'bga']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg:
+        image: bg-scraper:latest
+        container_name: bg-scraper-bgg
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'bgg']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 10800 # 3 hours
+            DONT_RUN_BEFORE_SEC: 3600 # 1 hour
+            GOOGLE_APPLICATION_CREDENTIALS: /app/gs.json
+        volumes:
+            - ./feeds:/app/feeds
+            - ../recommend-games-server/gs.json:/app/gs.json
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-hotness:
+        image: bg-scraper:latest
+        container_name: bg-scraper-bgg-hotness
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'bgg_hotness']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 21600 # 6 hours
+            DONT_RUN_BEFORE_SEC: 10800 # 3 hours
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings:
+        image: bg-scraper:latest
+        container_name: bg-scraper-bgg-rankings
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'bgg_rankings']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    dbpedia:
+        image: bg-scraper:latest
+        container_name: bg-scraper-dbpedia
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'dbpedia']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 30m
+        stop_signal: SIGINT
+
+    luding:
+        image: bg-scraper:latest
+        container_name: bg-scraper-luding
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'luding']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    spielen:
+        image: bg-scraper:latest
+        container_name: bg-scraper-spielen
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'spielen']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 30m
+        stop_signal: SIGINT
+
+    wikidata:
+        image: bg-scraper:latest
+        container_name: bg-scraper-wikidata
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'wikidata']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT

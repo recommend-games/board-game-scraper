@@ -9,7 +9,7 @@ python_version = "3.7"
 [packages]
 awscli = "*"
 boto = "*"
-dedupe = "<2.0.0"
+dedupe = ">=2.0.0"
 google-cloud-pubsub = "*"
 jmespath = "*"
 pillow = "*"
@@ -21,11 +21,11 @@ pytrie = "*"
 pyyaml = "*"
 requests = "*"
 scrapy = "*"
+scrapy-extensions = {editable = true, path = "./../scrapy-extensions", extras = ["articles"]}
+# scrapy-extensions = {editable = true, git = "https://gitlab.com/mshepherd/scrapy-extensions.git", ref = "website-spider", extras = ["articles"]}
 smart-open = "<1.6.0"
 twisted = "*"
 "w3lib" = "*"
-scrapy-extensions = {editable = true, path = "./../scrapy-extensions", extras = ["articles"]}
-# scrapy-extensions = {editable = true, git = "https://gitlab.com/mshepherd/scrapy-extensions.git", ref = "website-spider", extras = ["articles"]}
 
 [dev-packages]
 black = "==19.10b0"

@@ -98,7 +98,7 @@ class BggSpider(Spider):
     """ BoardGameGeek spider """
 
     name = "bgg"
-    allowed_domains = ["boardgamegeek.com"]
+    allowed_domains = ("boardgamegeek.com",)
     start_urls = (
         "https://boardgamegeek.com/browse/boardgame/",
         "https://boardgamegeek.com/browse/user/numreviews",
@@ -299,7 +299,7 @@ class BggSpider(Spider):
 
         return default
 
-    def _user_item_or_request(self, user_name, **kwargs):
+    def _user_item_or_request(self, user_name, priority=2, **kwargs):
         if not user_name:
             return None
 
@@ -316,7 +316,10 @@ class BggSpider(Spider):
 
         url = self._api_url(action="user", name=user_name)
         return Request(
-            url, callback=partial(self.parse_user, item=item), meta={"item": item}
+            url=url,
+            callback=partial(self.parse_user, item=item),
+            meta={"item": item},
+            priority=priority,
         )
 
     def parse(self, response):
