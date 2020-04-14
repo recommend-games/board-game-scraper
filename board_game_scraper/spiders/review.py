@@ -2,32 +2,37 @@
 
 """Review spider."""
 
-from scrapy_extensions.items import WebpageItem
-from scrapy_extensions.spiders import WebsiteSpider
+from scrapy_extensions.spiders import ArticleSpider
+
+from ..items import ReviewItem
+
+# from ..loaders import ReviewLoader
 
 
-class ReviewSpider(WebsiteSpider):
+class ReviewSpider(ArticleSpider):
     """Review spider."""
 
     name = "review"
     allowed_domains = ("spiegel.de",)
     start_urls = ("https://www.spiegel.de/",)
-    item_classes = (WebpageItem,)
+    item_classes = (ReviewItem,)
 
-    custom_settings = {
-        "DOWNLOAD_DELAY": 0.5,
-        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
-        "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
-        "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
-    }
+    custom_settings = {}
 
     def parse(self, response):
         for url in response.xpath("/html/body//a/@href").extract():
-            yield response.follow(url=url, callback=self.parse)
+            try:
+                yield response.follow(url=url, callback=self.parse)
+            except Exception:
+                pass
 
-        item = self.parse_page(response)
+        item = self.parse_article(response)
 
-        item.pop("full_html", None)
-        print(item)
+        print(
+            item.get("url_canonical"),
+            item.get("title_short"),
+            item.get("author"),
+            item.get("content"),
+        )
 
         yield item
