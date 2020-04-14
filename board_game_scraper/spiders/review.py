@@ -5,14 +5,14 @@
 from scrapy_extensions.spiders import ArticleSpider
 
 from ..items import ReviewItem
-
-# from ..loaders import ReviewLoader
+from ..loaders import ReviewLoader
 
 
 class ReviewSpider(ArticleSpider):
     """Review spider."""
 
     name = "review"
+    loader_cls = ReviewLoader
     allowed_domains = ("spiegel.de",)
     start_urls = ("https://www.spiegel.de/",)
     item_classes = (ReviewItem,)
