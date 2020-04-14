@@ -4,7 +4,7 @@
 
 import logging
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from functools import partial
 
 from pytility import (
@@ -18,7 +18,7 @@ from pytility import (
 from scrapy import Field
 from scrapy.loader.processors import Identity, MapCompose
 from scrapy.utils.project import get_project_settings
-from scrapy_extensions import TypedItem
+from scrapy_extensions import DATE_PROCESSOR, URL_PROCESSOR, ArticleItem, TypedItem
 from w3lib.html import remove_tags
 
 from .utils import (
@@ -29,7 +29,6 @@ from .utils import (
     serialize_date,
     serialize_json,
     validate_range,
-    validate_url,
 )
 
 IDENTITY = Identity()
@@ -71,10 +70,6 @@ NN_FLOAT_PROCESSOR = MapCompose(
     normalize_space,
     parse_float,
     partial(validate_range, lower=0),
-)
-DATE_PROCESSOR = MapCompose(partial(parse_date, tzinfo=timezone.utc))
-URL_PROCESSOR = MapCompose(
-    IDENTITY, str, partial(validate_url, schemes=frozenset(("http", "https")))
 )
 
 
@@ -658,31 +653,19 @@ class RatingItem(TypedItem):
     )
 
 
-class ReviewItem(TypedItem):
-    """ item representing a review """
+class ReviewItem(ArticleItem):
+    """Item representing a review."""
 
-    JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
-    JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
-    BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool
-
-    url = Field(dtype=str, required=True)
-    image_url = Field(
+    url_video = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
-        serializer=JSON_SERIALIZER,
-        parser=parse_json,
-    )
-    image_file = Field(serializer=JSON_SERIALIZER, parser=parse_json,)
-    video_url = Field(
-        dtype=list,
-        output_processor=clear_list,
-        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
     external_link = Field(
         dtype=list,
+        input_processor=URL_PROCESSOR,
         output_processor=clear_list,
-        serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
 
@@ -723,24 +706,3 @@ class ReviewItem(TypedItem):
     )
     spielen_id = Field(dtype=str)
     bga_id = Field(dtype=str)
-
-    published_at = Field(
-        dtype=datetime,
-        input_processor=DATE_PROCESSOR,
-        serializer=serialize_date,
-        parser=parse_date,
-    )
-    updated_at = Field(
-        dtype=datetime,
-        input_processor=DATE_PROCESSOR,
-        serializer=serialize_date,
-        parser=parse_date,
-    )
-    scraped_at = Field(
-        dtype=datetime,
-        required=True,
-        default=now,
-        input_processor=DATE_PROCESSOR,
-        serializer=serialize_date,
-        parser=parse_date,
-    )

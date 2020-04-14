@@ -10,10 +10,11 @@ from random import randint
 
 from pytility import normalize_space, parse_date, parse_int
 from scrapy import Request, Spider
+from scrapy_extensions import parse_url
 
 from ..items import GameItem
 from ..loaders import GameLoader
-from ..utils import extract_bgg_id, now, parse_url
+from ..utils import extract_bgg_id, now
 
 DIGITS_REGEX = re.compile(r"^\D*(\d+).*$")
 BGG_URL_REGEX = re.compile(r"^.*(https?://?(www\.)?boardgamegeek\.com.*)$")

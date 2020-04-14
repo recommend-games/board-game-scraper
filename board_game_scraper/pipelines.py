@@ -16,9 +16,10 @@ from scrapy.exceptions import DropItem, NotConfigured
 from scrapy.utils.defer import defer_result
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import flatten
+from scrapy_extensions import parse_url
 from twisted.internet.defer import DeferredList
 
-from .utils import REGEX_DBPEDIA_DOMAIN, parse_json, parse_url
+from .utils import REGEX_DBPEDIA_DOMAIN, parse_json
 
 LOGGER = logging.getLogger(__name__)
 
