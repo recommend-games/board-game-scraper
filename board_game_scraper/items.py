@@ -670,39 +670,24 @@ class ReviewItem(ArticleItem):
     )
 
     rating = Field(
-        dtype=float,
-        dtype_convert=parse_float,
-        input_processor=POS_FLOAT_PROCESSOR,
-        default=None,
+        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR,
     )
     worst_rating = Field(
-        dtype=int,
-        dtype_convert=parse_int,
-        input_processor=POS_INT_PROCESSOR,
-        default=None,
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
     )
     best_rating = Field(
-        dtype=int,
-        dtype_convert=parse_int,
-        input_processor=POS_INT_PROCESSOR,
-        default=None,
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
     )
 
     bgg_id = Field(
-        dtype=int,
-        dtype_convert=parse_int,
-        input_processor=POS_INT_PROCESSOR,
-        default=None,
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
     )
     freebase_id = Field(dtype=str)
     wikidata_id = Field(dtype=str)
     wikipedia_id = Field(dtype=str)
     dbpedia_id = Field(dtype=str)
     luding_id = Field(
-        dtype=int,
-        dtype_convert=parse_int,
-        input_processor=POS_INT_PROCESSOR,
-        default=None,
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
     )
     spielen_id = Field(dtype=str)
     bga_id = Field(dtype=str)
