@@ -21,8 +21,7 @@ pytrie = "*"
 pyyaml = "*"
 requests = "*"
 scrapy = "*"
-scrapy-extensions = {editable = true, path = "./../scrapy-extensions", extras = ["articles"]}
-# scrapy-extensions = {editable = true, git = "https://gitlab.com/mshepherd/scrapy-extensions.git", ref = "website-spider", extras = ["articles"]}
+scrapy-extensions = {extras = ["articles"], version = ">=0.2.0"}
 smart-open = "<1.6.0"
 twisted = "*"
 "w3lib" = "*"
