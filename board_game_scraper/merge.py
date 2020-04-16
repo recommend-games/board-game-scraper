@@ -16,7 +16,7 @@ from pathlib import Path
 # pylint: disable=no-name-in-module
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import array, lower, to_timestamp
-from pytility import concat_files, parse_float, parse_int
+from pytility import concat_files, parse_int
 from scrapy.utils.misc import arg_to_iter
 
 from .utils import now, to_lower
@@ -53,40 +53,12 @@ def _spark_session(log_level=None):
     return None
 
 
-def _parse(item, keys, parsers):
-    values = tuple(parser(item.get(key)) for key, parser in zip(keys, parsers))
-    return None if any(x is None for x in values) else values
-
-
 def _compare(first, second, column="_latest"):
     return (
         second
         if not first[column] or (second[column] and second[column] >= first[column])
         else first
     )
-
-
-def _empty(value):
-    return (
-        False
-        if isinstance(value, bool) or parse_float(value) is not None
-        else not value
-    )
-
-
-def _filter_fields(item, remove_empty=True, fieldnames=None, fieldnames_exclude=None):
-    item = (
-        ((k, v) for k, v in item.items() if not _empty(v))
-        if remove_empty
-        else item.items()
-    )
-    item = ((k, v) for k, v in item if k in fieldnames) if fieldnames else item
-    item = (
-        ((k, v) for k, v in item if k not in fieldnames_exclude)
-        if fieldnames_exclude
-        else item
-    )
-    return dict(item)
 
 
 def _column_type(column, column_type=None):
@@ -196,18 +168,13 @@ def merge_files(
     if fieldnames:
         fieldnames -= frozenset(data.columns)
         data = data.select(*fieldnames)
+    else:
+        data = data.select(*sorted(data.columns))
 
     if fieldnames_exclude:
         data = data.drop(*fieldnames_exclude)
 
-    # rdd = rdd.map(
-    #     partial(
-    #         _filter_fields,
-    #         remove_empty=True,
-    #         fieldnames=fieldnames,
-    #         fieldnames_exclude=fieldnames_exclude,
-    #     )
-    # ).map(partial(serialize_json, sort_keys=True))
+    # TODO remove all empty values ([], {}, and "")
 
     if concat_output:
         with tempfile.TemporaryDirectory() as temp_path:
