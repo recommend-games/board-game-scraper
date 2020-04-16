@@ -145,16 +145,15 @@ echo -e "Started! Follow logs from <${LOGS_DIR}/bga_ratings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
     "${IN_DIR}/bgg/RatingItem/*" \
-    --out-path "${OUT_DIR}/bgg_RatingItem/{prefix}.jl" \
+    --out-path "${OUT_DIR}/bgg_RatingItem.jl" \
     --keys bgg_user_name bgg_id \
     --key-types istring int \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --fields-exclude published_at updated_at scraped_at \
-    --split \
-    --split-limit 300_000 \
-    --trie-path '../board-game-data/prefixes.txt' \
+    --sort-keys \
+    --concat \
     >> "${LOGS_DIR}/bgg_ratings_merge.log" 2>&1 &
 echo -e "Started! Follow logs from <${LOGS_DIR}/bgg_ratings_merge.log>.\\n"
 
@@ -165,9 +164,9 @@ nohup python3 -m board_game_scraper.merge \
     --key-types date int \
     --latest scraped_at \
     --latest-types date \
-    --fields published_at bgg_id rank name year num_votes \
+    --fields published_at rank bgg_id name year num_votes \
         bayes_rating avg_rating image_url \
-    --sort-keys \
+    --sort-fields published_at rank \
     --concat \
     >> "${LOGS_DIR}/bgg_rankings_merge.log" 2>&1 &
 echo -e "Started! Follow logs from <${LOGS_DIR}/bgg_rankings_merge.log>.\\n"
@@ -180,7 +179,7 @@ nohup python3 -m board_game_scraper.merge \
     --latest scraped_at \
     --latest-types date \
     --fields published_at rank bgg_id name year image_url \
-    --sort-keys \
+    --sort-fields published_at rank \
     --concat \
     >> "${LOGS_DIR}/bgg_hotness_merge.log" 2>&1 &
 echo -e "Started! Follow logs from <${LOGS_DIR}/bgg_hotness_merge.log>.\\n"
