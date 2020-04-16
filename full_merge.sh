@@ -3,11 +3,11 @@
 set -euo pipefail
 
 BASE_DIR="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
-FEEDS_DIR="${1:-${BASE_DIR}/feeds}"
-LOGS_DIR="${2:-$(pwd)/logs}"
+FEEDS_DIR="$(readlink --canonicalize "${1:-${BASE_DIR}/feeds}")"
+LOGS_DIR="$(readlink --canonicalize "${2:-$(pwd)/logs}")"
 DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
-echo "Merging in <${FEEDS_DIR}>, writing logs to <${LOGS_DIR}>, using date tag <${DATE}>."
+echo -e "Merging in <${FEEDS_DIR}>, writing logs to <${LOGS_DIR}>, using date tag <${DATE}>.\\n"
 
 mkdir --parents "${LOGS_DIR}" \
     "${FEEDS_DIR}/bga/GameItem" \
