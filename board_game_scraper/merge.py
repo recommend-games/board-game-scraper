@@ -15,7 +15,7 @@ from pathlib import Path
 
 # pylint: disable=no-name-in-module
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import array, lower, to_timestamp
+from pyspark.sql.functions import array, length, lower, size, to_timestamp, when
 from pytility import clear_list, concat_files, parse_int
 from scrapy.utils.misc import arg_to_iter
 
@@ -70,6 +70,18 @@ def _column_type(column, column_type=None):
         if column_type in ("istr", "istring", "lower")
         else column
     )
+
+
+def _remove_empty(data, remove_false=False):
+    for column, dtype in data.dtypes:
+        if dtype in ("string", "binary"):
+            data = data.withColumn(column, when(length(data[column]) > 0, data[column]))
+        # TODO recursive in maps and structs
+        elif dtype.startswith("array") or dtype.startswith("map"):
+            data = data.withColumn(column, when(size(data[column]) > 0, data[column]))
+        elif dtype == "boolean" and remove_false:
+            data = data.withColumn(column, when(data[column], data[column]))
+    return data
 
 
 def merge_files(
@@ -178,7 +190,7 @@ def merge_files(
         LOGGER.info("Dropping columns: %s", fieldnames_exclude)
         data = data.drop(*fieldnames_exclude)
 
-    # TODO remove all empty values ([], {}, and "")
+    data = _remove_empty(data)
 
     if concat_output:
         with tempfile.TemporaryDirectory() as temp_path:
