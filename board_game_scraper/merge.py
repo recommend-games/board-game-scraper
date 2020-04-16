@@ -94,9 +94,9 @@ def merge_files(
     latest_min=None,
     fieldnames=None,
     fieldnames_exclude=None,
-    sort_output=False,
+    sort_keys=False,
     sort_latest=False,
-    sort_field=None,
+    sort_fields=None,
     sort_descending=False,
     concat_output=False,
     log_level=None,
@@ -117,6 +117,12 @@ def merge_files(
     if fieldnames and fieldnames_exclude:
         LOGGER.warning(
             "both <fieldnames> and <fieldnames_exclude> were specified, please choose one"
+        )
+
+    sort_fields = tuple(arg_to_iter(sort_fields))
+    if sum(map(bool, (sort_keys, sort_latest, sort_fields))) > 1:
+        LOGGER.warning(
+            "Only use at most one of <sort_keys>, <sort_latest>, and <sort_fields>"
         )
 
     keys = tuple(arg_to_iter(keys))
@@ -166,14 +172,12 @@ def merge_files(
 
     data = rdd.toDF(schema=data.schema)
 
-    if sort_output:
-        data = data.sort(*key_column_names)
-
-    if sort_latest:
-        data = data.sort(*latest_column_names, ascending=sort_latest == "asc")
-
-    if sort_field:
-        data = data.sort(sort_field, ascending=not sort_descending)
+    if sort_keys:
+        data = data.sort(*key_column_names, ascending=not sort_descending)
+    elif sort_latest:
+        data = data.sort(*latest_column_names, ascending=not sort_descending)
+    elif sort_fields:
+        data = data.sort(*sort_fields, ascending=not sort_descending)
 
     data = data.drop("_key", *key_column_names, "_latest", *latest_column_names)
 
@@ -238,25 +242,24 @@ def _parse_args():
         "-m",
         help="minimum value for latest column, all other values will be ignored (days for dates)",
     )
-    parser.add_argument("--fields", "-f", nargs="+", help="output columns")
-    parser.add_argument(
+    fields_group = parser.add_mutually_exclusive_group()
+    fields_group.add_argument("--fields", "-f", nargs="+", help="output columns")
+    fields_group.add_argument(
         "--fields-exclude", "-F", nargs="+", help="ignore these output columns"
     )
-    parser.add_argument(
-        "--sort-output", "-O", action="store_true", help="sort output by keys"
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--sort-keys", "-s", action="store_true", help="sort output by keys"
     )
-    parser.add_argument(
+    sort_group.add_argument(
         "--sort-latest",
-        "-s",
-        choices=("asc", "desc"),
+        "-S",
+        action="store_true",
         help='sort output by "latest" column',
     )
-    parser.add_argument("--sort-field", "-S", help="sort output by a column")
+    sort_group.add_argument("--sort-fields", nargs="+", help="sort output by columns")
     parser.add_argument(
-        "--sort-desc",
-        "-D",
-        action="store_true",
-        help="sort descending (only in connection with --sort-field)",
+        "--sort-desc", "-D", action="store_true", help="sort descending",
     )
     parser.add_argument(
         "--concat", "-c", action="store_true", help="concatenate output into one file"
@@ -303,9 +306,9 @@ def main():
         latest_min=latest_min,
         fieldnames=args.fields,
         fieldnames_exclude=args.fields_exclude,
-        sort_output=args.sort_output,
+        sort_keys=args.sort_keys,
         sort_latest=args.sort_latest,
-        sort_field=args.sort_field,
+        sort_fields=args.sort_fields,
         sort_descending=args.sort_desc,
         concat_output=args.concat,
         log_level="DEBUG"
