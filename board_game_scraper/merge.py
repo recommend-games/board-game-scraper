@@ -16,7 +16,7 @@ from pathlib import Path
 # pylint: disable=no-name-in-module
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import array, lower, to_timestamp
-from pytility import concat_files, parse_int
+from pytility import clear_list, concat_files, parse_int
 from scrapy.utils.misc import arg_to_iter
 
 from .utils import now, to_lower
@@ -99,7 +99,7 @@ def merge_files(
 
     LOGGER.info("merging items with Spark %r", spark)
 
-    fieldnames = frozenset(arg_to_iter(fieldnames))
+    fieldnames = clear_list(arg_to_iter(fieldnames))
     fieldnames_exclude = frozenset(arg_to_iter(fieldnames_exclude))
 
     if fieldnames and fieldnames_exclude:
@@ -166,10 +166,13 @@ def merge_files(
     data = data.drop("_key", *key_column_names, "_latest", *latest_column_names)
 
     if fieldnames:
-        fieldnames -= frozenset(data.columns)
-        data = data.select(*fieldnames)
+        columns = frozenset(data.columns)
+        fieldnames = [column for column in fieldnames if column in columns]
+        LOGGER.info("Only use columns: %s", fieldnames)
     else:
-        data = data.select(*sorted(data.columns))
+        fieldnames = sorted(data.columns)
+        LOGGER.info("Use sorted column names: %s", fieldnames)
+    data = data.select(*fieldnames)
 
     if fieldnames_exclude:
         data = data.drop(*fieldnames_exclude)
