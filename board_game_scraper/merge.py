@@ -175,6 +175,7 @@ def merge_files(
     data = data.select(*fieldnames)
 
     if fieldnames_exclude:
+        LOGGER.info("Dropping columns: %s", fieldnames_exclude)
         data = data.drop(*fieldnames_exclude)
 
     # TODO remove all empty values ([], {}, and "")
