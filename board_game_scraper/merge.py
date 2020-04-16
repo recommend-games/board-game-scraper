@@ -13,6 +13,7 @@ from datetime import timedelta
 from functools import lru_cache
 from pathlib import Path
 
+# pylint: disable=no-name-in-module
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import array, lower, to_timestamp
 from pytility import concat_files, parse_float, parse_int
@@ -193,6 +194,7 @@ def merge_files(
     data = data.drop("_key", *key_column_names, "_latest", *latest_column_names)
 
     if fieldnames:
+        fieldnames -= frozenset(data.columns)
         data = data.select(*fieldnames)
 
     if fieldnames_exclude:
