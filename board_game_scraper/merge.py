@@ -181,18 +181,14 @@ def merge_files(
 
     data = data.drop("_key", *key_column_names, "_latest", *latest_column_names)
 
+    columns = frozenset(data.columns) - fieldnames_exclude
     if fieldnames:
-        columns = frozenset(data.columns)
         fieldnames = [column for column in fieldnames if column in columns]
         LOGGER.info("Only use columns: %s", fieldnames)
     else:
-        fieldnames = sorted(data.columns)
+        fieldnames = sorted(columns)
         LOGGER.info("Use sorted column names: %s", fieldnames)
     data = data.select(*fieldnames)
-
-    if fieldnames_exclude:
-        LOGGER.info("Dropping columns: %s", fieldnames_exclude)
-        data = data.drop(*fieldnames_exclude)
 
     data = _remove_empty(data)
 

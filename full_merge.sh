@@ -5,7 +5,19 @@ set -euo pipefail
 SAVEDIR="$(pwd)"
 cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 
-mkdir --parents 'logs'
+mkdir --parents 'logs' \
+    'feeds/bga/GameItem' \
+    'feeds/bgg/GameItem' \
+    'feeds/dbpedia/GameItem' \
+    'feeds/luding/GameItem' \
+    'feeds/spielen/GameItem' \
+    'feeds/wikidata/GameItem' \
+    'feeds/bgg/UserItem' \
+    'feeds/bga/RatingItem' \
+    'feeds/bgg/RatingItem' \
+    'feeds/bgg_rankings/GameItem' \
+    'feeds/bgg_hotness/GameItem' \
+    'feeds/news'
 
 DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
