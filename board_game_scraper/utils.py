@@ -26,6 +26,12 @@ from pytility import (
 from scrapy.item import BaseItem, Item
 from w3lib.html import replace_entities
 
+try:
+    # pylint: disable=redefined-builtin
+    from smart_open import open
+except ImportError:
+    pass
+
 LOGGER = logging.getLogger(__name__)
 
 REGEX_ENTITIES = re.compile(r"(&#(\d+);)+")
@@ -150,12 +156,7 @@ def serialize_json(obj, file=None, **kwargs):
         path_dir = os.path.abspath(os.path.split(file)[0])
         os.makedirs(path_dir, exist_ok=True)
 
-        try:
-            from smart_open import smart_open
-        except ImportError:
-            smart_open = open
-
-        with smart_open(file, "w") as json_file:
+        with open(file, "w") as json_file:
             return json.dump(obj, json_file, **kwargs)
 
     if file is not None:
