@@ -2,5 +2,5 @@
 
 """Version."""
 
-VERSION = (2, 6, 0)
+VERSION = (2, 7, 0)
 __version__ = ".".join(map(str, VERSION))
