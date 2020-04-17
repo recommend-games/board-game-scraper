@@ -112,6 +112,7 @@
 **/tests/
 **/*.sqlite*
 **/.temp*
+**/*tmp
 **/.tc*
 **/.csslintrc*
 **/.htmllintrc*
