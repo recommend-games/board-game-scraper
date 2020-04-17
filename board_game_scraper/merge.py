@@ -10,21 +10,16 @@ import sys
 import tempfile
 
 from datetime import timedelta
-from functools import lru_cache, partial
+from functools import lru_cache
 from pathlib import Path
 
-from pytility import concat_files, parse_float, parse_int
+# pylint: disable=no-name-in-module
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import array, length, lower, size, to_timestamp, when
+from pytility import clear_list, concat_files, parse_int
 from scrapy.utils.misc import arg_to_iter
 
-from .prefixes import split_file
-from .utils import (
-    identity,
-    now,
-    parse_json,
-    serialize_json,
-    str_to_parser,
-    to_lower,
-)
+from .utils import now, to_lower
 
 csv.field_size_limit(sys.maxsize)
 
@@ -32,102 +27,91 @@ LOGGER = logging.getLogger(__name__)
 
 
 @lru_cache()
-def _spark_context(log_level=None, **kwargs):
-    LOGGER.info(
-        "creating Spark context with log level <%s> and config %r", log_level, kwargs
-    )
+def _spark_session(log_level=None):
+    LOGGER.info("creating Spark session with log level <%s>", log_level)
 
     os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
 
     try:
-        import pyspark
-
-        conf = pyspark.SparkConf()
-        conf.set("spark.ui.showConsoleProgress", False)
-        conf.set("spark.executor.memory", "16G")
-        conf.set("spark.driver.memory", "16G")
-        conf.set("spark.driver.maxResultSize", "16G")
-        kwargs["conf"] = conf
-        context = pyspark.SparkContext(**kwargs)
+        spark = (
+            SparkSession.builder.appName(__name__)
+            .config("spark.ui.showConsoleProgress", False)
+            .config("spark.executor.memory", "16G")
+            .config("spark.driver.memory", "16G")
+            .config("spark.driver.maxResultSize", "16G")
+            .getOrCreate()
+        )
 
         if log_level:
-            context.setLogLevel(log_level)
+            spark.sparkContext.setLogLevel(log_level)
 
-        return context
+        return spark
 
     except Exception:
-        LOGGER.exception("unable to create Spark context")
+        LOGGER.exception("unable to create Spark session")
 
     return None
 
 
-def _parse(item, keys, parsers):
-    values = tuple(parser(item.get(key)) for key, parser in zip(keys, parsers))
-    return None if any(x is None for x in values) else values
-
-
-def _compare(first, second):
-    latest_first, _ = first
-    latest_second, _ = second
+def _compare(first, second, column="_latest"):
     return (
         second
-        if latest_first is None
-        or (latest_second is not None and latest_second >= latest_first)
+        if not first[column] or (second[column] and second[column] >= first[column])
         else first
     )
 
 
-def _empty(value):
+def _column_type(column, column_type=None):
+    column_type = to_lower(column_type)
     return (
-        False
-        if isinstance(value, bool) or parse_float(value) is not None
-        else not value
+        to_timestamp(column)
+        if column_type in ("date", "datetime", "dt")
+        else lower(column)
+        if column_type in ("istr", "istring", "lower")
+        else column
     )
 
 
-def _filter_fields(item, remove_empty=True, fieldnames=None, fieldnames_exclude=None):
-    item = (
-        ((k, v) for k, v in item.items() if not _empty(v))
-        if remove_empty
-        else item.items()
-    )
-    item = ((k, v) for k, v in item if k in fieldnames) if fieldnames else item
-    item = (
-        ((k, v) for k, v in item if k not in fieldnames_exclude)
-        if fieldnames_exclude
-        else item
-    )
-    return dict(item)
+def _remove_empty(data, remove_false=False):
+    for column, dtype in data.dtypes:
+        if dtype in ("string", "binary"):
+            data = data.withColumn(column, when(length(data[column]) > 0, data[column]))
+        # TODO recursive in maps and structs
+        elif dtype.startswith("array") or dtype.startswith("map"):
+            data = data.withColumn(column, when(size(data[column]) > 0, data[column]))
+        elif dtype == "boolean" and remove_false:
+            data = data.withColumn(column, when(data[column], data[column]))
+    return data
 
 
 def merge_files(
     in_paths,
     out_path,
-    keys=("id",),
-    key_parsers=None,
+    keys="id",
+    key_types=None,
     latest=None,
-    latest_parsers=None,
+    latest_types=None,
     latest_min=None,
     fieldnames=None,
     fieldnames_exclude=None,
-    sort_output=False,
+    sort_keys=False,
     sort_latest=False,
-    sort_field=None,
+    sort_fields=None,
     sort_descending=False,
     concat_output=False,
-    **spark,
+    log_level=None,
 ):
     """ merge files into one """
 
-    context = _spark_context(**spark)
+    spark = _spark_session(log_level=log_level)
 
-    if context is None:
-        LOGGER.warning("please make sure Spark is installed and configured correctly")
+    if spark is None:
+        LOGGER.warning("Please make sure Spark is installed and configured correctly!")
         return
 
-    LOGGER.info("merging items with Spark %r", context)
+    LOGGER.info("merging items with Spark %r", spark)
 
-    fieldnames = frozenset(arg_to_iter(fieldnames))
+    fieldnames = clear_list(arg_to_iter(fieldnames))
     fieldnames_exclude = frozenset(arg_to_iter(fieldnames_exclude))
 
     if fieldnames and fieldnames_exclude:
@@ -135,64 +119,84 @@ def merge_files(
             "both <fieldnames> and <fieldnames_exclude> were specified, please choose one"
         )
 
-    keys = tuple(arg_to_iter(keys))
-    key_parsers = tuple(arg_to_iter(key_parsers))
-    key_parsers += (identity,) * (len(keys) - len(key_parsers))
-    latest = tuple(arg_to_iter(latest))
-    latest_parsers = tuple(arg_to_iter(latest_parsers))
-    latest_parsers += (identity,) * (len(latest) - len(latest_parsers))
-    latest_min = latest_parsers[0](latest_min)
+    sort_fields = tuple(arg_to_iter(sort_fields))
+    if sum(map(bool, (sort_keys, sort_latest, sort_fields))) > 1:
+        LOGGER.warning(
+            "Only use at most one of <sort_keys>, <sort_latest>, and <sort_fields>"
+        )
 
-    rdd = (
-        context.textFile(",".join(arg_to_iter(in_paths)))
-        .map(parse_json)
-        .filter(lambda item: item is not None)
-        .keyBy(partial(_parse, keys=latest, parsers=latest_parsers))
+    keys = tuple(arg_to_iter(keys))
+    key_types = tuple(arg_to_iter(key_types))
+    key_types += (None,) * (len(keys) - len(key_types))
+    assert len(keys) == len(key_types)
+
+    latest = tuple(arg_to_iter(latest))
+    latest_types = tuple(arg_to_iter(latest_types))
+    latest_types += (None,) * (len(latest) - len(latest_types))
+    assert len(latest) == len(latest_types)
+
+    data = spark.read.json(
+        path=list(arg_to_iter(in_paths)), mode="DROPMALFORMED", dropFieldIfAllNull=True
+    )
+
+    key_column_names = [f"_key_{i}" for i in range(len(keys))]
+    key_columns = [
+        _column_type(data[column], column_type).alias(name)
+        for column, column_type, name in zip(keys, key_types, key_column_names)
+    ]
+    key_columns_str = (column.cast("string") for column in key_columns)
+    latest_column_names = [f"_latest_{i}" for i in range(len(latest))]
+    latest_columns = [
+        _column_type(data[column], column_type).alias(name)
+        for column, column_type, name in zip(latest, latest_types, latest_column_names)
+    ]
+    latest_columns_str = (column.cast("string") for column in latest_columns)
+
+    data = data.na.drop(subset=keys).select(
+        "*",
+        *key_columns,
+        array(*key_columns_str).alias("_key"),
+        *latest_columns,
+        array(*latest_columns_str).alias("_latest"),
     )
 
     if latest_min is not None:
         LOGGER.info("filter out items before %r", latest_min)
-        rdd = rdd.filter(
-            lambda item: item and item[0] and item[0][0] and item[0][0] >= latest_min
-        )
+        data = data.filter(latest_columns[0] >= latest_min)
 
     rdd = (
-        rdd.map(
-            lambda item: (_parse(item=item[1], keys=keys, parsers=key_parsers), item)
-        )
-        .filter(lambda item: item[0] is not None)
+        data.rdd.keyBy(lambda row: tuple(arg_to_iter(row["_key"])))
         .reduceByKey(_compare)
+        .values()
     )
 
-    if sort_output:
-        rdd = rdd.sortByKey()
+    data = rdd.toDF(schema=data.schema)
 
-    rdd = rdd.values()
+    if sort_keys:
+        data = data.sort(*key_column_names, ascending=not sort_descending)
+    elif sort_latest:
+        data = data.sort(*latest_column_names, ascending=not sort_descending)
+    elif sort_fields:
+        data = data.sort(*sort_fields, ascending=not sort_descending)
 
-    if sort_latest:
-        rdd = rdd.sortByKey(ascending=sort_latest == "asc")
+    data = data.drop("_key", *key_column_names, "_latest", *latest_column_names)
 
-    rdd = rdd.values()
+    columns = frozenset(data.columns) - fieldnames_exclude
+    if fieldnames:
+        fieldnames = [column for column in fieldnames if column in columns]
+        LOGGER.info("Only use columns: %s", fieldnames)
+    else:
+        fieldnames = sorted(columns)
+        LOGGER.info("Use sorted column names: %s", fieldnames)
+    data = data.select(*fieldnames)
 
-    if sort_field:
-        rdd = rdd.sortBy(
-            lambda item: item.get(sort_field), ascending=not sort_descending
-        )
-
-    rdd = rdd.map(
-        partial(
-            _filter_fields,
-            remove_empty=True,
-            fieldnames=fieldnames,
-            fieldnames_exclude=fieldnames_exclude,
-        )
-    ).map(partial(serialize_json, sort_keys=True))
+    data = _remove_empty(data)
 
     if concat_output:
         with tempfile.TemporaryDirectory() as temp_path:
             path = Path(temp_path) / "out"
             LOGGER.info("saving temporary output to <%s>", path)
-            rdd.saveAsTextFile(str(path))
+            data.write.json(path=str(path))
 
             LOGGER.info("concatenate temporary files to <%s>", out_path)
             files = path.glob("part-*")
@@ -200,7 +204,7 @@ def merge_files(
 
     else:
         LOGGER.info("saving output to <%s>", out_path)
-        rdd.saveAsTextFile(out_path)
+        data.write.json(path=str(out_path))
 
     LOGGER.info("done merging")
 
@@ -234,39 +238,27 @@ def _parse_args():
         "-m",
         help="minimum value for latest column, all other values will be ignored (days for dates)",
     )
-    parser.add_argument("--fields", "-f", nargs="+", help="output columns")
-    parser.add_argument(
+    fields_group = parser.add_mutually_exclusive_group()
+    fields_group.add_argument("--fields", "-f", nargs="+", help="output columns")
+    fields_group.add_argument(
         "--fields-exclude", "-F", nargs="+", help="ignore these output columns"
     )
-    parser.add_argument(
-        "--sort-output", "-O", action="store_true", help="sort output by keys"
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--sort-keys", "-s", action="store_true", help="sort output by keys"
     )
-    parser.add_argument(
+    sort_group.add_argument(
         "--sort-latest",
-        "-s",
-        choices=("asc", "desc"),
+        "-S",
+        action="store_true",
         help='sort output by "latest" column',
     )
-    parser.add_argument("--sort-field", "-S", help="sort output by a column")
+    sort_group.add_argument("--sort-fields", nargs="+", help="sort output by columns")
     parser.add_argument(
-        "--sort-desc",
-        "-D",
-        action="store_true",
-        help="sort descending (only in connection with --sort-field)",
+        "--sort-desc", "-D", action="store_true", help="sort descending",
     )
     parser.add_argument(
         "--concat", "-c", action="store_true", help="concatenate output into one file"
-    )
-    parser.add_argument(
-        "--split", "-p", action="store_true", help="split output along prefixes"
-    )
-    parser.add_argument("--trie-path", "-t", help="path to prefix trie")
-    parser.add_argument(
-        "--split-limit",
-        "-P",
-        type=int,
-        default=300_000,
-        help="limit of items per prefix",
     )
     parser.add_argument(
         "--verbose",
@@ -292,8 +284,6 @@ def main():
 
     LOGGER.info(args)
 
-    key_parsers = map(str_to_parser, arg_to_iter(args.key_types))
-    latest_parsers = map(str_to_parser, arg_to_iter(args.latest_types))
     latest_min = (
         now() - timedelta(days=parse_int(args.latest_min))
         if args.latest_min
@@ -302,68 +292,27 @@ def main():
         else args.latest_min
     )
 
-    if args.split:
-        with tempfile.TemporaryFile("w+") as tmp_file:
-            LOGGER.info(
-                "merging into temp file %r, then splitting along prefixes into <%s>...",
-                tmp_file,
-                args.out_path,
-            )
-
-            merge_files(
-                in_paths=args.paths,
-                out_path=tmp_file,
-                keys=args.keys,
-                key_parsers=key_parsers,
-                latest=args.latest,
-                latest_parsers=latest_parsers,
-                latest_min=latest_min,
-                fieldnames=args.fields,
-                fieldnames_exclude=args.fields_exclude,
-                sort_output=True,
-                concat_output=True,
-                log_level="DEBUG"
-                if args.verbose > 1
-                else "INFO"
-                if args.verbose > 0
-                else "WARN",
-                # TODO Spark config
-            )
-
-            tmp_file.seek(0)
-
-            split_file(
-                in_file=tmp_file,
-                out_file=args.out_path,
-                fields=args.keys[0],
-                trie_file=args.trie_path,
-                limits=args.split_limit,
-                construct=False,
-            )
-
-    else:
-        merge_files(
-            in_paths=args.paths,
-            out_path=args.out_path,
-            keys=args.keys,
-            key_parsers=key_parsers,
-            latest=args.latest,
-            latest_parsers=latest_parsers,
-            latest_min=latest_min,
-            fieldnames=args.fields,
-            fieldnames_exclude=args.fields_exclude,
-            sort_output=args.sort_output,
-            sort_latest=args.sort_latest,
-            sort_field=args.sort_field,
-            sort_descending=args.sort_desc,
-            concat_output=args.concat,
-            log_level="DEBUG"
-            if args.verbose > 1
-            else "INFO"
-            if args.verbose > 0
-            else "WARN",
-            # TODO Spark config
-        )
+    merge_files(
+        in_paths=args.paths,
+        out_path=args.out_path,
+        keys=args.keys,
+        key_types=args.key_types,
+        latest=args.latest,
+        latest_types=args.latest_types,
+        latest_min=latest_min,
+        fieldnames=args.fields,
+        fieldnames_exclude=args.fields_exclude,
+        sort_keys=args.sort_keys,
+        sort_latest=args.sort_latest,
+        sort_fields=args.sort_fields,
+        sort_descending=args.sort_desc,
+        concat_output=args.concat,
+        log_level="DEBUG"
+        if args.verbose > 1
+        else "INFO"
+        if args.verbose > 0
+        else "WARN",
+    )
 
 
 if __name__ == "__main__":

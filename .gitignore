@@ -98,6 +98,7 @@ ENV/
 .~*
 ._*
 *.sqlite*
+*tmp
 bin/
 include/
 share/
