@@ -58,14 +58,13 @@ REQUIRED = (
     "requests",
     "scrapy",
     "scrapy-extensions",
-    "smart-open",
     "twisted",
     "w3lib",
 )
 
 # What packages are optional?
 EXTRAS = {
-    # 'fancy feature': ['django'],
+    "cloud": ("smart-open>=1.8.1",),
 }
 
 # The rest you shouldn't have to touch too much :)
