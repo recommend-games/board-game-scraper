@@ -122,3 +122,22 @@ services:
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
+
+    news:
+        image: news-scraper:0.17.16
+        container_name: bg-scraper-news
+        volumes:
+            - ./feeds/news/output:/root/output
+            - ~/.aws:/root/.aws
+        env_file: .env
+        environment:
+            ENVIRONMENT: docker
+            OUTPUT_DIR: s3://scrape.news.recommend.games
+            ELASTICSEARCH_STORAGE_ENABLED: 0
+            COUCHBASE_CACHE_ENABLED: 1
+            COUCHBASE_ENTITY_LINKING_ENABLED: 0
+            LOGSTASH_HOST: ''
+            LOGSTASH_PORT: ''
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
