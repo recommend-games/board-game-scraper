@@ -5,6 +5,7 @@
 import argparse
 import logging
 
+from datetime import timezone
 from pathlib import Path
 from time import sleep
 from shutil import rmtree
@@ -110,9 +111,9 @@ def main():
     job_dir.mkdir(parents=True, exist_ok=True)
 
     dont_run_before_file = job_dir / ".dont_run_before"
-    dont_run_before = parse_date(args.dont_run_before) or date_from_file(
-        dont_run_before_file
-    )
+    dont_run_before = parse_date(
+        args.dont_run_before, tzinfo=timezone.utc
+    ) or date_from_file(dont_run_before_file, tzinfo=timezone.utc)
 
     if dont_run_before:
         LOGGER.info("Don't run before %s", dont_run_before.isoformat())
