@@ -7,12 +7,17 @@ import logging
 import os.path
 import sys
 
+from datetime import timedelta, timezone
 from pathlib import Path
 from shutil import rmtree
 from subprocess import run
+from time import sleep
+
+from pytility import parse_date
 
 from .merge import merge_files
 from .split import split_files
+from .utils import date_from_file, now
 
 LOGGER = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -127,6 +132,16 @@ def _parse_args():
         help="number of items in each result file",
     )
     parser.add_argument(
+        "--dont-run-before", "-d", help="Either a date or a file with date information"
+    )
+    parser.add_argument(
+        "--interval",
+        "-i",
+        type=int,
+        default=10 * 60,  # 10 minutes
+        help="number of seconds to wait before next run",
+    )
+    parser.add_argument(
         "--verbose",
         "-v",
         action="count",
@@ -149,6 +164,27 @@ def main():
     )
 
     LOGGER.info(args)
+
+    dont_run_before = parse_date(
+        args.dont_run_before, tzinfo=timezone.utc
+    ) or date_from_file(args.dont_run_before, tzinfo=timezone.utc)
+
+    if dont_run_before:
+        LOGGER.info("Don't run before %s", dont_run_before.isoformat())
+        sleep_seconds = dont_run_before.timestamp() - now().timestamp()
+        if sleep_seconds > 0:
+            LOGGER.info("Going to sleep for %.1f seconds", sleep_seconds)
+            sleep(sleep_seconds)
+
+    if args.interval and args.dont_run_before and not parse_date(args.dont_run_before):
+        dont_run_before = now() + timedelta(seconds=args.interval)
+        LOGGER.info(
+            "Don't run next time before %s, writing tag to <%s>",
+            dont_run_before.isoformat(),
+            args.dont_run_before,
+        )
+        with open(args.dont_run_before, "w") as file_obj:
+            file_obj.write(dont_run_before.isoformat())
 
     update_news(
         s3_src=f"s3://{args.src_bucket}/",
