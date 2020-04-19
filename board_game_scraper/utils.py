@@ -8,7 +8,6 @@ import os
 import re
 
 from datetime import datetime, timezone
-from functools import partial
 from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse
@@ -17,7 +16,6 @@ from pytility import (
     arg_to_iter,
     clear_list,
     normalize_space,
-    parse_float,
     parse_int,
     take_first,
     to_str,
@@ -164,24 +162,6 @@ def serialize_json(obj, file=None, **kwargs):
         return json.dump(obj, file, **kwargs)
 
     return json.dumps(obj, **kwargs)
-
-
-def str_to_parser(string):
-    """ parser from key string """
-    string = to_lower(string)
-    if not string:
-        return to_str
-    return (
-        parse_int
-        if string == "int"
-        else parse_float
-        if string == "float"
-        else partial(parse_date, tzinfo=timezone.utc)
-        if string == "date"
-        else to_lower
-        if string in ("istr", "istring")
-        else to_str
-    )
 
 
 def validate_range(value, lower=None, upper=None):
