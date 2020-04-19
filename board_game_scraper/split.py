@@ -10,7 +10,12 @@ import sys
 from functools import partial
 
 from pytility import batchify
-from smart_open import smart_open
+
+try:
+    # pylint: disable=redefined-builtin
+    from smart_open import open
+except ImportError:
+    pass
 
 LOGGER = logging.getLogger(__name__)
 FIELDS = frozenset(
@@ -44,7 +49,7 @@ def _filter_fields(item, fields=None, exclude_empty=False):
 
 def _load_items(iterable, fields=None):
     if isinstance(iterable, str):
-        with smart_open(iterable, "r") as file_obj:
+        with open(iterable) as file_obj:
             yield from _load_items(file_obj, fields=fields)
         return
 
@@ -105,7 +110,7 @@ def _main():
         else:
             out_path = args.outfile.format(number=i)
             LOGGER.info("writing batch #%d to <%s>...", i, out_path)
-            with smart_open(out_path, "w") as out_file:
+            with open(out_path, "w") as out_file:
                 json.dump(result, out_file, sort_keys=True)
 
     LOGGER.info("done")
