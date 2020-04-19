@@ -141,3 +141,15 @@ services:
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
+
+    news-update:
+        image: bg-scraper:latest
+        container_name: bg-scraper-news-update
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper.news', '--dont-run-before', 'feeds/news/.dont_run_before']
+        env_file: .env
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
