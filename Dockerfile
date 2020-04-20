@@ -5,7 +5,7 @@ ENV LANG=C.UTF-8
 ENV MAILTO=''
 ENV PYTHONPATH=.
 
-RUN mkdir -p /app
+RUN mkdir --parents /app
 WORKDIR /app
 
 RUN python3.7 -m pip install --upgrade \

@@ -109,8 +109,9 @@ def merge_files(
     spark = _spark_session(log_level=log_level)
 
     if spark is None:
-        LOGGER.warning("Please make sure Spark is installed and configured correctly!")
-        return
+        raise RuntimeError(
+            "Please make sure Spark is installed and configured correctly!"
+        )
 
     in_paths = list(map(str, arg_to_iter(in_paths)))
 

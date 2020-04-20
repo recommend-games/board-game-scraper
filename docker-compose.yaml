@@ -142,10 +142,13 @@ services:
         stop_grace_period: 15m
         stop_signal: SIGINT
 
+    # TODO make sure Spark works in container
     news-update:
-        image: bg-scraper:latest
+        image: bg-merger:latest
         container_name: bg-scraper-news-update
-        build: '.'
+        build:
+            dockerfile: Dockerfile-spark
+            context: '.'
         command: ['python', '-m', 'board_game_scraper.news', '--dont-run-before', 'feeds/news/.dont_run_before']
         env_file: .env
         volumes:
