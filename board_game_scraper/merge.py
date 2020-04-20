@@ -33,14 +33,20 @@ def _spark_session(log_level=None):
     os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
 
     try:
-        spark = (
+        builder = (
             SparkSession.builder.appName(__name__)
             .config("spark.ui.showConsoleProgress", False)
             .config("spark.executor.memory", "16G")
             .config("spark.driver.memory", "16G")
             .config("spark.driver.maxResultSize", "16G")
-            .getOrCreate()
         )
+
+        master = os.getenv("SPARK_MASTER")
+        if master:
+            LOGGER.info("Using Spark master <%s>", master)
+            builder = builder.master(master)
+
+        spark = builder.getOrCreate()
 
         if log_level:
             spark.sparkContext.setLogLevel(log_level)
