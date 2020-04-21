@@ -39,9 +39,9 @@ scrapy crawl "${SPIDER}" \
 
 where `$SPIDER` is one of the IDs above.
 
-Run all the spiders with the [`run_all.sh`](run_all.sh) script. Get a list of
-the running scrapers' PIDs with the [`processes.sh`](processes.sh) script. You
-can close all the running scrapers via
+Run all the spiders with the [`run_scrapers.sh`](run_scrapers.sh) script. Get a
+list of the running scrapers' PIDs with the [`processes.sh`](processes.sh)
+script. You can close all the running scrapers via
 
 ```bash
 ./processes.sh stop
