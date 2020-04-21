@@ -142,7 +142,7 @@ services:
         stop_grace_period: 15m
         stop_signal: SIGINT
 
-    # TODO make sure Spark works in container
+    # TODO make sure Spark works in container (#60)
     news-update:
         image: bg-merger:latest
         container_name: bg-scraper-news-update
