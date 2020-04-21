@@ -33,14 +33,20 @@ def _spark_session(log_level=None):
     os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
 
     try:
-        spark = (
+        builder = (
             SparkSession.builder.appName(__name__)
             .config("spark.ui.showConsoleProgress", False)
             .config("spark.executor.memory", "16G")
             .config("spark.driver.memory", "16G")
             .config("spark.driver.maxResultSize", "16G")
-            .getOrCreate()
         )
+
+        master = os.getenv("SPARK_MASTER")
+        if master:
+            LOGGER.info("Using Spark master <%s>", master)
+            builder = builder.master(master)
+
+        spark = builder.getOrCreate()
 
         if log_level:
             spark.sparkContext.setLogLevel(log_level)
@@ -75,11 +81,14 @@ def _column_type(column, column_type=None):
 def _remove_empty(data, remove_false=False):
     for column, dtype in data.dtypes:
         if dtype in ("string", "binary"):
+            LOGGER.info("Remove empty string or binary values from <%s>", column)
             data = data.withColumn(column, when(length(data[column]) > 0, data[column]))
         # TODO recursive in maps and structs
         elif dtype.startswith("array") or dtype.startswith("map"):
+            LOGGER.info("Remove empty array or map values from <%s>", column)
             data = data.withColumn(column, when(size(data[column]) > 0, data[column]))
         elif dtype == "boolean" and remove_false:
+            LOGGER.info("Remove <false> values from <%s>", column)
             data = data.withColumn(column, when(data[column], data[column]))
     return data
 
@@ -106,17 +115,25 @@ def merge_files(
     spark = _spark_session(log_level=log_level)
 
     if spark is None:
-        LOGGER.warning("Please make sure Spark is installed and configured correctly!")
-        return
+        raise RuntimeError(
+            "Please make sure Spark is installed and configured correctly!"
+        )
 
-    LOGGER.info("merging items with Spark %r", spark)
+    in_paths = list(map(str, arg_to_iter(in_paths)))
+
+    LOGGER.info(
+        "Merging items from %s into <%s> with Spark session %r",
+        f"[{len(in_paths) } paths]" if len(in_paths) > 10 else in_paths,
+        out_path,
+        spark,
+    )
 
     fieldnames = clear_list(arg_to_iter(fieldnames))
     fieldnames_exclude = frozenset(arg_to_iter(fieldnames_exclude))
 
     if fieldnames and fieldnames_exclude:
         LOGGER.warning(
-            "both <fieldnames> and <fieldnames_exclude> were specified, please choose one"
+            "Both <fieldnames> and <fieldnames_exclude> were specified, please choose one"
         )
 
     sort_fields = tuple(arg_to_iter(sort_fields))
@@ -129,15 +146,15 @@ def merge_files(
     key_types = tuple(arg_to_iter(key_types))
     key_types += (None,) * (len(keys) - len(key_types))
     assert len(keys) == len(key_types)
+    LOGGER.info("Using keys %s with types %s", keys, key_types)
 
     latest = tuple(arg_to_iter(latest))
     latest_types = tuple(arg_to_iter(latest_types))
     latest_types += (None,) * (len(latest) - len(latest_types))
     assert len(latest) == len(latest_types)
+    LOGGER.info("Using latest %s with types %s", latest, latest_types)
 
-    data = spark.read.json(
-        path=list(arg_to_iter(in_paths)), mode="DROPMALFORMED", dropFieldIfAllNull=True
-    )
+    data = spark.read.json(path=in_paths, mode="DROPMALFORMED", dropFieldIfAllNull=True)
 
     key_column_names = [f"_key_{i}" for i in range(len(keys))]
     key_columns = [
@@ -161,7 +178,7 @@ def merge_files(
     )
 
     if latest_min is not None:
-        LOGGER.info("filter out items before %r", latest_min)
+        LOGGER.info("Filter out items before %s", latest_min)
         data = data.filter(latest_columns[0] >= latest_min)
 
     rdd = (
@@ -173,10 +190,25 @@ def merge_files(
     data = rdd.toDF(schema=data.schema)
 
     if sort_keys:
+        LOGGER.info(
+            "Sorting %s by columns %s",
+            "descending" if sort_descending else "ascending",
+            keys,
+        )
         data = data.sort(*key_column_names, ascending=not sort_descending)
     elif sort_latest:
+        LOGGER.info(
+            "Sorting %s by columns %s",
+            "descending" if sort_descending else "ascending",
+            latest,
+        )
         data = data.sort(*latest_column_names, ascending=not sort_descending)
     elif sort_fields:
+        LOGGER.info(
+            "Sorting %s by columns %s",
+            "descending" if sort_descending else "ascending",
+            sort_fields,
+        )
         data = data.sort(*sort_fields, ascending=not sort_descending)
 
     data = data.drop("_key", *key_column_names, "_latest", *latest_column_names)
@@ -195,18 +227,18 @@ def merge_files(
     if concat_output:
         with tempfile.TemporaryDirectory() as temp_path:
             path = Path(temp_path) / "out"
-            LOGGER.info("saving temporary output to <%s>", path)
+            LOGGER.info("Saving temporary output to <%s>", path)
             data.write.json(path=str(path))
 
-            LOGGER.info("concatenate temporary files to <%s>", out_path)
+            LOGGER.info("Concatenate temporary files to <%s>", out_path)
             files = path.glob("part-*")
             concat_files(dst=out_path, srcs=sorted(files), ensure_newline=True)
 
     else:
-        LOGGER.info("saving output to <%s>", out_path)
+        LOGGER.info("Saving output to <%s>", out_path)
         data.write.json(path=str(out_path))
 
-    LOGGER.info("done merging")
+    LOGGER.info("Done merging.")
 
 
 def _parse_args():

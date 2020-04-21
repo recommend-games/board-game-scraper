@@ -122,3 +122,76 @@ services:
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
+
+    news:
+        image: news-scraper:0.17.16
+        container_name: bg-scraper-news
+        volumes:
+            - ./feeds/news/output:/root/output
+            - ~/.aws:/root/.aws
+        env_file: .env
+        environment:
+            ENVIRONMENT: docker
+            OUTPUT_DIR: s3://scrape.news.recommend.games
+            ELASTICSEARCH_STORAGE_ENABLED: 0
+            COUCHBASE_CACHE_ENABLED: 1
+            COUCHBASE_ENTITY_LINKING_ENABLED: 0
+            LOGSTASH_HOST: ''
+            LOGSTASH_PORT: ''
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    # TODO make sure Spark works in container (#60)
+    news-update:
+        image: bg-merger:latest
+        container_name: bg-scraper-news-update
+        build:
+            dockerfile: Dockerfile-spark
+            context: '.'
+        # depends_on:
+        #     - spark-master
+        command: ['python', '-m', 'board_game_scraper.news', '--dont-run-before', 'feeds/news/.dont_run_before']
+        env_file: .env
+        # environment:
+        #     SPARK_MASTER: spark://spark-master:7077
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    # spark-master:
+    #     image: bde2020/spark-master:2.4.5-hadoop2.7
+    #     container_name: spark-master
+    #     ports:
+    #         - "8080:8080"
+    #         - "7077:7077"
+    #     environment:
+    #         - INIT_DAEMON_STEP=setup_spark
+    #         - "constraint:node==<yourmasternode>"
+    #     restart: always
+
+    # spark-worker-1:
+    #     image: bde2020/spark-worker:2.4.5-hadoop2.7
+    #     container_name: spark-worker-1
+    #     depends_on:
+    #         - spark-master
+    #     ports:
+    #         - "8081:8081"
+    #     environment:
+    #         - "SPARK_MASTER=spark://spark-master:7077"
+    #         - "constraint:node==<yourworkernode>"
+    #     restart: always
+
+    # spark-worker-2:
+    #     image: bde2020/spark-worker:2.4.5-hadoop2.7
+    #     container_name: spark-worker-2
+    #     depends_on:
+    #         - spark-master
+    #     ports:
+    #         - "8082:8082"
+    #     environment:
+    #         - "SPARK_MASTER=spark://spark-master:7077"
+    #         - "constraint:node==<yourworkernode>"
+    #     restart: always

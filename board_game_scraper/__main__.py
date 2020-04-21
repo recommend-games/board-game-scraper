@@ -5,6 +5,7 @@
 import argparse
 import logging
 
+from datetime import timezone
 from pathlib import Path
 from time import sleep
 from shutil import rmtree
@@ -17,7 +18,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.project import get_project_settings
 from scrapy.utils.python import garbage_collect
 
-from .utils import now
+from .utils import date_from_file, now
 
 LOGGER = logging.getLogger(__name__)
 DATE_FORMAT = "%Y-%m-%dT%H-%M-%S"
@@ -60,17 +61,6 @@ def _find_states(
             result[sub_dir.name] = state
 
     return result
-
-
-def _date_from_file(path):
-    path = Path(path).resolve()
-    LOGGER.info("Reading date from path <%s>", path)
-    try:
-        with path.open() as file_obj:
-            date = normalize_space(next(file_obj, None))
-    except Exception:
-        date = None
-    return parse_date(date)
 
 
 def _parse_args():
@@ -121,9 +111,9 @@ def main():
     job_dir.mkdir(parents=True, exist_ok=True)
 
     dont_run_before_file = job_dir / ".dont_run_before"
-    dont_run_before = parse_date(args.dont_run_before) or _date_from_file(
-        dont_run_before_file
-    )
+    dont_run_before = parse_date(
+        args.dont_run_before, tzinfo=timezone.utc
+    ) or date_from_file(dont_run_before_file, tzinfo=timezone.utc)
 
     if dont_run_before:
         LOGGER.info("Don't run before %s", dont_run_before.isoformat())
