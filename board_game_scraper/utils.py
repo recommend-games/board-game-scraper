@@ -166,11 +166,14 @@ def serialize_json(obj, file=None, **kwargs):
 
 
 def date_from_file(
-    path: Union[bytes, str, os.PathLike],
+    path: Union[bytes, str, os.PathLike, None],
     tzinfo: Optional[timezone] = None,
     format_str: Optional[str] = None,
 ) -> Optional[datetime]:
     """Parse a date from a file."""
+
+    if not path:
+        return None
 
     path = Path(path).resolve()
     LOGGER.info("Reading date from path <%s>", path)
@@ -180,6 +183,7 @@ def date_from_file(
             date = normalize_space(next(file_obj, None))
     except Exception:
         date = None
+
     return parse_date(date=date, tzinfo=tzinfo, format_str=format_str)
 
 
