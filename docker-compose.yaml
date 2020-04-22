@@ -138,6 +138,7 @@ services:
             COUCHBASE_ENTITY_LINKING_ENABLED: 0
             LOGSTASH_HOST: ''
             LOGSTASH_PORT: ''
+            LOGSTASH_PROTOCOL: none
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
