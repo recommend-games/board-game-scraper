@@ -9,14 +9,25 @@ import os
 import sys
 import tempfile
 
-from datetime import timedelta
-from functools import lru_cache
+from datetime import datetime, timedelta, timezone
+from functools import lru_cache, reduce
+from operator import or_
 from pathlib import Path
 
 # pylint: disable=no-name-in-module
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import array, length, lower, size, to_timestamp, when
-from pytility import clear_list, concat_files, parse_int
+from pyspark.sql.functions import (
+    PandasUDFType,
+    array,
+    length,
+    lower,
+    pandas_udf,
+    size,
+    to_timestamp,
+    when,
+)
+from pyspark.sql.types import BooleanType, DoubleType, IntegerType, StringType
+from pytility import clear_list, concat_files, parse_date, parse_int
 from scrapy.utils.misc import arg_to_iter
 
 from .utils import now, to_lower
@@ -24,6 +35,7 @@ from .utils import now, to_lower
 csv.field_size_limit(sys.maxsize)
 
 LOGGER = logging.getLogger(__name__)
+MIN_DATE = datetime.min.replace(tzinfo=timezone.utc)
 
 
 @lru_cache()
@@ -78,6 +90,86 @@ def _column_type(column, column_type=None):
     )
 
 
+@pandas_udf(returnType=BooleanType(), functionType=PandasUDFType.GROUPED_AGG)
+def _or(iterable):
+    return reduce(or_, map(bool, iterable), False)
+
+
+@pandas_udf(returnType=StringType(), functionType=PandasUDFType.GROUPED_AGG)
+def _concat(iterable):
+    return "\n\n".join(map(str, filter(None, iterable))) or None
+
+
+@pandas_udf(returnType=StringType(), functionType=PandasUDFType.GROUPED_AGG)
+def _first(iterable):
+    for item in iterable:
+        try:
+            take = False if item is None else len(item)
+        except Exception:
+            take = True
+        if take:
+            return str(item)
+    return None
+
+
+@pandas_udf(returnType=DoubleType(), functionType=PandasUDFType.GROUPED_AGG)
+def _sum(iterable):
+    return iterable.sum()
+
+
+@pandas_udf(returnType=IntegerType(), functionType=PandasUDFType.GROUPED_AGG)
+def _sum_int(iterable):
+    return parse_int(iterable.sum())
+
+
+@pandas_udf(returnType=DoubleType(), functionType=PandasUDFType.GROUPED_AGG)
+def _min(iterable):
+    return iterable.min()
+
+
+@pandas_udf(returnType=IntegerType(), functionType=PandasUDFType.GROUPED_AGG)
+def _min_int(iterable):
+    return parse_int(iterable.min())
+
+
+@pandas_udf(returnType=DoubleType(), functionType=PandasUDFType.GROUPED_AGG)
+def _max(iterable):
+    return iterable.max()
+
+
+@pandas_udf(returnType=IntegerType(), functionType=PandasUDFType.GROUPED_AGG)
+def _max_int(iterable):
+    return parse_int(iterable.max())
+
+
+@pandas_udf(returnType=StringType(), functionType=PandasUDFType.GROUPED_AGG)
+def _latest(iterable):
+    return max(
+        iterable,
+        key=lambda date: parse_date(date, tzinfo=timezone.utc) or MIN_DATE,
+        default=None,
+    )
+
+
+def _aggregations(data, columns):
+    agg_mappings = {
+        "or": _or,
+        "concat": _concat,
+        "first": _first,
+        "sum": _sum,
+        "sum_int": _sum_int,
+        "min": _min,
+        "min_int": _min_int,
+        "max": _max,
+        "max_int": _max_int,
+        "latest": _latest,
+    }
+
+    for column, agg in columns.items():
+        agg = agg_mappings.get(agg) or agg
+        yield agg(data[column]).alias(column)
+
+
 def _remove_empty(data, remove_false=False):
     for column, dtype in data.dtypes:
         if dtype in ("string", "binary"):
@@ -100,6 +192,8 @@ def merge_data(
     latest=None,
     latest_types=None,
     latest_min=None,
+    aggregate_on=None,
+    aggregate_columns=None,
     sort_keys=False,
     sort_latest=False,
     sort_fields=None,
@@ -141,6 +235,10 @@ def merge_data(
     assert len(latest) == len(latest_types)
     LOGGER.info("Using latest %s with types %s", latest, latest_types)
 
+    aggregate_on = tuple(arg_to_iter(aggregate_on))
+    aggregate_columns = dict(aggregate_columns) if aggregate_columns is not None else {}
+    LOGGER.info("Aggregate on %s columns %s", aggregate_on, aggregate_columns)
+
     data = spark.read.json(path=in_paths, mode="DROPMALFORMED", dropFieldIfAllNull=True)
 
     key_column_names = [f"_key_{i}" for i in range(len(keys))]
@@ -175,6 +273,16 @@ def merge_data(
     )
 
     data = rdd.toDF(schema=data.schema)
+
+    if aggregate_on:
+        grouped = data.groupBy(*aggregate_on)
+        aggregated = grouped.agg(*_aggregations(data, aggregate_columns))
+        if sort_keys:
+            data = aggregated.select("*", *key_columns)
+        elif sort_latest:
+            data = aggregated.select("*", *latest_columns)
+        else:
+            data = aggregated
 
     if sort_keys:
         LOGGER.info(
