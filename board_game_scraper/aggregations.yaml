@@ -1,0 +1,13 @@
+bgg_user_for_trade: or
+bgg_user_owned: or
+bgg_user_play_count: sum_int
+bgg_user_preordered: or
+bgg_user_prev_owned: or
+bgg_user_rating: max
+bgg_user_want_in_trade: or
+bgg_user_want_to_buy: or
+bgg_user_want_to_play: or
+bgg_user_wishlist: min_int
+comment: concat
+scraped_at: latest
+updated_at: latest
