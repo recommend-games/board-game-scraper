@@ -4,7 +4,7 @@
 
 import logging
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from functools import partial
 
 from pytility import (
@@ -18,7 +18,7 @@ from pytility import (
 from scrapy import Field
 from scrapy.loader.processors import Identity, MapCompose
 from scrapy.utils.project import get_project_settings
-from scrapy_extensions import TypedItem
+from scrapy_extensions import DATE_PROCESSOR, URL_PROCESSOR, ArticleItem, TypedItem
 from w3lib.html import remove_tags
 
 from .utils import (
@@ -29,7 +29,6 @@ from .utils import (
     serialize_date,
     serialize_json,
     validate_range,
-    validate_url,
 )
 
 IDENTITY = Identity()
@@ -71,10 +70,6 @@ NN_FLOAT_PROCESSOR = MapCompose(
     normalize_space,
     parse_float,
     partial(validate_range, lower=0),
-)
-DATE_PROCESSOR = MapCompose(partial(parse_date, tzinfo=timezone.utc))
-URL_PROCESSOR = MapCompose(
-    IDENTITY, str, partial(validate_url, schemes=frozenset(("http", "https")))
 )
 
 
@@ -656,3 +651,43 @@ class RatingItem(TypedItem):
         serializer=serialize_date,
         parser=parse_date,
     )
+
+
+class ReviewItem(ArticleItem):
+    """Item representing a review."""
+
+    url_video = Field(
+        dtype=list,
+        input_processor=URL_PROCESSOR,
+        output_processor=clear_list,
+        parser=parse_json,
+    )
+    external_link = Field(
+        dtype=list,
+        input_processor=URL_PROCESSOR,
+        output_processor=clear_list,
+        parser=parse_json,
+    )
+
+    rating = Field(
+        dtype=float, dtype_convert=parse_float, input_processor=POS_FLOAT_PROCESSOR,
+    )
+    worst_rating = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
+    )
+    best_rating = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
+    )
+
+    bgg_id = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
+    )
+    freebase_id = Field(dtype=str)
+    wikidata_id = Field(dtype=str)
+    wikipedia_id = Field(dtype=str)
+    dbpedia_id = Field(dtype=str)
+    luding_id = Field(
+        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
+    )
+    spielen_id = Field(dtype=str)
+    bga_id = Field(dtype=str)

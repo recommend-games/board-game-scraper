@@ -57,7 +57,7 @@ REQUIRED = (
     "pyyaml",
     "requests",
     "scrapy",
-    "scrapy-extensions",
+    "scrapy-extensions[articles]",
     "twisted",
     "w3lib",
 )
