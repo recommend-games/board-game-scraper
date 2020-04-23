@@ -299,7 +299,7 @@ class BggSpider(Spider):
 
         return default
 
-    def _user_item_or_request(self, user_name, priority=2, **kwargs):
+    def _user_item_or_request(self, user_name, priority=3, **kwargs):
         if not user_name:
             return None
 
