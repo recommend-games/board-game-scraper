@@ -14,7 +14,7 @@ google-cloud-pubsub = "*"
 jmespath = "*"
 pillow = "*"
 pympler = "*"
-pyspark = "*"
+pyspark = {extras = ["sql"], version = "*"}
 python-dotenv = "*"
 pytility = {extras = ["dates"], version = "*"}
 pytrie = "*"
