@@ -13,6 +13,7 @@ dedupe = ">=2.0.0"
 google-cloud-pubsub = "*"
 jmespath = "*"
 pillow = "*"
+pyarrow = "<0.15"
 pympler = "*"
 pyspark = {extras = ["sql"], version = "*"}
 python-dotenv = "*"
