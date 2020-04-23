@@ -93,24 +93,20 @@ def _remove_empty(data, remove_false=False):
     return data
 
 
-def merge_files(
+def merge_data(
     in_paths,
-    out_path,
     keys="id",
     key_types=None,
     latest=None,
     latest_types=None,
     latest_min=None,
-    fieldnames=None,
-    fieldnames_exclude=None,
     sort_keys=False,
     sort_latest=False,
     sort_fields=None,
     sort_descending=False,
-    concat_output=False,
     log_level=None,
 ):
-    """ merge files into one """
+    """Merge files into dataframe."""
 
     spark = _spark_session(log_level=log_level)
 
@@ -122,19 +118,10 @@ def merge_files(
     in_paths = list(map(str, arg_to_iter(in_paths)))
 
     LOGGER.info(
-        "Merging items from %s into <%s> with Spark session %r",
+        "Merging items from %s with Spark session %r",
         f"[{len(in_paths) } paths]" if len(in_paths) > 10 else in_paths,
-        out_path,
         spark,
     )
-
-    fieldnames = clear_list(arg_to_iter(fieldnames))
-    fieldnames_exclude = frozenset(arg_to_iter(fieldnames_exclude))
-
-    if fieldnames and fieldnames_exclude:
-        LOGGER.warning(
-            "Both <fieldnames> and <fieldnames_exclude> were specified, please choose one"
-        )
 
     sort_fields = tuple(arg_to_iter(sort_fields))
     if sum(map(bool, (sort_keys, sort_latest, sort_fields))) > 1:
@@ -211,11 +198,53 @@ def merge_files(
         )
         data = data.sort(*sort_fields, ascending=not sort_descending)
 
-    data = data.drop("_key", *key_column_names, "_latest", *latest_column_names)
+    return data.drop("_key", *key_column_names, "_latest", *latest_column_names)
+
+
+def merge_files(
+    in_paths,
+    out_path,
+    keys="id",
+    key_types=None,
+    latest=None,
+    latest_types=None,
+    latest_min=None,
+    fieldnames=None,
+    fieldnames_exclude=None,
+    sort_keys=False,
+    sort_latest=False,
+    sort_fields=None,
+    sort_descending=False,
+    concat_output=False,
+    log_level=None,
+):
+    """ merge files into one """
+
+    data = merge_data(
+        in_paths=in_paths,
+        keys=keys,
+        key_types=key_types,
+        latest=latest,
+        latest_types=latest_types,
+        latest_min=latest_min,
+        sort_keys=sort_keys,
+        sort_latest=sort_latest,
+        sort_fields=sort_fields,
+        sort_descending=sort_descending,
+        log_level=log_level,
+    )
+
+    fieldnames = clear_list(arg_to_iter(fieldnames))
+    fieldnames_exclude = frozenset(arg_to_iter(fieldnames_exclude))
+
+    if fieldnames and fieldnames_exclude:
+        LOGGER.warning(
+            "Both <fieldnames> and <fieldnames_exclude> were specified, please choose one"
+        )
 
     columns = frozenset(data.columns) - fieldnames_exclude
     if fieldnames:
-        fieldnames = [column for column in fieldnames if column in columns]
+        fieldnames = [fieldname for fieldname in fieldnames if fieldname in columns]
         LOGGER.info("Only use columns: %s", fieldnames)
     else:
         fieldnames = sorted(columns)
