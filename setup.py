@@ -50,7 +50,6 @@ REQUIRED = (
     "jmespath",
     "pillow",
     "pympler",
-    "pyspark",
     "python-dotenv",
     "pytility[dates]",
     "pytrie",
@@ -65,6 +64,7 @@ REQUIRED = (
 # What packages are optional?
 EXTRAS = {
     "cloud": ("smart-open>=1.8.1",),
+    "merge": ("pyarrow<0.15", "pyspark[sql]>=2.4.0"),
 }
 
 # The rest you shouldn't have to touch too much :)
