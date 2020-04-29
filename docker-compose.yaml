@@ -124,7 +124,7 @@ services:
         stop_signal: SIGINT
 
     news:
-        image: news-scraper:0.17.16
+        image: news-scraper:0.17.18
         container_name: bg-scraper-news
         volumes:
             - ./feeds/news/output:/root/output
