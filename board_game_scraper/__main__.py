@@ -4,6 +4,7 @@
 
 import argparse
 import logging
+import os
 
 from datetime import timezone
 from pathlib import Path
@@ -68,6 +69,9 @@ def _parse_args():
     parser.add_argument("spider", help="TODO")
     parser.add_argument("--job-dir", "-j", help="TODO")
     parser.add_argument("--feeds-dir", "-f", help="TODO")
+    parser.add_argument(
+        "--file-tag", "-t", default=os.getenv("SCRAPER_FILE_TAG"), help="TODO"
+    )
     parser.add_argument("--dont-run-before", "-d", help="TODO")
     parser.add_argument(
         "--verbose",
@@ -94,7 +98,10 @@ def main():
     feeds_dir = Path(args.feeds_dir) if args.feeds_dir else base_dir / "feeds"
     feeds_dir = feeds_dir.resolve()
     feeds_dir_scraper = feeds_dir / args.spider
-    out_file = feeds_dir / "%(name)s" / "%(class)s" / "%(time)s.jl"
+    file_tag = normalize_space(args.file_tag)
+    out_file = feeds_dir / "%(name)s" / "%(class)s" / f"%(time)s{file_tag}.jl"
+
+    LOGGER.info("Output file will be <%s>", out_file)
 
     from_settings = job_dir_from_settings(settings)
     job_dir = (
