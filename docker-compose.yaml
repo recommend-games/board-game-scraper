@@ -124,7 +124,7 @@ services:
         stop_signal: SIGINT
 
     news:
-        image: news-scraper:0.17.18
+        image: news-scraper:0.17.19
         container_name: bg-scraper-news
         volumes:
             - ./feeds/news/output:/root/output
@@ -144,23 +144,23 @@ services:
         stop_signal: SIGINT
 
     # TODO make sure Spark works in container (#60)
-    news-update:
-        image: bg-merger:latest
-        container_name: bg-scraper-news-update
-        build:
-            dockerfile: Dockerfile-spark
-            context: '.'
-        # depends_on:
-        #     - spark-master
-        command: ['python', '-m', 'board_game_scraper.news', '--dont-run-before', 'feeds/news/.dont_run_before']
-        env_file: .env
-        # environment:
-        #     SPARK_MASTER: spark://spark-master:7077
-        volumes:
-            - ./feeds:/app/feeds
-        restart: always
-        stop_grace_period: 15m
-        stop_signal: SIGINT
+    # news-update:
+    #     image: bg-merger:latest
+    #     container_name: bg-scraper-news-update
+    #     build:
+    #         dockerfile: Dockerfile-spark
+    #         context: '.'
+    #     # depends_on:
+    #     #     - spark-master
+    #     command: ['python', '-m', 'board_game_scraper.news', '--dont-run-before', 'feeds/news/.dont_run_before']
+    #     env_file: .env
+    #     # environment:
+    #     #     SPARK_MASTER: spark://spark-master:7077
+    #     volumes:
+    #         - ./feeds:/app/feeds
+    #     restart: always
+    #     stop_grace_period: 15m
+    #     stop_signal: SIGINT
 
     # spark-master:
     #     image: bde2020/spark-master:2.4.5-hadoop2.7
