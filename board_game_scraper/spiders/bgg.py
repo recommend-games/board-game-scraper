@@ -226,7 +226,9 @@ class BggSpider(Spider):
     def _game_request(self, bgg_id, default=None, **kwargs):
         return next(self._game_requests(bgg_id, **kwargs), default)
 
-    def collection_request(self, user_name, *, meta=None, played=None, **kwargs):
+    def collection_request(
+        self, user_name, *, meta=None, played=None, from_request=None, **kwargs
+    ):
         """ make a collection request for that user """
 
         user_name = user_name.lower()
@@ -240,7 +242,8 @@ class BggSpider(Spider):
             played=played,
         )
 
-        request = Request(url, callback=self.parse_collection, **kwargs)
+        request_method = from_request.replace if from_request else Request
+        request = request_method(url=url, callback=self.parse_collection, **kwargs)
         if meta:
             request.meta.update(meta)
         request.meta["bgg_user_name"] = user_name
@@ -299,7 +302,7 @@ class BggSpider(Spider):
 
         return default
 
-    def _user_item_or_request(self, user_name, priority=3, **kwargs):
+    def _user_item_or_request(self, user_name, priority=3, from_request=None, **kwargs):
         if not user_name:
             return None
 
@@ -315,7 +318,8 @@ class BggSpider(Spider):
             return item
 
         url = self._api_url(action="user", name=user_name)
-        return Request(
+        request_method = from_request.replace if from_request else Request
+        return request_method(
             url=url,
             callback=partial(self.parse_user, item=item),
             meta={"item": item},
@@ -590,11 +594,16 @@ class BggSpider(Spider):
         if not extract_query_param(response.url, "played"):
             updated_at = response.xpath("/items/@pubdate").extract_first()
             yield self._user_item_or_request(
-                user_name, updated_at=updated_at, scraped_at=scraped_at
+                user_name,
+                updated_at=updated_at,
+                scraped_at=scraped_at,
+                from_request=response.request,
             )
 
             # explicitly fetch played games (not part of collection by default)
-            yield self.collection_request(user_name, played=1, priority=1)
+            yield self.collection_request(
+                user_name, played=1, priority=1, from_request=response.request
+            )
 
         games = response.xpath("/items/item")
         bgg_ids = games.xpath("@objectid").extract()
