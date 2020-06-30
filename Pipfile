@@ -20,7 +20,7 @@ pytility = {extras = ["dates"], version = "*"}
 pytrie = "*"
 pyyaml = "*"
 requests = "*"
-scrapy = "*"
+scrapy = "<2.1.0"
 scrapy-extensions = "*"
 smart-open = ">=1.8.1"
 twisted = "*"
