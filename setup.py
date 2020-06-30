@@ -56,7 +56,7 @@ REQUIRED = (
     "pytrie",
     "pyyaml",
     "requests",
-    "scrapy",
+    "scrapy<2.1.0",
     "scrapy-extensions",
     "twisted",
     "w3lib",
