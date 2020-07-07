@@ -82,11 +82,11 @@ class BgaSpider(Spider):
 
     def _game_requests(self, bga_id):
         if self.scrape_images:
-            yield self._api_url("game/images", {"game-id": bga_id}), self.parse_images
+            yield self._api_url("game/images", {"game_id": bga_id}), self.parse_images
         if self.scrape_videos:
-            yield self._api_url("game/videos", {"game-id": bga_id}), self.parse_videos
+            yield self._api_url("game/videos", {"game_id": bga_id}), self.parse_videos
         if self.scrape_reviews:
-            yield self._api_url("game/reviews", {"game-id": bga_id}), self.parse_reviews
+            yield self._api_url("game/reviews", {"game_id": bga_id}), self.parse_reviews
 
     # pylint: disable=no-self-use
     def _next_request_or_item(self, item, requests):
@@ -119,7 +119,7 @@ class BgaSpider(Spider):
     # pylint: disable=line-too-long
     def parse(self, response):
         """
-        @url https://api.boardgameatlas.com/api/search?client_id=SB1VGnDv7M&order-by=popularity&limit=100
+        @url https://api.boardgameatlas.com/api/search?client_id=8jfqHypg2l&order_by=popularity&limit=100
         @returns items 100 100
         @returns requests 1 1
         @scrapes name description url image_url bga_id scraped_at worst_rating best_rating
@@ -132,7 +132,7 @@ class BgaSpider(Spider):
         if games:
             skip = parse_int(extract_query_param(response.url, "skip")) or 0
             limit = parse_int(extract_query_param(response.url, "limit")) or 100
-            query = {"order-by": "popularity", "skip": skip + limit, "limit": limit}
+            query = {"order_by": "popularity", "skip": skip + limit, "limit": limit}
             yield Request(
                 url=self._api_url(query=query), callback=self.parse, priority=2
             )
@@ -191,7 +191,7 @@ class BgaSpider(Spider):
 
     def parse_images(self, response, item=None):
         """
-        @url https://api.boardgameatlas.com/api/game/images?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
+        @url https://api.boardgameatlas.com/api/game/images?client_id=8jfqHypg2l&game_id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes image_url
@@ -211,7 +211,7 @@ class BgaSpider(Spider):
 
     def parse_videos(self, response, item=None):
         """
-        @url https://api.boardgameatlas.com/api/game/videos?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
+        @url https://api.boardgameatlas.com/api/game/videos?client_id=8jfqHypg2l&game_id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes video_url
@@ -231,7 +231,7 @@ class BgaSpider(Spider):
     # pylint: disable=no-self-use
     def parse_reviews(self, response, item=None):
         """
-        @url https://api.boardgameatlas.com/api/game/reviews?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
+        @url https://api.boardgameatlas.com/api/game/reviews?client_id=8jfqHypg2l&game_id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes review_url
@@ -250,7 +250,7 @@ class BgaSpider(Spider):
 
     def parse_user_reviews(self, response):
         """
-        @url https://api.boardgameatlas.com/api/reviews?client_id=SB1VGnDv7M&limit=100
+        @url https://api.boardgameatlas.com/api/reviews?client_id=8jfqHypg2l&limit=100
         @returns items 100 100
         @returns requests 1 1
         @scrapes item_id bga_id bga_user_id bga_user_name
