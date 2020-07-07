@@ -22,7 +22,7 @@ from ..utils import (
     now,
 )
 
-API_URL = "https://www.boardgameatlas.com/api"
+API_URL = "https://api.boardgameatlas.com/api"
 
 
 def _extract_bga_id(item=None, response=None):
@@ -119,7 +119,7 @@ class BgaSpider(Spider):
     # pylint: disable=line-too-long
     def parse(self, response):
         """
-        @url https://www.boardgameatlas.com/api/search?client_id=SB1VGnDv7M&order-by=popularity&limit=100
+        @url https://api.boardgameatlas.com/api/search?client_id=SB1VGnDv7M&order-by=popularity&limit=100
         @returns items 100 100
         @returns requests 1 1
         @scrapes name description url image_url bga_id scraped_at worst_rating best_rating
@@ -191,7 +191,7 @@ class BgaSpider(Spider):
 
     def parse_images(self, response, item=None):
         """
-        @url https://www.boardgameatlas.com/api/game/images?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
+        @url https://api.boardgameatlas.com/api/game/images?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes image_url
@@ -211,7 +211,7 @@ class BgaSpider(Spider):
 
     def parse_videos(self, response, item=None):
         """
-        @url https://www.boardgameatlas.com/api/game/videos?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
+        @url https://api.boardgameatlas.com/api/game/videos?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes video_url
@@ -231,7 +231,7 @@ class BgaSpider(Spider):
     # pylint: disable=no-self-use
     def parse_reviews(self, response, item=None):
         """
-        @url https://www.boardgameatlas.com/api/game/reviews?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
+        @url https://api.boardgameatlas.com/api/game/reviews?client_id=SB1VGnDv7M&game-id=OIXt3DmJU0&limit=100
         @returns items 1 1
         @returns requests 0 0
         @scrapes review_url
@@ -250,7 +250,7 @@ class BgaSpider(Spider):
 
     def parse_user_reviews(self, response):
         """
-        @url https://www.boardgameatlas.com/api/reviews?client_id=SB1VGnDv7M&limit=100
+        @url https://api.boardgameatlas.com/api/reviews?client_id=SB1VGnDv7M&limit=100
         @returns items 100 100
         @returns requests 1 1
         @scrapes item_id bga_id bga_user_id bga_user_name
