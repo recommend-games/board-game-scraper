@@ -106,7 +106,7 @@ class BgaSpider(Spider):
         """ generate start requests """
 
         yield Request(
-            url=self._api_url(query={"order-by": "popularity"}),
+            url=self._api_url(query={"order_by": "popularity"}),
             callback=self.parse,
             priority=2,
         )
