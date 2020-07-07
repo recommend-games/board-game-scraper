@@ -1,4 +1,4 @@
-FROM python:3.7.7
+FROM python:3.7.8
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
@@ -9,7 +9,7 @@ RUN mkdir --parents /app
 WORKDIR /app
 
 RUN python3.7 -m pip install --upgrade \
-        pipenv==2018.11.26
+        pipenv==2020.6.2
 COPY Pipfile* ./
 RUN pipenv install --deploy --verbose
 
