@@ -101,6 +101,7 @@ def merge_files(
     latest=None,
     latest_types=None,
     latest_min=None,
+    latest_required=False,
     fieldnames=None,
     fieldnames_exclude=None,
     sort_keys=False,
@@ -169,13 +170,18 @@ def merge_files(
     ]
     latest_columns_str = (column.cast("string") for column in latest_columns)
 
-    data = data.na.drop(subset=keys).select(
+    drop_subset = keys + tuple(key_column_names)
+    if latest_required:
+        drop_subset += latest + tuple(latest_column_names)
+    LOGGER.info("Dropping rows without values in columns %s", drop_subset)
+
+    data = data.select(
         "*",
         *key_columns,
         array(*key_columns_str).alias("_key"),
         *latest_columns,
         array(*latest_columns_str).alias("_latest"),
-    )
+    ).dropna(how="any", subset=drop_subset)
 
     if latest_min is not None:
         LOGGER.info("Filter out items before %s", latest_min)
@@ -270,6 +276,12 @@ def _parse_args():
         "-m",
         help="minimum value for latest column, all other values will be ignored (days for dates)",
     )
+    parser.add_argument(
+        "--latest-required",
+        "-r",
+        action="store_true",
+        help="drop rows that do not have values in their latest column(s)",
+    )
     fields_group = parser.add_mutually_exclusive_group()
     fields_group.add_argument("--fields", "-f", nargs="+", help="output columns")
     fields_group.add_argument(
@@ -332,6 +344,7 @@ def main():
         latest=args.latest,
         latest_types=args.latest_types,
         latest_min=latest_min,
+        latest_required=args.latest_required,
         fieldnames=args.fields,
         fieldnames_exclude=args.fields_exclude,
         sort_keys=args.sort_keys,
