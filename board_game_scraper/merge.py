@@ -101,6 +101,7 @@ def merge_files(
     latest=None,
     latest_types=None,
     latest_min=None,
+    latest_required=False,
     fieldnames=None,
     fieldnames_exclude=None,
     sort_keys=False,
@@ -169,13 +170,18 @@ def merge_files(
     ]
     latest_columns_str = (column.cast("string") for column in latest_columns)
 
-    data = data.na.drop(subset=keys).select(
+    drop_subset = keys + tuple(key_column_names)
+    if latest_required:
+        drop_subset += latest + tuple(latest_column_names)
+    LOGGER.info("Dropping rows without values in columns %s", drop_subset)
+
+    data = data.select(
         "*",
         *key_columns,
         array(*key_columns_str).alias("_key"),
         *latest_columns,
         array(*latest_columns_str).alias("_latest"),
-    )
+    ).dropna(how="any", subset=drop_subset)
 
     if latest_min is not None:
         LOGGER.info("Filter out items before %s", latest_min)

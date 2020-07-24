@@ -58,6 +58,7 @@ def update_news(
         key_types="string",
         latest=("published_at", "scraped_at"),
         latest_types=("date", "date"),
+        latest_required=True,
         sort_latest=True,
         sort_descending=True,
         concat_output=True,
