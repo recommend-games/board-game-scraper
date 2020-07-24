@@ -276,6 +276,12 @@ def _parse_args():
         "-m",
         help="minimum value for latest column, all other values will be ignored (days for dates)",
     )
+    parser.add_argument(
+        "--latest-required",
+        "-r",
+        action="store_true",
+        help="drop rows that do not have values in their latest column(s)",
+    )
     fields_group = parser.add_mutually_exclusive_group()
     fields_group.add_argument("--fields", "-f", nargs="+", help="output columns")
     fields_group.add_argument(
@@ -338,6 +344,7 @@ def main():
         latest=args.latest,
         latest_types=args.latest_types,
         latest_min=latest_min,
+        latest_required=args.latest_required,
         fieldnames=args.fields,
         fieldnames_exclude=args.fields_exclude,
         sort_keys=args.sort_keys,
