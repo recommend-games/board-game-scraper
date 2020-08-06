@@ -2,15 +2,20 @@
 
 """Stop scraper, merge files, delete old files, and resume scraping."""
 
+import argparse
 import logging
 import subprocess
+import sys
 
 from pathlib import Path
 from time import sleep
 
+from scrapy.utils.project import get_project_settings
 from yaml import safe_load
 
 LOGGER = logging.getLogger(__name__)
+SETTINGS = get_project_settings()
+BASE_DIR = Path(SETTINGS.get("BASE_DIR") or ".").resolve()
 
 
 def _docker_container(name):
@@ -91,8 +96,10 @@ def _docker_compose(path, service):
     return {}
 
 
-def _stop_merge_start(spider, cool_down=None):
-    config = _docker_compose(path=Path() / "docker-compose.yaml", service=spider)
+def _stop_merge_start(spider, compose_file, cool_down=None):
+    LOGGER.info("Stopping, merging, and restarting spider <%s>", spider)
+
+    config = _docker_compose(path=compose_file, service=spider)
     container = config.get("container_name")
 
     _docker_stop(name=container)
@@ -110,8 +117,41 @@ def _stop_merge_start(spider, cool_down=None):
     _docker_start(name=container)
 
 
+def _parse_args():
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument("spiders", nargs="+", help="")
+    parser.add_argument(
+        "--compose-file", "-c", default=BASE_DIR / "docker-compose.yaml"
+    )
+    parser.add_argument("--cool-down", "-d", type=int, default=60, help="")
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=0,
+        help="log level (repeat for more verbosity)",
+    )
+
+    return parser.parse_args()
+
+
 def main():
     """Command line entry point."""
+
+    args = _parse_args()
+
+    logging.basicConfig(
+        stream=sys.stderr,
+        level=logging.DEBUG if args.verbose > 0 else logging.INFO,
+        format="%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s",
+    )
+
+    LOGGER.info(args)
+
+    for spider in args.spiders:
+        _stop_merge_start(
+            spider=spider, compose_file=args.compose_file, cool_down=args.cool_down
+        )
 
 
 if __name__ == "__main__":
