@@ -5,6 +5,11 @@
 import logging
 import subprocess
 
+from pathlib import Path
+from time import sleep
+
+from yaml import safe_load
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -72,6 +77,37 @@ def _docker_stop(name, timeout=120):
 
     LOGGER.warning("Unable to stop container <%s>", name)
     return False
+
+
+def _docker_compose(path, service):
+    path = Path(path).resolve()
+    LOGGER.info("Loading service <%s> from file <%s>", service, path)
+    try:
+        with open(path) as compose_file:
+            config = safe_load(compose_file)
+        return config["services"][service]
+    except Exception:
+        LOGGER.exception("Unable to load service <%s> from file <%s>", service, path)
+    return {}
+
+
+def _stop_merge_start(spider, cool_down=None):
+    config = _docker_compose(path=Path() / "docker-compose.yaml", service=spider)
+    container = config.get("container_name")
+
+    _docker_stop(name=container)
+
+    if cool_down:
+        LOGGER.info("Cooling down for %d seconds...", cool_down)
+        sleep(cool_down)
+
+    # TODO merge
+
+    if cool_down:
+        LOGGER.info("Cooling down for %d seconds...", cool_down)
+        sleep(cool_down)
+
+    _docker_start(name=container)
 
 
 def main():
