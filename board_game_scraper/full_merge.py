@@ -127,6 +127,10 @@ def _stop_merge_start(spider, compose_file, timeout=None, cool_down=None):
     config = _docker_compose(path=compose_file, service=spider)
     container = config.get("container_name")
 
+    if not container:
+        LOGGER.error("Unable to find container name for spider <%s>, aborting", spider)
+        return False
+
     timeout = _parse_timeout(timeout)
     if timeout is None:
         timeout = _parse_timeout(config.get("stop_grace_period"))
