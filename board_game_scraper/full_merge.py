@@ -7,16 +7,53 @@ import logging
 import subprocess
 import sys
 
+from datetime import timedelta
 from pathlib import Path
 from time import sleep
 
-from pytility import parse_float
+from pytility import parse_bool, parse_float
 from scrapy.utils.project import get_project_settings
 from yaml import safe_load
+
+from .utils import now
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS = get_project_settings()
 BASE_DIR = Path(SETTINGS.get("BASE_DIR") or ".").resolve()
+FEEDS_DIR = BASE_DIR / "feeds"
+DATA_DIR = (BASE_DIR / ".." / "board-game-data").resolve()
+
+
+def merge_config(
+    spider, item="GameItem", in_paths=None, out_path=None, full=False, **kwargs
+):
+    """Returns arguments for merging a given spider."""
+
+    curr_date = now()
+    curr_date_str = curr_date.strftime("%Y-%m-%dT%H-%M-%S")
+
+    kwargs["in_paths"] = in_paths or FEEDS_DIR / spider / item / "*"
+    kwargs.setdefault("keys", f"{spider}_id")
+    kwargs.setdefault("key_types", "int" if spider in ("bgg", "luding") else "str")
+    kwargs.setdefault("latest", "scraped_at")
+    kwargs.setdefault("latest_types", "date")
+    kwargs.setdefault("latest_min", curr_date - timedelta(days=30))
+    kwargs.setdefault("concat_output", True)
+
+    if parse_bool(full):
+        kwargs["out_path"] = (
+            out_path or FEEDS_DIR / spider / item / f"{curr_date_str}-merged.jl"
+        )
+
+    else:
+        kwargs["out_path"] = out_path or DATA_DIR / "scraped" / f"{spider}_{item}.jl"
+        kwargs.setdefault(
+            "fieldnames_exclude",
+            ("image_file", "rules_file", "published_at", "updated_at", "scraped_at"),
+        )
+        kwargs.setdefault("sort_keys", True)
+
+    return kwargs
 
 
 def _parse_timeout(timeout):
