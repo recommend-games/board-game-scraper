@@ -15,6 +15,7 @@ from pytility import parse_bool, parse_float
 from scrapy.utils.project import get_project_settings
 from yaml import safe_load
 
+from .merge import merge_files
 from .utils import now
 
 LOGGER = logging.getLogger(__name__)
@@ -241,11 +242,17 @@ def _docker_compose(path, service):
     return {}
 
 
-def _stop_merge_start(spider, compose_file, timeout=None, cool_down=None):
-    LOGGER.info("Stopping, merging, and restarting spider <%s>", spider)
+def _stop_merge_start(spider, compose_file, full=True, timeout=None, cool_down=None):
+    scraper_name = spider.translate({ord("-"): "_"})
+    docker_name = spider.translate({ord("_"): "-"})
+    LOGGER.info(
+        "Stopping, merging, and restarting spider <%s> / <%s>",
+        scraper_name,
+        docker_name,
+    )
 
-    config = _docker_compose(path=compose_file, service=spider)
-    container = config.get("container_name")
+    docker_config = _docker_compose(path=compose_file, service=docker_name)
+    container = docker_config.get("container_name")
 
     if not container:
         LOGGER.error("Unable to find container name for spider <%s>, aborting", spider)
@@ -253,17 +260,22 @@ def _stop_merge_start(spider, compose_file, timeout=None, cool_down=None):
 
     timeout = _parse_timeout(timeout)
     if timeout is None:
-        timeout = _parse_timeout(config.get("stop_grace_period"))
+        timeout = _parse_timeout(docker_config.get("stop_grace_period"))
 
-    if not _docker_stop(name=container, timeout=timeout):
-        LOGGER.error("Unable to stop <%s>, aborting", container)
-        return False
+    # TODO add force option
+    # if not _docker_stop(name=container, timeout=timeout):
+    #     LOGGER.error("Unable to stop <%s>, aborting", container)
+    #     return False
+
+    _docker_stop(name=container, timeout=timeout)
 
     if cool_down:
         LOGGER.info("Cooling down for %d seconds...", cool_down)
         sleep(cool_down)
 
-    # TODO merge
+    for config in merge_configs(spider=scraper_name, full=full):
+        LOGGER.info("Running merge with config %r", config)
+        merge_files(**config)
 
     if cool_down:
         LOGGER.info("Cooling down for %d seconds...", cool_down)
