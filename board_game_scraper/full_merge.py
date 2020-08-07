@@ -56,6 +56,89 @@ def merge_config(
     return kwargs
 
 
+def merge_configs(spider, full=False):
+    """Yields configs for all items in a given spider."""
+
+    full = parse_bool(full)
+
+    if spider == "bga":
+        yield merge_config(spider="bga", item="GameItem", full=full)
+        yield merge_config(
+            spider="bga",
+            item="RatingItem",
+            full=full,
+            keys=("bga_user_id", "bga_id"),
+            fieldnames_exclude=("bgg_user_play_count",)
+            if parse_bool(full)
+            else ("bgg_user_play_count", "published_at", "updated_at", "scraped_at"),
+        )
+        return
+
+    if spider == "bgg":
+        yield merge_config(spider="bgg", item="GameItem", full=full)
+        yield merge_config(
+            spider="bgg",
+            item="UserItem",
+            full=full,
+            keys="bgg_user_name",
+            key_types="istr",
+            fieldnames_exclude=None if full else ("published_at", "scraped_at"),
+        )
+        yield merge_config(
+            spider="bgg",
+            item="RatingItem",
+            full=full,
+            keys=("bgg_user_name", "bgg_id"),
+            key_types=("istr", "int"),
+        )
+        return
+
+    if spider == "bgg_hotness":
+        yield merge_config(
+            spider="bgg_hotness",
+            item="GameItem",
+            full=full,
+            keys=("published_at", "bgg_id"),
+            key_types=("date", "int"),
+            latest_min=None,
+            fieldnames=None
+            if full
+            else ("published_at", "rank", "bgg_id", "name", "year", "image_url",),
+            fieldnames_exclude=None,
+            sort_keys=False,
+            sort_fields=("published_at", "rank"),
+        )
+        return
+
+    if spider == "bgg_rankings":
+        yield merge_config(
+            spider="bgg_rankings",
+            item="GameItem",
+            full=full,
+            keys=("published_at", "bgg_id"),
+            key_types=("date", "int"),
+            latest_min=now() - timedelta(days=7),
+            fieldnames=None
+            if full
+            else (
+                "published_at",
+                "bgg_id",
+                "rank",
+                "name",
+                "year",
+                "num_votes",
+                "bayes_rating",
+                "avg_rating",
+            ),
+            fieldnames_exclude=None,
+            sort_keys=False,
+            sort_fields=("published_at", "rank"),
+        )
+        return
+
+    yield merge_config(spider=spider, item="GameItem", full=full)
+
+
 def _parse_timeout(timeout):
     if timeout is None or timeout == "":
         return None
