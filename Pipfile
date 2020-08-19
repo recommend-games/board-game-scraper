@@ -28,7 +28,9 @@ twisted = "*"
 
 [dev-packages]
 black = "==19.10b0"
+docker = "*"
 mypy = "*"
 psutil = "*"
 pylint = "*"
+pytimeparse = "*"
 twine = "*"

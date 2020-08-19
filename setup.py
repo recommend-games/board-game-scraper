@@ -156,6 +156,7 @@ setup(
         "console_scripts": (
             "bg-scraper=board_game_scraper.__main__:main",
             "bg-merge=board_game_scraper.merge:main",
+            "bg-full-merge=board_game_scraper.full_merge:main",
             "bg-news=board_game_scraper.news:main",
         ),
     },
