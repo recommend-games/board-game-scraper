@@ -137,6 +137,8 @@ def merge_configs(spider, full=False):
         )
         return
 
+    # TODO news merge config
+
     yield merge_config(spider=spider, item="GameItem", full=full)
 
 
