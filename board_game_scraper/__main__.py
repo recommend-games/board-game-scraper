@@ -69,6 +69,7 @@ def _parse_args():
     parser.add_argument("spider", help="TODO")
     parser.add_argument("--job-dir", "-j", help="TODO")
     parser.add_argument("--feeds-dir", "-f", help="TODO")
+    parser.add_argument("--feeds-subdir", "-F", help="TODO")
     parser.add_argument(
         "--file-tag", "-t", default=os.getenv("SCRAPER_FILE_TAG"), help="TODO"
     )
@@ -97,9 +98,11 @@ def main():
     cache_dir = base_dir / ".scrapy" / "httpcache"
     feeds_dir = Path(args.feeds_dir) if args.feeds_dir else base_dir / "feeds"
     feeds_dir = feeds_dir.resolve()
-    feeds_dir_scraper = feeds_dir / args.spider
+    feeds_dir_scraper = (
+        feeds_dir / args.feeds_subdir if args.feeds_subdir else feeds_dir / args.spider
+    )
     file_tag = normalize_space(args.file_tag)
-    out_file = feeds_dir / "%(name)s" / "%(class)s" / f"%(time)s{file_tag}.jl"
+    out_file = feeds_dir_scraper / "%(class)s" / f"%(time)s{file_tag}.jl"
 
     LOGGER.info("Output file will be <%s>", out_file)
 

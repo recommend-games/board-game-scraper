@@ -67,11 +67,12 @@ services:
         image: bg-scraper:latest
         container_name: bg-scraper-bgg-geeklist
         build: '.'
-        command: ['python', '-m', 'board_game_scraper', 'bgg_geeklist']
+        command: ['python', '-m', 'board_game_scraper', 'bgg_geeklist', '--feeds-subdir', 'bgg_rankings']
         env_file: .env
         environment:
             CLOSESPIDER_TIMEOUT: 129600 # 36 hours
             DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-geeklist${SCRAPER_FILE_TAG}'
         volumes:
             - ./feeds:/app/feeds
         restart: always
