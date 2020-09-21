@@ -2,12 +2,21 @@
 
 """BoardGameGeek GeekList spider."""
 
-from pytility import parse_int
+import re
+
+from datetime import timezone
+
+from pytility import parse_date, parse_int
 from scrapy import Spider
 
 from ..items import GameItem
 from ..loaders import GameLoader
 from ..utils import extract_bgg_id, now
+
+TITLE_REGEX = re.compile(
+    r"^\s*bgg\s*top.*from\s*(\d+\s*[a-z]+\s*\d+)\s*to\s*(\d+\s*[a-z]+\s*\d+).*$",
+    re.IGNORECASE,
+)
 
 
 class BggGeekListSpider(Spider):
@@ -67,10 +76,9 @@ class BggGeekListSpider(Spider):
 
     def parse(self, response):
         """
-        @url TODO
-        @returns TODO
-        @returns TODO
-        @scrapes TODO
+        @url https://www.boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list
+        @returns items 0 0
+        @returns requests 26
         """
 
         for next_page in response.xpath(
@@ -82,5 +90,25 @@ class BggGeekListSpider(Spider):
 
         scraped_at = now()
 
+        for title in (
+            response.xpath("/html/head/title/text()").extract()
+            + response.css("div.geeklist_title::text").extract()
+        ):
+            match = TITLE_REGEX.match(title)
+            published_at = (
+                parse_date(match.group(2), tzinfo=timezone.utc) if match else None
+            )
+            if published_at:
+                break
+        else:
+            published_at = None
+
         for item in response.xpath("//*[@data-objecttype = 'listitem']"):
-            yield self.parse_item(item=item, response=response, scraped_at=scraped_at)
+            result = self.parse_item(
+                item=item,
+                response=response,
+                published_at=published_at,
+                scraped_at=scraped_at,
+            )
+            if result:
+                yield result
