@@ -35,7 +35,7 @@ class BggGeekListSpider(Spider):
         assert bgg_id
 
         ldr = GameLoader(
-            item=GameItem(bgg_id=bgg_id, **kwargs), selector=item, response=response
+            item=GameItem(bgg_id=bgg_id, **kwargs), selector=item, response=response,
         )
 
         ldr.add_value("name", title.xpath(".//a[2]/text()").extract_first())
@@ -49,14 +49,12 @@ class BggGeekListSpider(Spider):
         url = item.css(".geeklist_item_title").xpath(".//a[2]/@href").extract_first()
 
         if url and "/geeklist/" in url:
-            return response.follow(url=url, callback=self.parse,)
+            return response.follow(url=url, callback=self.parse)
 
         return None
 
     def parse_item(self, item, response, **kwargs):
         """Decide on the item type and call corresponding method."""
-
-        # TODO decide what type and call corresponding method
 
         rank_text = (
             item.css(".geeklist_item_title").xpath(".//a[1]/text()").extract_first()
@@ -74,6 +72,13 @@ class BggGeekListSpider(Spider):
         @returns TODO
         @scrapes TODO
         """
+
+        for next_page in response.xpath(
+            "//a[contains(@title, 'page')]/@href"
+        ).extract():
+            yield response.follow(
+                url=next_page, callback=self.parse,
+            )
 
         scraped_at = now()
 
