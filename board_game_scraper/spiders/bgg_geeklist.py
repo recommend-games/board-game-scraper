@@ -29,6 +29,10 @@ class BggGeekListSpider(Spider):
     )
     item_classes = (GameItem,)
 
+    # exclude Hall of Fame (197551) and The Thing from the Future (167330)
+    # as they are not part of the rankings
+    exclude_bgg_ids = frozenset((197551, 167330))
+
     custom_settings = {
         "DOWNLOAD_DELAY": 0.5,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
@@ -49,6 +53,9 @@ class BggGeekListSpider(Spider):
             if bgg_id:
                 break
         else:
+            return None
+
+        if bgg_id in self.exclude_bgg_ids:
             return None
 
         assert bgg_id
