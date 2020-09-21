@@ -63,6 +63,21 @@ services:
         stop_grace_period: 15m
         stop_signal: SIGINT
 
+    bgg-geeklist:
+        image: bg-scraper:latest
+        container_name: bg-scraper-bgg-geeklist
+        build: '.'
+        command: ['python', '-m', 'board_game_scraper', 'bgg_geeklist']
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+        volumes:
+            - ./feeds:/app/feeds
+        restart: always
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
     dbpedia:
         image: bg-scraper:latest
         container_name: bg-scraper-dbpedia
