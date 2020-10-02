@@ -299,7 +299,10 @@ def _parse_args():
     )
     sort_group.add_argument("--sort-fields", nargs="+", help="sort output by columns")
     parser.add_argument(
-        "--sort-desc", "-D", action="store_true", help="sort descending",
+        "--sort-desc",
+        "-D",
+        action="store_true",
+        help="sort descending",
     )
     parser.add_argument(
         "--concat", "-c", action="store_true", help="concatenate output into one file"

@@ -27,7 +27,10 @@ RESUMABLE_STATES = frozenset(("shutdown", "closespider_timeout"))
 
 
 def _find_states(
-    path_dir, state_file=".state", delete="finished", delete_non_state=False,
+    path_dir,
+    state_file=".state",
+    delete="finished",
+    delete_non_state=False,
 ):
     path_dir = Path(path_dir).resolve()
     delete = frozenset(arg_to_iter(delete))

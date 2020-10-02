@@ -61,7 +61,9 @@ class BggGeekListSpider(Spider):
         assert bgg_id
 
         ldr = GameLoader(
-            item=GameItem(bgg_id=bgg_id, **kwargs), selector=item, response=response,
+            item=GameItem(bgg_id=bgg_id, **kwargs),
+            selector=item,
+            response=response,
         )
 
         ldr.add_value("name", title.xpath(".//a[2]/text()").extract_first())
@@ -87,9 +89,15 @@ class BggGeekListSpider(Spider):
         )
         rank = parse_int(rank_text[:-1]) if rank_text else None
 
-        return self.parse_game(
-            item=item, response=response, rank=rank, **kwargs,
-        ) or self.parse_geeklist(item=item, response=response)
+        return (
+            self.parse_game(
+                item=item,
+                response=response,
+                rank=rank,
+                **kwargs,
+            )
+            or self.parse_geeklist(item=item, response=response)
+        )
 
     def parse(self, response):
         """
@@ -102,7 +110,8 @@ class BggGeekListSpider(Spider):
             "//a[contains(@title, 'page')]/@href"
         ).extract():
             yield response.follow(
-                url=next_page, callback=self.parse,
+                url=next_page,
+                callback=self.parse,
             )
 
         scraped_at = now()

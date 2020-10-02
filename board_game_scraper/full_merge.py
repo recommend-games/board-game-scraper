@@ -104,7 +104,14 @@ def merge_configs(spider, full=False):
             latest_min=None,
             fieldnames=None
             if full
-            else ("published_at", "rank", "bgg_id", "name", "year", "image_url",),
+            else (
+                "published_at",
+                "rank",
+                "bgg_id",
+                "name",
+                "year",
+                "image_url",
+            ),
             fieldnames_exclude=None,
             sort_keys=False,
             sort_fields=("published_at", "rank"),

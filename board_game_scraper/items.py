@@ -463,7 +463,9 @@ class UserItem(TypedItem):
     JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
 
     item_id = Field(
-        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
+        dtype=int,
+        dtype_convert=parse_int,
+        input_processor=POS_INT_PROCESSOR,
     )
 
     bgg_user_name = Field(
