@@ -81,7 +81,13 @@ def _parse_date(date, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
 
 
 def _extract_date(url, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
-    url = parse_url(url, ("archive.org", "web.archive.org",),)
+    url = parse_url(
+        url,
+        (
+            "archive.org",
+            "web.archive.org",
+        ),
+    )
 
     if not url:
         return None
@@ -238,7 +244,9 @@ class BggRankingsSpider(Spider):
 
             ldr = GameLoader(
                 item=GameItem(
-                    bgg_id=bgg_id, published_at=published_at, scraped_at=scraped_at,
+                    bgg_id=bgg_id,
+                    published_at=published_at,
+                    scraped_at=scraped_at,
                 ),
                 selector=row,
                 response=response,

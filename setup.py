@@ -32,10 +32,14 @@ URL_HOMEPAGE = "https://recommend.games/"
 URL_DOCUMENTATION = (
     "https://gitlab.com/recommend.games/board-game-scraper/blob/master/README.md"
 )
-URL_FUNDING = None
-URL_THANKS = None
+URL_FUNDING = "https://paypal.me/mschepke"
+URL_THANKS = "https://saythanks.io/to/mk.schepke%40gmail.com"
 URL_SOURCE = "https://gitlab.com/recommend.games/board-game-scraper"
 URL_TRACKER = "https://gitlab.com/recommend.games/board-game-scraper/issues"
+URL_EXAMPLES = None
+URL_CHANGELOG = None
+URL_MAILING = None
+URL_TWITTER = "https://twitter.com/recommend_games"
 EMAIL = "markus@recommend.games"
 AUTHOR = "Markus Shepherd"
 REQUIRES_PYTHON = ">=3.6.0"
@@ -143,10 +147,14 @@ setup(
     url=URL_HOMEPAGE,
     project_urls={
         "Documentation": URL_DOCUMENTATION,
-        # "Funding": URL_FUNDING,
-        # "Say Thanks!": URL_THANKS,
+        "Funding": URL_FUNDING,
+        "Say Thanks!": URL_THANKS,
         "Source": URL_SOURCE,
         "Tracker": URL_TRACKER,
+        # "Examples": URL_EXAMPLES,
+        # "Changelog": URL_CHANGELOG,
+        # "Mailing List": URL_MAILING,
+        "Twitter": URL_TWITTER,
     },
     python_requires=REQUIRES_PYTHON,
     packages=find_packages(exclude=("tests", "*.tests", "*.tests.*", "tests.*")),
