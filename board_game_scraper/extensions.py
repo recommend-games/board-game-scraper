@@ -14,7 +14,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.job import job_dir
 from scrapy_extensions import LoopingExtension
 
-from .utils import now
+from .utils import now, pubsub_client
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,13 +62,11 @@ class PullQueueExtension(LoopingExtension):
         prevent_rescrape_for=None,
         pull_timeout=10,
     ):
-        try:
-            from google.cloud import pubsub
+        self.client = pubsub_client()
 
-            self.client = pubsub.SubscriberClient()
-        except Exception as exc:
-            LOGGER.exception("Google Cloud Pub/Sub Client could not be initialised")
-            raise NotConfigured from exc
+        if not self.client:
+            LOGGER.error("Google Cloud Pub/Sub Client could not be initialised")
+            raise NotConfigured
 
         # pylint: disable=no-member
         self.subscription_path = self.client.subscription_path(project, subscription)

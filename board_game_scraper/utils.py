@@ -8,6 +8,7 @@ import os
 import re
 
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
@@ -393,3 +394,18 @@ def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
         "spielen_id": clear_list(map(extract_spielen_id, urls)),
         "bga_id": clear_list(map(extract_bga_id, urls)),
     }
+
+
+@lru_cache(maxsize=8)
+def pubsub_client():
+    """Google Cloud PubSub client."""
+
+    try:
+        from google.cloud import pubsub
+
+        return pubsub.SubscriberClient()
+
+    except Exception:
+        LOGGER.exception("unable to initialise PubSub client")
+
+    return None
