@@ -3,17 +3,63 @@
 """TODO."""
 
 import argparse
+import csv
 import logging
+import os
 import sys
 
 from pathlib import Path
+
+from pytility import normalize_space
+
+try:
+    # pylint: disable=redefined-builtin
+    from smart_open import open
+except ImportError:
+    pass
+
+from .utils import pubsub_client
 
 LOGGER = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _process_messages(messages, output, encoding="utf-8"):
+    writer = csv.writer(output)
+    writer.writerow(("date", "user"))
+    for message in messages:
+        date = message.message.publish_time.replace(nanosecond=0).isoformat()
+        user = normalize_space(message.message.data.decode(encoding)).lower()
+        writer.writerow((date, user))
+        yield message.ack_id
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description="TODO.")
+    parser.add_argument(
+        "--project",
+        "-p",
+        default=os.getenv("PULL_QUEUE_PROJECT"),
+        help="Google Cloud project",
+    )
+    parser.add_argument(
+        "--subscription",
+        "-s",
+        default=os.getenv("PULL_QUEUE_SUBSCRIPTION"),
+        help="Google Cloud PubSub subscription",
+    )
+    parser.add_argument(
+        "--out-file",
+        "-o",
+        help="Output location",
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=0,
+        help="log level (repeat for more verbosity)",
+    )
 
     return parser.parse_args()
 
@@ -30,6 +76,29 @@ def main():
     )
 
     LOGGER.info(args)
+
+    client = pubsub_client()
+    subscription_path = client.subscription_path(args.project, args.subscription)
+
+    response = client.pull(
+        subscription=subscription_path,
+        max_messages=1000,
+        return_immediately=False,
+        timeout=10,
+    )
+
+    if not args.out_file or args.out_file == "-":
+        ack_ids = tuple(_process_messages(response.received_messages, sys.stdout))
+    else:
+        with open(args.out_file, "w", newline="") as out_file:
+            ack_ids = tuple(_process_messages(response.received_messages, out_file))
+
+    LOGGER.info("%d message(s) succesfully processed", len(ack_ids))
+
+    # if ack_ids:
+    #     client.acknowledge(subscription=subscription_path, ack_ids=ack_ids)
+
+    LOGGER.info("Done.")
 
 
 if __name__ == "__main__":
