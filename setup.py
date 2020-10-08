@@ -166,6 +166,7 @@ setup(
             "bg-merge=board_game_scraper.merge:main",
             "bg-full-merge=board_game_scraper.full_merge:main",
             "bg-news=board_game_scraper.news:main",
+            "bg-pull=board_game_scraper.pubsub_pull:main",
         ),
     },
     install_requires=REQUIRED,

@@ -22,7 +22,7 @@ pyyaml = "*"
 requests = "*"
 scrapy = "<2.1.0"
 scrapy-extensions = "*"
-smart-open = ">=1.8.1"
+smart-open = {extras = ["all"], version = ">=1.8.1"}
 twisted = "*"
 "w3lib" = "*"
 
