@@ -47,7 +47,9 @@ def _process_messages(messages, output, header=False, encoding="utf-8"):
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="Pull logs from Google Cloud PubSub queue.")
+    parser = argparse.ArgumentParser(
+        description="Pull logs from Google Cloud PubSub queue."
+    )
     parser.add_argument(
         "--project",
         "-p",
@@ -57,7 +59,7 @@ def _parse_args():
     parser.add_argument(
         "--subscription",
         "-s",
-        default=os.getenv("PULL_QUEUE_SUBSCRIPTION"),
+        default=os.getenv("PULL_QUEUE_SUBSCRIPTION_LOGS"),
         help="Google Cloud PubSub subscription",
     )
     parser.add_argument(
@@ -120,6 +122,10 @@ def main():
     )
 
     LOGGER.info(args)
+
+    if not args.project or not args.subscription:
+        LOGGER.error("Google Cloud PubSub project and subscription are required")
+        sys.exit(1)
 
     if args.sleep:
         LOGGER.info("going to sleep for %.1f seconds", args.sleep)
