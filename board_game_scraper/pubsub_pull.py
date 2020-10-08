@@ -98,17 +98,22 @@ def main():
     LOGGER.info(args)
 
     client = pubsub_client()
-
     # pylint: disable=no-member
     subscription_path = client.subscription_path(args.project, args.subscription)
 
     while True:
-        response = client.pull(
-            subscription=subscription_path,
-            max_messages=args.max_messages,
-            return_immediately=False,
-            timeout=args.timeout,
-        )
+        LOGGER.info("pulling subscription <%s>", subscription_path)
+
+        try:
+            response = client.pull(
+                subscription=subscription_path,
+                max_messages=args.max_messages,
+                return_immediately=False,
+                timeout=args.timeout,
+            )
+        except Exception:
+            LOGGER.info("subscription <%s> timed out", subscription_path)
+            break
 
         if not response or not response.received_messages:
             LOGGER.info(
@@ -119,12 +124,19 @@ def main():
         if not args.out_file or args.out_file == "-":
             ack_ids = tuple(_process_messages(response.received_messages, sys.stdout))
         else:
+            # TODO format timestamp and index
+            LOGGER.info("writing results to <%s>", args.out_file)
             with open(args.out_file, "w", newline="") as out_file:
                 ack_ids = tuple(_process_messages(response.received_messages, out_file))
 
         LOGGER.info("%d message(s) succesfully processed", len(ack_ids))
 
         if ack_ids and not args.no_ack:
+            LOGGER.info(
+                "acknowledge %d message(s) in subscription <%s>",
+                len(ack_ids),
+                subscription_path,
+            )
             client.acknowledge(subscription=subscription_path, ack_ids=ack_ids)
 
     LOGGER.info("Done.")
