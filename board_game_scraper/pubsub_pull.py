@@ -54,6 +54,12 @@ def _parse_args():
         help="Output location",
     )
     parser.add_argument(
+        "--no-ack",
+        "-n",
+        action="store_true",
+        help="do not acknowledge messages to subscription",
+    )
+    parser.add_argument(
         "--verbose",
         "-v",
         action="count",
@@ -78,6 +84,8 @@ def main():
     LOGGER.info(args)
 
     client = pubsub_client()
+
+    # pylint: disable=no-member
     subscription_path = client.subscription_path(args.project, args.subscription)
 
     response = client.pull(
@@ -95,8 +103,8 @@ def main():
 
     LOGGER.info("%d message(s) succesfully processed", len(ack_ids))
 
-    # if ack_ids:
-    #     client.acknowledge(subscription=subscription_path, ack_ids=ack_ids)
+    if ack_ids and not args.no_ack:
+        client.acknowledge(subscription=subscription_path, ack_ids=ack_ids)
 
     LOGGER.info("Done.")
 
