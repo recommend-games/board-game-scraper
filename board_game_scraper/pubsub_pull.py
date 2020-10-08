@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 
+from itertools import count
 from pathlib import Path
 
 from pytility import normalize_space
@@ -18,20 +19,30 @@ try:
 except ImportError:
     pass
 
-from .utils import pubsub_client
+from .utils import now, pubsub_client
 
 LOGGER = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-def _process_messages(messages, output, encoding="utf-8"):
+def _process_messages(messages, output, header=False, encoding="utf-8"):
     writer = csv.writer(output)
-    writer.writerow(("date", "user"))
+
+    if header:
+        writer.writerow(("date", "user"))
+
     for message in messages:
-        date = message.message.publish_time.replace(nanosecond=0).isoformat()
-        user = normalize_space(message.message.data.decode(encoding)).lower()
-        writer.writerow((date, user))
-        yield message.ack_id
+        try:
+            date = message.message.publish_time.replace(nanosecond=0).isoformat()
+            user = normalize_space(message.message.data.decode(encoding)).lower()
+            if date and user:
+                writer.writerow((date, user))
+                yield message.ack_id
+            else:
+                LOGGER.error("there was a problem processing message %r", message)
+
+        except Exception:
+            LOGGER.exception("unable to process message %r", message)
 
 
 def _parse_args():
@@ -49,9 +60,15 @@ def _parse_args():
         help="Google Cloud PubSub subscription",
     )
     parser.add_argument(
-        "--out-file",
+        "--out-path",
         "-o",
         help="Output location",
+    )
+    parser.add_argument(
+        "--header",
+        "-H",
+        action="store_true",
+        help="include CSV header",
     )
     parser.add_argument(
         "--batch-size",
@@ -101,8 +118,8 @@ def main():
     # pylint: disable=no-member
     subscription_path = client.subscription_path(args.project, args.subscription)
 
-    while True:
-        LOGGER.info("pulling subscription <%s>", subscription_path)
+    for i in count():
+        LOGGER.info("#%d: pulling subscription <%s>", i, subscription_path)
 
         try:
             response = client.pull(
@@ -122,12 +139,26 @@ def main():
             break
 
         if not args.out_file or args.out_file == "-":
-            ack_ids = tuple(_process_messages(response.received_messages, sys.stdout))
+            ack_ids = tuple(
+                _process_messages(
+                    messages=response.received_messages,
+                    output=sys.stdout,
+                    header=args.header and (i == 0),
+                )
+            )
         else:
-            # TODO format timestamp and index
-            LOGGER.info("writing results to <%s>", args.out_file)
-            with open(args.out_file, "w", newline="") as out_file:
-                ack_ids = tuple(_process_messages(response.received_messages, out_file))
+            out_path = args.out_path.format(
+                number=i, time=now().strftime("%Y-%m-%dT%H-%M-%S")
+            )
+            LOGGER.info("writing results to <%s>", out_path)
+            with open(out_path, "w", newline="") as out_file:
+                ack_ids = tuple(
+                    _process_messages(
+                        messages=response.received_messages,
+                        output=out_file,
+                        header=args.header,
+                    )
+                )
 
         LOGGER.info("%d message(s) succesfully processed", len(ack_ids))
 
