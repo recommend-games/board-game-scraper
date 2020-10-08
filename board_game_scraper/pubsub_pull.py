@@ -54,6 +54,20 @@ def _parse_args():
         help="Output location",
     )
     parser.add_argument(
+        "--batch-size",
+        "-b",
+        type=int,
+        default=1000,
+        help="maximum batch size (max messages per pull and file)",
+    )
+    parser.add_argument(
+        "--timeout",
+        "-t",
+        type=float,
+        default=60,
+        help="timeout for a pull in seconds",
+    )
+    parser.add_argument(
         "--no-ack",
         "-n",
         action="store_true",
@@ -91,9 +105,9 @@ def main():
     while True:
         response = client.pull(
             subscription=subscription_path,
-            max_messages=1000,
+            max_messages=args.max_messages,
             return_immediately=False,
-            timeout=10,
+            timeout=args.timeout,
         )
 
         if not response or not response.received_messages:
