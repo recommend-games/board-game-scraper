@@ -88,23 +88,30 @@ def main():
     # pylint: disable=no-member
     subscription_path = client.subscription_path(args.project, args.subscription)
 
-    response = client.pull(
-        subscription=subscription_path,
-        max_messages=1000,
-        return_immediately=False,
-        timeout=10,
-    )
+    while True:
+        response = client.pull(
+            subscription=subscription_path,
+            max_messages=1000,
+            return_immediately=False,
+            timeout=10,
+        )
 
-    if not args.out_file or args.out_file == "-":
-        ack_ids = tuple(_process_messages(response.received_messages, sys.stdout))
-    else:
-        with open(args.out_file, "w", newline="") as out_file:
-            ack_ids = tuple(_process_messages(response.received_messages, out_file))
+        if not response or not response.received_messages:
+            LOGGER.info(
+                "nothing to be pulled from subscription <%s>", subscription_path
+            )
+            break
 
-    LOGGER.info("%d message(s) succesfully processed", len(ack_ids))
+        if not args.out_file or args.out_file == "-":
+            ack_ids = tuple(_process_messages(response.received_messages, sys.stdout))
+        else:
+            with open(args.out_file, "w", newline="") as out_file:
+                ack_ids = tuple(_process_messages(response.received_messages, out_file))
 
-    if ack_ids and not args.no_ack:
-        client.acknowledge(subscription=subscription_path, ack_ids=ack_ids)
+        LOGGER.info("%d message(s) succesfully processed", len(ack_ids))
+
+        if ack_ids and not args.no_ack:
+            client.acknowledge(subscription=subscription_path, ack_ids=ack_ids)
 
     LOGGER.info("Done.")
 
