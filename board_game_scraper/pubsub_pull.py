@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""TODO."""
+"""Pull logs from Google Cloud PubSub queue."""
 
 import argparse
 import csv
@@ -47,7 +47,7 @@ def _process_messages(messages, output, header=False, encoding="utf-8"):
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="TODO.")
+    parser = argparse.ArgumentParser(description="Pull logs from Google Cloud PubSub queue.")
     parser.add_argument(
         "--project",
         "-p",
@@ -109,7 +109,7 @@ def _parse_args():
 
 
 def main():
-    """TODO."""
+    """Pull logs from Google Cloud PubSub queue."""
 
     args = _parse_args()
 
