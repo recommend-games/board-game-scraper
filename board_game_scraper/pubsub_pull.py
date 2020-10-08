@@ -124,7 +124,7 @@ def main():
         try:
             response = client.pull(
                 subscription=subscription_path,
-                max_messages=args.max_messages,
+                max_messages=args.batch_size,
                 return_immediately=False,
                 timeout=args.timeout,
             )
@@ -138,7 +138,7 @@ def main():
             )
             break
 
-        if not args.out_file or args.out_file == "-":
+        if not args.out_path or args.out_path == "-":
             ack_ids = tuple(
                 _process_messages(
                     messages=response.received_messages,
