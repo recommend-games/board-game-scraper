@@ -10,6 +10,7 @@ import sys
 
 from itertools import count
 from pathlib import Path
+from time import sleep
 
 from pytility import normalize_space
 
@@ -81,8 +82,14 @@ def _parse_args():
         "--timeout",
         "-t",
         type=float,
-        default=60,
+        default=10,
         help="timeout for a pull in seconds",
+    )
+    parser.add_argument(
+        "--sleep",
+        "-S",
+        type=float,
+        help="sleep for that many seconds before start pulling",
     )
     parser.add_argument(
         "--no-ack",
@@ -113,6 +120,10 @@ def main():
     )
 
     LOGGER.info(args)
+
+    if args.sleep:
+        LOGGER.info("going to sleep for %.1f seconds", args.sleep)
+        sleep(args.sleep)
 
     client = pubsub_client()
     # pylint: disable=no-member
