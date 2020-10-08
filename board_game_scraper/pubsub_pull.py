@@ -82,7 +82,7 @@ def _parse_args():
         "--timeout",
         "-t",
         type=float,
-        default=10,
+        default=60,
         help="timeout for a pull in seconds",
     )
     parser.add_argument(
