@@ -91,6 +91,7 @@ def merge_configs(spider, full=False):
             full=full,
             keys=("bgg_user_name", "bgg_id"),
             key_types=("istr", "int"),
+            fieldnames_exclude=None if full else ("published_at", "scraped_at"),
         )
         return
 
