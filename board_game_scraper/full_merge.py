@@ -12,15 +12,13 @@ from pathlib import Path
 from time import sleep
 
 from pytility import parse_bool, parse_float
-from scrapy.utils.project import get_project_settings
 from yaml import safe_load
 
 from .merge import merge_files
 from .utils import now
 
 LOGGER = logging.getLogger(__name__)
-SETTINGS = get_project_settings()
-BASE_DIR = Path(SETTINGS.get("BASE_DIR") or ".").resolve()
+BASE_DIR = Path(__file__).resolve().parent.parent
 FEEDS_DIR = BASE_DIR / "feeds"
 DATA_DIR = (BASE_DIR / ".." / "board-game-data").resolve()
 

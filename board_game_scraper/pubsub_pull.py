@@ -9,7 +9,6 @@ import os
 import sys
 
 from itertools import count
-from pathlib import Path
 from time import sleep
 
 from pytility import normalize_space
@@ -23,7 +22,6 @@ except ImportError:
 from .utils import now, pubsub_client
 
 LOGGER = logging.getLogger(__name__)
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def _process_messages(messages, output, header=False, encoding="utf-8"):
