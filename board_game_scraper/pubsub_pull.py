@@ -162,8 +162,18 @@ def main():
                 )
             )
         else:
+            curr = now()
             out_path = args.out_path.format(
-                number=i, time=now().strftime("%Y-%m-%dT%H-%M-%S")
+                number=i,
+                datetime=curr.strftime("%Y-%m-%dT%H-%M-%S"),
+                date=curr.strftime("%Y-%m-%d"),
+                time=curr.strftime("%H-%M-%S"),
+                year=curr.year,
+                month=curr.month,
+                day=curr.day,
+                hour=curr.hour,
+                minute=curr.minute,
+                second=curr.second,
             )
             LOGGER.info("writing results to <%s>", out_path)
             with open(out_path, "w", newline="") as out_file:
