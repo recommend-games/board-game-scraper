@@ -1,5 +1,0 @@
-- id: say-hello-world
-  name: Say hi!
-  description: Just checking in
-  entry: bg-hello
-  language: python
