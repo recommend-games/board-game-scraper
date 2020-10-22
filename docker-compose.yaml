@@ -1,8 +1,8 @@
-version: '3.7'
+version: '3.8'
 
 services:
     bga:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-bga
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bga']
@@ -17,7 +17,7 @@ services:
         stop_signal: SIGINT
 
     bgg:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-bgg
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bgg']
@@ -34,7 +34,7 @@ services:
         stop_signal: SIGINT
 
     bgg-hotness:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-bgg-hotness
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bgg_hotness']
@@ -49,7 +49,7 @@ services:
         stop_signal: SIGINT
 
     bgg-rankings:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-bgg-rankings
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bgg_rankings']
@@ -64,7 +64,7 @@ services:
         stop_signal: SIGINT
 
     bgg-geeklist:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-bgg-geeklist
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bgg_geeklist', '--feeds-subdir', 'bgg_rankings']
@@ -80,7 +80,7 @@ services:
         stop_signal: SIGINT
 
     dbpedia:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-dbpedia
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'dbpedia']
@@ -95,7 +95,7 @@ services:
         stop_signal: SIGINT
 
     luding:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-luding
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'luding']
@@ -110,7 +110,7 @@ services:
         stop_signal: SIGINT
 
     spielen:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-spielen
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'spielen']
@@ -125,7 +125,7 @@ services:
         stop_signal: SIGINT
 
     wikidata:
-        image: bg-scraper:latest
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-wikidata
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'wikidata']
