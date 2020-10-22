@@ -1,0 +1,20 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v3.3.0
+  hooks:
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+- repo: https://github.com/psf/black
+  rev: 20.8b1
+  hooks:
+  - id: black
+- repo: local
+  hooks:
+    - id: version-env
+      name: Writing version to .env
+      description: Reading library __version__ and saving it to .env
+      entry: pipenv run python -m board_game_scraper.version_env
+      language: system
+      always_run: true
+      pass_filenames: false
