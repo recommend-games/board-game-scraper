@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""TODO."""
+"""Read library __version__ and write to .env."""
 
 import argparse
 import logging
@@ -16,18 +16,20 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="TODO.")
+    parser = argparse.ArgumentParser(
+        description="Read library __version__ and write to .env."
+    )
     parser.add_argument(
         "--target",
         "-t",
         default=".env",
-        help="TODO",
+        help="target file",
     )
     parser.add_argument(
         "--variable",
         "-V",
         default="LIBRARY_VERSION",
-        help="TODO",
+        help="variable name",
     )
     parser.add_argument(
         "--verbose",
@@ -41,7 +43,7 @@ def _parse_args():
 
 
 def main():
-    """TODO."""
+    """Read library __version__ and write to .env."""
 
     args = _parse_args()
 
