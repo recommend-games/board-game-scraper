@@ -219,16 +219,17 @@ class LimitImagesPipeline:
     def process_item(self, item, spider):
         """Copy a limited number of image URLs to be downloaded from source to target."""
 
-        if self.limit is None or self.limit < 0:  # copy through everything
-            item[self.target_field] = list(arg_to_iter(item.get(self.source_field)))
-            return item
-
-        if not self.limit:  # limit is zero
-            item[self.target_field] = []
-            return item
-
-        # actual limit
-        item[self.target_field] = list(
-            islice(arg_to_iter(item.get(self.source_field)), self.limit)
+        values = (
+            arg_to_iter(item.get(self.source_field))
+            if self.limit is None or self.limit < 0  # copy through everything
+            else ()
+            if not self.limit  # limit is zero
+            else islice(arg_to_iter(item.get(self.source_field)), self.limit)
         )
+
+        try:
+            item[self.target_field] = list(values)
+        except Exception:
+            pass
+
         return item
