@@ -184,7 +184,7 @@ class ResolveImagePipeline:
 
 
 class LimitImagesPipeline:
-    """TODO."""
+    """Copy a limited number of image URLs to be downloaded from source to target."""
 
     source_field: str
     target_field: str
@@ -192,7 +192,7 @@ class LimitImagesPipeline:
 
     @classmethod
     def from_crawler(cls, crawler):
-        """ init from crawler """
+        """Init from crawler."""
 
         source_field = crawler.settings.get("LIMIT_IMAGES_URLS_FIELD")
         target_field = crawler.settings.get("IMAGES_URLS_FIELD")
@@ -200,7 +200,7 @@ class LimitImagesPipeline:
         if not source_field or not target_field:
             raise NotConfigured
 
-        limit = crawler.settings.getint("LIMIT_IMAGES_TO_DOWNLOAD")
+        limit = crawler.settings.getint("LIMIT_IMAGES_TO_DOWNLOAD", -1)
 
         return cls(
             source_field=source_field,
@@ -216,9 +216,9 @@ class LimitImagesPipeline:
         self.limit = limit
 
     def process_item(self, item, spider):
-        """TODO."""
+        """Copy a limited number of image URLs to be downloaded from source to target."""
 
-        if self.limit is None:  # copy through everything
+        if self.limit is None or self.limit < 0:  # copy through everything
             item[self.target_field] = list(arg_to_iter(item.get(self.source_field)))
             return item
 
