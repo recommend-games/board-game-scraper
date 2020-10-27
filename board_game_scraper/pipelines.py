@@ -215,6 +215,7 @@ class LimitImagesPipeline:
         self.target_field = target_field
         self.limit = limit
 
+    # pylint: disable=unused-argument
     def process_item(self, item, spider):
         """Copy a limited number of image URLs to be downloaded from source to target."""
 

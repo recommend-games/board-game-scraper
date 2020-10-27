@@ -3,10 +3,11 @@
 """ Wikidata spider """
 
 import json
+import os
 
 from urllib.parse import urlencode
 
-from pytility import batchify, normalize_space
+from pytility import batchify, normalize_space, parse_int
 from scrapy import Request, Spider
 from scrapy.loader.processors import MapCompose
 from scrapy.utils.misc import arg_to_iter
@@ -36,6 +37,10 @@ class WikidataSpider(Spider):
         "DOWNLOAD_DELAY": 10,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+        "LIMIT_IMAGES_TO_DOWNLOAD": parse_int(
+            os.getenv("LIMIT_IMAGES_TO_DOWNLOAD_WIKIDATA")
+        )
+        or 0,
     }
 
     game_types = (
