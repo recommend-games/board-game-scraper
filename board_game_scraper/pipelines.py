@@ -6,7 +6,9 @@ import logging
 import math
 import re
 
+from itertools import islice
 from urllib.parse import quote, unquote_plus
+from typing import Optional
 
 import jmespath
 
@@ -178,4 +180,54 @@ class ResolveImagePipeline:
         for field in self.fields:
             if item.get(field):
                 item[field] = clear_list(map(self._parse_url, arg_to_iter(item[field])))
+        return item
+
+
+class LimitImagesPipeline:
+    """TODO."""
+
+    source_field: str
+    target_field: str
+    limit: Optional[int] = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        """ init from crawler """
+
+        source_field = crawler.settings.get("LIMIT_IMAGES_URLS_FIELD")
+        target_field = crawler.settings.get("IMAGES_URLS_FIELD")
+
+        if not source_field or not target_field:
+            raise NotConfigured
+
+        limit = crawler.settings.getint("LIMIT_IMAGES_TO_DOWNLOAD")
+
+        return cls(
+            source_field=source_field,
+            target_field=target_field,
+            limit=limit,
+        )
+
+    def __init__(
+        self, source_field: str, target_field: str, limit: Optional[int] = None
+    ):
+        self.source_field = source_field
+        self.target_field = target_field
+        self.limit = limit
+
+    def process_item(self, item, spider):
+        """TODO."""
+
+        if self.limit is None:  # copy through everything
+            item[self.target_field] = list(arg_to_iter(item.get(self.source_field)))
+            return item
+
+        if not self.limit:  # limit is zero
+            item[self.target_field] = []
+            return item
+
+        # actual limit
+        item[self.target_field] = list(
+            islice(arg_to_iter(item.get(self.source_field)), self.limit)
+        )
         return item

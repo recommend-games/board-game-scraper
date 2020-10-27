@@ -201,7 +201,8 @@ ITEM_PIPELINES = {
     "scrapy_extensions.ValidatePipeline": 200,
     "board_game_scraper.pipelines.ResolveLabelPipeline": 300,
     "board_game_scraper.pipelines.ResolveImagePipeline": 400,
-    "scrapy.pipelines.images.ImagesPipeline": None,
+    "board_game_scraper.pipelines.LimitImagesPipeline": 500,
+    "scrapy.pipelines.images.ImagesPipeline": 600,
     "scrapy.pipelines.images.FilesPipeline": None,
 }
 
@@ -264,12 +265,16 @@ DONT_RUN_BEFORE_DATE = os.getenv("DONT_RUN_BEFORE_DATE")
 
 MEDIA_ALLOW_REDIRECTS = True
 
+# LimitImagesPipeline
+LIMIT_IMAGES_TO_DOWNLOAD = 0
+LIMIT_IMAGES_URLS_FIELD = "image_url"
+
 # Image processing
 IMAGES_STORE = os.path.join(BASE_DIR, "images")
-IMAGES_URLS_FIELD = "image_url"
+IMAGES_URLS_FIELD = "image_url_dowload"
 IMAGES_RESULT_FIELD = "image_file"
-IMAGES_EXPIRES = 180
-IMAGES_THUMBS = {"thumb": (1024, 1024)}
+IMAGES_EXPIRES = 360
+# IMAGES_THUMBS = {"thumb": (1024, 1024)}
 
 # File processing
 FILES_STORE = os.path.join(BASE_DIR, "rules")
