@@ -12,6 +12,7 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
@@ -28,6 +29,7 @@ services:
             GOOGLE_APPLICATION_CREDENTIALS: /app/gs.json
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
             - ../recommend-games-server/gs.json:/app/gs.json
         restart: always
         stop_grace_period: 15m
@@ -44,6 +46,7 @@ services:
             DONT_RUN_BEFORE_SEC: 10800 # 3 hours
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
@@ -59,6 +62,7 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
@@ -75,6 +79,7 @@ services:
             SCRAPER_FILE_TAG: '-geeklist${SCRAPER_FILE_TAG}'
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
@@ -90,6 +95,7 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
         restart: always
         stop_grace_period: 30m
         stop_signal: SIGINT
@@ -105,6 +111,7 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
@@ -120,6 +127,7 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
         restart: always
         stop_grace_period: 30m
         stop_signal: SIGINT
@@ -135,6 +143,7 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
+            - ./images:/app/images
         restart: always
         stop_grace_period: 15m
         stop_signal: SIGINT
