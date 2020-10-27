@@ -2,6 +2,7 @@
 
 """ BoardGameGeek spider """
 
+import os
 import re
 import statistics
 
@@ -120,6 +121,8 @@ class BggSpider(Spider):
         "DELAYED_RETRY_DELAY": 5.0,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
         "PULL_QUEUE_ENABLED": True,
+        "LIMIT_IMAGES_TO_DOWNLOAD": parse_int(os.getenv("LIMIT_IMAGES_TO_DOWNLOAD_BGG"))
+        or 0,
     }
 
     scrape_ratings = False

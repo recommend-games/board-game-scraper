@@ -2,9 +2,11 @@
 
 """ Luding spider """
 
+import os
 import re
 import string
 
+from pytility import parse_int
 from scrapy import Spider
 from scrapy.utils.misc import arg_to_iter
 
@@ -28,6 +30,10 @@ class LudingSpider(Spider):
         "DOWNLOAD_DELAY": 2,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
+        "LIMIT_IMAGES_TO_DOWNLOAD": parse_int(
+            os.getenv("LIMIT_IMAGES_TO_DOWNLOAD_LUDING")
+        )
+        or 0,
     }
 
     def parse(self, response):
