@@ -16,5 +16,5 @@ repos:
       description: Reading library __version__ and saving it to .env
       entry: pipenv run python -m board_game_scraper.version_env
       language: system
-      always_run: true
+      files: '__version__\.py'
       pass_filenames: false
