@@ -271,7 +271,7 @@ LIMIT_IMAGES_URLS_FIELD = "image_url"
 
 # Image processing
 IMAGES_STORE = os.path.join(BASE_DIR, "images")
-IMAGES_URLS_FIELD = "image_url_dowload"
+IMAGES_URLS_FIELD = "image_url_download"
 IMAGES_RESULT_FIELD = "image_file"
 IMAGES_EXPIRES = 360
 # IMAGES_THUMBS = {"thumb": (1024, 1024)}
