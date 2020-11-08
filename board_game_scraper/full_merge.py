@@ -48,7 +48,7 @@ def merge_config(
         kwargs["out_path"] = out_path or DATA_DIR / "scraped" / f"{spider}_{item}.jl"
         kwargs.setdefault(
             "fieldnames_exclude",
-            ("image_file", "rules_file", "published_at", "updated_at", "scraped_at"),
+            ("published_at", "updated_at", "scraped_at"),
         )
         kwargs.setdefault("sort_keys", True)
 
