@@ -85,7 +85,7 @@ def _parse_args():
         help="log level (repeat for more verbosity)",
     )
 
-    return parser.parse_args()
+    return parser.parse_known_args()
 
 
 def main():
@@ -94,8 +94,9 @@ def main():
     settings = get_project_settings()
     configure_logging(settings)
 
-    args = _parse_args()
+    args, remainder = _parse_args()
     LOGGER.info(args)
+    LOGGER.info(remainder)
 
     base_dir = Path(settings["BASE_DIR"]).resolve()
     cache_dir = base_dir / ".scrapy" / "httpcache"
@@ -179,7 +180,9 @@ def main():
         f"JOBDIR={curr_job}",
         "--set",
         f"DONT_RUN_BEFORE_FILE={dont_run_before_file}",
-    ]
+    ] + remainder
+
+    LOGGER.info("Executing command %r", command)
 
     try:
         execute(argv=command)
