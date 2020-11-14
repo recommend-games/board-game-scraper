@@ -9,7 +9,7 @@ RUN mkdir --parents /app
 WORKDIR /app
 
 RUN python3.8 -m pip install --upgrade \
-        pipenv==2020.8.13
+        pipenv==2020.11.4
 COPY Pipfile* ./
 RUN pipenv install --deploy --verbose
 
