@@ -67,6 +67,7 @@ FEED_EXPORT_FIELDS = (
     "implementation",
     "integration",
     "rank",
+    "add_rank",
     "num_votes",
     "avg_rating",
     "stddev_rating",

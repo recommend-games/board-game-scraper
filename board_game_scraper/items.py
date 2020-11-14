@@ -342,6 +342,13 @@ class GameItem(TypedItem):
         input_processor=POS_INT_PROCESSOR,
         default=None,
     )
+    add_rank = Field(
+        dtype=list,
+        input_processor=IDENTITY,
+        output_processor=IDENTITY,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
     num_votes = Field(
         dtype=int,
         dtype_convert=parse_int,
