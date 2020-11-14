@@ -10,7 +10,7 @@ from functools import partial
 from itertools import repeat
 from urllib.parse import urlencode
 
-from pytility import batchify, clear_list, normalize_space, parse_int
+from pytility import batchify, clear_list, normalize_space, parse_float, parse_int
 from scrapy import signals
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
@@ -87,10 +87,18 @@ def _value_id(items, sep=":"):
         yield f"{value}{sep}{id_}" if id_ else value
 
 
+def _remove_rank(value):
+    return (
+        value[:-5]
+        if value and isinstance(value, str) and value.lower().endswith(" rank")
+        else value
+    )
+
+
 def _value_id_rank(items, sep=":"):
     for item in arg_to_iter(items):
         value = item.xpath("@friendlyname").extract_first() or ""
-        value = value[:-5] if value and value.lower().endswith(" rank") else value
+        value = _remove_rank(value)
         id_ = item.xpath("@id").extract_first() or ""
         yield f"{value}{sep}{id_}" if id_ else value
 
@@ -372,7 +380,7 @@ class BggSpider(Spider):
             min_players_best max_players_best \
             min_age min_age_rec min_time max_time \
             game_type category mechanic cooperative compilation family expansion \
-            rank num_votes avg_rating stddev_rating \
+            rank add_rank num_votes avg_rating stddev_rating \
             bayes_rating worst_rating best_rating \
             complexity easiest_complexity hardest_complexity \
             language_dependency lowest_language_dependency highest_language_dependency \
@@ -569,6 +577,20 @@ class BggSpider(Spider):
                     func=statistics.median_grouped,
                 ),
             )
+
+            for rank in game.xpath('statistics/ratings/ranks/rank[@type="family"]'):
+                add_rank = {
+                    "id": parse_int(rank.xpath("@id").extract_first()),
+                    "name": rank.xpath("@name").extract_first(),
+                    "friendlyname": _remove_rank(
+                        rank.xpath("@friendlyname").extract_first()
+                    ),
+                    "rank": parse_int(rank.xpath("@value").extract_first()),
+                    "bayes_rating": parse_float(
+                        rank.xpath("@bayesaverage").extract_first()
+                    ),
+                }
+                ldr.add_value("add_rank", add_rank)
 
             yield ldr.load_item()
 
