@@ -578,13 +578,11 @@ class BggSpider(Spider):
                 ),
             )
 
-            for rank in game.xpath('statistics/ratings/ranks/rank[@type="family"]'):
+            for rank in game.xpath('statistics/ratings/ranks/rank[@type = "family"]'):
                 add_rank = {
-                    "id": parse_int(rank.xpath("@id").extract_first()),
-                    "name": rank.xpath("@name").extract_first(),
-                    "friendlyname": _remove_rank(
-                        rank.xpath("@friendlyname").extract_first()
-                    ),
+                    "game_type": rank.xpath("@name").extract_first(),
+                    "game_type_id": parse_int(rank.xpath("@id").extract_first()),
+                    "name": _remove_rank(rank.xpath("@friendlyname").extract_first()),
                     "rank": parse_int(rank.xpath("@value").extract_first()),
                     "bayes_rating": parse_float(
                         rank.xpath("@bayesaverage").extract_first()
