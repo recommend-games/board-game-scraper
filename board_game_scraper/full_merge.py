@@ -106,6 +106,7 @@ def merge_configs(spider, full=False):
             else (
                 "published_at",
                 "rank",
+                "add_rank",
                 "bgg_id",
                 "name",
                 "year",
@@ -131,6 +132,7 @@ def merge_configs(spider, full=False):
                 "published_at",
                 "bgg_id",
                 "rank",
+                "add_rank",
                 "name",
                 "year",
                 "num_votes",
