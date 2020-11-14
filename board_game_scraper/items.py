@@ -344,7 +344,8 @@ class GameItem(TypedItem):
     )
     add_rank = Field(
         dtype=list,
-        output_processor=_clear_list,
+        input_processor=IDENTITY,
+        output_processor=IDENTITY,
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
