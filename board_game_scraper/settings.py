@@ -205,6 +205,7 @@ ITEM_PIPELINES = {
     "board_game_scraper.pipelines.LimitImagesPipeline": 500,
     "scrapy.pipelines.images.ImagesPipeline": 600,
     "scrapy.pipelines.images.FilesPipeline": None,
+    "board_game_scraper.pipelines.CleanItemPipeline": 900,
 }
 
 # See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
