@@ -284,6 +284,10 @@ FILES_URLS_FIELD = "rules_url"
 FILES_RESULT_FIELD = "rules_file"
 FILES_EXPIRES = 180
 
+# CleanItemPipeline
+CLEAN_ITEM_DROP_FALSEY = True
+CLEAN_ITEM_DROP_VALUES = None
+
 # Board Game Atlas
 BGA_CLIENT_ID = os.getenv("BGA_CLIENT_ID")
 BGA_SCRAPE_IMAGES = False
