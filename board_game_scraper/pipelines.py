@@ -12,6 +12,7 @@ from typing import Optional
 
 import jmespath
 
+from itemadapter import ItemAdapter
 from pytility import clear_list, take_first
 from scrapy import Request
 from scrapy.exceptions import DropItem, NotConfigured
@@ -235,4 +236,44 @@ class LimitImagesPipeline:
         item[self.target_field] = list(
             islice(arg_to_iter(item.get(self.source_field)), self.limit)
         )
+        return item
+
+
+class CleanItemPipeline:
+    """Clean up unnecessary values from an item."""
+
+    drop_falsey: bool
+    drop_values: Optional[tuple]
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        """Init from crawler."""
+
+        drop_falsey = crawler.settings.getbool("CLEAN_ITEM_DROP_FALSEY")
+        drop_values = (
+            tuple(arg_to_iter(crawler.settings.getlist("CLEAN_ITEM_DROP_VALUES")))
+            or None
+        )
+
+        if not drop_falsey and not drop_values:
+            raise NotConfigured
+
+        return cls(drop_falsey=drop_falsey, drop_values=drop_values)
+
+    def __init__(self, drop_falsey: bool, drop_values: Optional[tuple]):
+        self.drop_falsey = drop_falsey
+        self.drop_values = drop_values
+
+    # pylint: disable=unused-argument
+    def process_item(self, item, spider):
+        """Clean up unnecessary values from an item."""
+
+        adapter = ItemAdapter(item)
+
+        for key in tuple(adapter.keys()):
+            if (self.drop_falsey and not adapter[key]) or (
+                self.drop_values is not None and adapter[key] in self.drop_values
+            ):
+                del adapter[key]
+
         return item

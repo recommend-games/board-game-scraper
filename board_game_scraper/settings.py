@@ -205,6 +205,7 @@ ITEM_PIPELINES = {
     "board_game_scraper.pipelines.LimitImagesPipeline": 500,
     "scrapy.pipelines.images.ImagesPipeline": 600,
     "scrapy.pipelines.images.FilesPipeline": None,
+    "board_game_scraper.pipelines.CleanItemPipeline": 900,
 }
 
 # See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
@@ -282,6 +283,10 @@ FILES_STORE = os.path.join(BASE_DIR, "rules")
 FILES_URLS_FIELD = "rules_url"
 FILES_RESULT_FIELD = "rules_file"
 FILES_EXPIRES = 180
+
+# CleanItemPipeline
+CLEAN_ITEM_DROP_FALSEY = True
+CLEAN_ITEM_DROP_VALUES = None
 
 # Board Game Atlas
 BGA_CLIENT_ID = os.getenv("BGA_CLIENT_ID")
