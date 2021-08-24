@@ -4,13 +4,14 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
 
 [packages]
 awscli = "*"
 boto = "*"
 dedupe = ">=2.0.0"
 google-cloud-pubsub = "*"
+itemadapter = "*"
 jmespath = "*"
 pillow = "*"
 pympler = "*"
@@ -20,15 +21,18 @@ pytility = {extras = ["dates"], version = "*"}
 pytrie = "*"
 pyyaml = "*"
 requests = "*"
-scrapy = "*"
+scrapy = "<2.1.0"
 scrapy-extensions = "*"
-smart-open = "<1.6.0"
+smart-open = {extras = ["all"], version = ">=1.8.1"}
 twisted = "*"
 "w3lib" = "*"
 
 [dev-packages]
-black = "==19.10b0"
+black = "==21.4b2"
+docker = "*"
 mypy = "*"
+pre-commit = "*"
 psutil = "*"
 pylint = "*"
+pytimeparse = "*"
 twine = "*"

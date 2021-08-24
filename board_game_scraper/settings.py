@@ -67,6 +67,7 @@ FEED_EXPORT_FIELDS = (
     "implementation",
     "integration",
     "rank",
+    "add_rank",
     "num_votes",
     "avg_rating",
     "stddev_rating",
@@ -182,11 +183,13 @@ DOWNLOADER_MIDDLEWARES = {"scrapy_extensions.DelayedRetry": 555}
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 EXTENSIONS = {
+    "scrapy.extensions.closespider.CloseSpider": 0,
     "scrapy.extensions.feedexport.FeedExporter": None,
     "scrapy_extensions.MultiFeedExporter": 0,
     "scrapy.extensions.throttle.AutoThrottle": None,
     "scrapy_extensions.NicerAutoThrottle": 0,
     "board_game_scraper.extensions.StateTag": 0,
+    "board_game_scraper.extensions.DontRunBeforeTag": 0,
     "board_game_scraper.extensions.PullQueueExtension": 100,
     "scrapy_extensions.MonitorDownloadsExtension": 500,
     "scrapy_extensions.DumpStatsExtension": 500,
@@ -199,9 +202,14 @@ ITEM_PIPELINES = {
     "scrapy_extensions.ValidatePipeline": 200,
     "board_game_scraper.pipelines.ResolveLabelPipeline": 300,
     "board_game_scraper.pipelines.ResolveImagePipeline": 400,
-    "scrapy.pipelines.images.ImagesPipeline": None,
+    "board_game_scraper.pipelines.LimitImagesPipeline": 500,
+    "scrapy.pipelines.images.ImagesPipeline": 600,
     "scrapy.pipelines.images.FilesPipeline": None,
+    "board_game_scraper.pipelines.CleanItemPipeline": 900,
 }
+
+# See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
+CLOSESPIDER_TIMEOUT = os.getenv("CLOSESPIDER_TIMEOUT")
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -252,20 +260,33 @@ SCRAPE_BGG_USERS = True
 STATE_TAG_FILE = ".state"
 PID_TAG_FILE = ".pid"
 
+# "Don't run before" settings
+DONT_RUN_BEFORE_FILE = os.getenv("DONT_RUN_BEFORE_FILE")
+DONT_RUN_BEFORE_SEC = os.getenv("DONT_RUN_BEFORE_SEC")
+DONT_RUN_BEFORE_DATE = os.getenv("DONT_RUN_BEFORE_DATE")
+
 MEDIA_ALLOW_REDIRECTS = True
+
+# LimitImagesPipeline
+LIMIT_IMAGES_TO_DOWNLOAD = 0
+LIMIT_IMAGES_URLS_FIELD = "image_url"
 
 # Image processing
 IMAGES_STORE = os.path.join(BASE_DIR, "images")
-IMAGES_URLS_FIELD = "image_url"
+IMAGES_URLS_FIELD = "image_url_download"
 IMAGES_RESULT_FIELD = "image_file"
-IMAGES_EXPIRES = 180
-IMAGES_THUMBS = {"thumb": (1024, 1024)}
+IMAGES_EXPIRES = 360
+# IMAGES_THUMBS = {"thumb": (1024, 1024)}
 
 # File processing
 FILES_STORE = os.path.join(BASE_DIR, "rules")
 FILES_URLS_FIELD = "rules_url"
 FILES_RESULT_FIELD = "rules_file"
 FILES_EXPIRES = 180
+
+# CleanItemPipeline
+CLEAN_ITEM_DROP_FALSEY = True
+CLEAN_ITEM_DROP_VALUES = None
 
 # Board Game Atlas
 BGA_CLIENT_ID = os.getenv("BGA_CLIENT_ID")

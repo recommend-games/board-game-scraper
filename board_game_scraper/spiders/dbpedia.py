@@ -2,9 +2,11 @@
 
 """ DBpedia spider """
 
+import os
+
 from urllib.parse import urlencode
 
-from pytility import batchify, normalize_space
+from pytility import batchify, parse_int, normalize_space
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
 
@@ -50,6 +52,10 @@ class DBpediaSpider(Spider):
         "DOWNLOAD_DELAY": 20,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+        "LIMIT_IMAGES_TO_DOWNLOAD": parse_int(
+            os.getenv("LIMIT_IMAGES_TO_DOWNLOAD_DBPEDIA")
+        )
+        or 0,
     }
 
     game_types = (

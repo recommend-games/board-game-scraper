@@ -2,100 +2,114 @@
 
 set -euo pipefail
 
-SAVEDIR="$(pwd)"
-cd "$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
-
-mkdir --parents 'logs'
-
+BASE_DIR="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
+FEEDS_DIR="$(readlink --canonicalize "${1:-${BASE_DIR}/feeds}")"
+LOGS_DIR="$(readlink --canonicalize "${2:-$(pwd)/logs}")"
 DATE="$(date --utc +'%Y-%m-%dT%H-%M-%S')"
 
+echo -e "Merging in <${FEEDS_DIR}>, writing logs to <${LOGS_DIR}>, using date tag <${DATE}>.\\n"
+
+mkdir --parents "${LOGS_DIR}" \
+    "${FEEDS_DIR}/bga/GameItem" \
+    "${FEEDS_DIR}/bgg/GameItem" \
+    "${FEEDS_DIR}/dbpedia/GameItem" \
+    "${FEEDS_DIR}/luding/GameItem" \
+    "${FEEDS_DIR}/spielen/GameItem" \
+    "${FEEDS_DIR}/wikidata/GameItem" \
+    "${FEEDS_DIR}/bgg/UserItem" \
+    "${FEEDS_DIR}/bga/RatingItem" \
+    "${FEEDS_DIR}/bgg/RatingItem" \
+    "${FEEDS_DIR}/bgg_rankings/GameItem" \
+    "${FEEDS_DIR}/bgg_hotness/GameItem" \
+    "${FEEDS_DIR}/news"
+
 nohup python3 -m board_game_scraper.merge \
-    'feeds/bga/GameItem/*' \
-    --out-path "feeds/bga/GameItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/bga/GameItem/*" \
+    --out-path "${FEEDS_DIR}/bga/GameItem/${DATE}-merged.jl" \
     --keys bga_id \
     --key-types string \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --concat \
-    >> 'logs/bga_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/bga_merge.log>.\\n"
+    >> "${LOGS_DIR}/bga_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/bga_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/bgg/GameItem/*' \
-    --out-path "feeds/bgg/GameItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/bgg/GameItem/*" \
+    --out-path "${FEEDS_DIR}/bgg/GameItem/${DATE}-merged.jl" \
     --keys bgg_id \
     --key-types int \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --concat \
-    >> 'logs/bgg_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/bgg_merge.log>.\\n"
+    >> "${LOGS_DIR}/bgg_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/bgg_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/dbpedia/GameItem/*' \
-    --out-path "feeds/dbpedia/GameItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/dbpedia/GameItem/*" \
+    --out-path "${FEEDS_DIR}/dbpedia/GameItem/${DATE}-merged.jl" \
     --keys dbpedia_id \
     --key-types string \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --concat \
-    >> 'logs/dbpedia_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/dbpedia_merge.log>.\\n"
+    >> "${LOGS_DIR}/dbpedia_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/dbpedia_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/luding/GameItem/*' \
-    --out-path "feeds/luding/GameItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/luding/GameItem/*" \
+    --out-path "${FEEDS_DIR}/luding/GameItem/${DATE}-merged.jl" \
     --keys luding_id \
     --key-types int \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --concat \
-    >> 'logs/luding_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/luding_merge.log>.\\n"
+    >> "${LOGS_DIR}/luding_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/luding_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/spielen/GameItem/*' \
-    --out-path "feeds/spielen/GameItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/spielen/GameItem/*" \
+    --out-path "${FEEDS_DIR}/spielen/GameItem/${DATE}-merged.jl" \
     --keys spielen_id \
     --key-types string \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --concat \
-    >> 'logs/spielen_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/spielen_merge.log>.\\n"
+    >> "${LOGS_DIR}/spielen_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/spielen_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/wikidata/GameItem/*' \
-    --out-path "feeds/wikidata/GameItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/wikidata/GameItem/*" \
+    --out-path "${FEEDS_DIR}/wikidata/GameItem/${DATE}-merged.jl" \
     --keys wikidata_id \
     --key-types string \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --concat \
-    >> 'logs/wikidata_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/wikidata_merge.log>.\\n"
+    >> "${LOGS_DIR}/wikidata_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/wikidata_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/bgg/UserItem/*' \
-    --out-path "feeds/bgg/UserItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/bgg/UserItem/*" \
+    --out-path "${FEEDS_DIR}/bgg/UserItem/${DATE}-merged.jl" \
     --keys bgg_user_name \
     --key-types istring \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --concat \
-    >> 'logs/bgg_users_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/bgg_users_merge.log>.\\n"
+    >> "${LOGS_DIR}/bgg_users_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/bgg_users_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/bga/RatingItem/*' \
-    --out-path "feeds/bga/RatingItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/bga/RatingItem/*" \
+    --out-path "${FEEDS_DIR}/bga/RatingItem/${DATE}-merged.jl" \
     --keys bga_user_id bga_id \
     --key-types string string \
     --latest scraped_at \
@@ -103,52 +117,50 @@ nohup python3 -m board_game_scraper.merge \
     --latest-min 30 \
     --fields-exclude bgg_user_play_count \
     --concat \
-    >> 'logs/bga_ratings_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/bga_ratings_merge.log>.\\n"
+    >> "${LOGS_DIR}/bga_ratings_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/bga_ratings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/bgg/RatingItem/*' \
-    --out-path "feeds/bgg/RatingItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/bgg/RatingItem/*" \
+    --out-path "${FEEDS_DIR}/bgg/RatingItem/${DATE}-merged.jl" \
     --keys bgg_user_name bgg_id \
     --key-types istring int \
     --latest scraped_at \
     --latest-types date \
     --latest-min 30 \
     --concat \
-    >> 'logs/bgg_ratings_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/bgg_ratings_merge.log>.\\n"
+    >> "${LOGS_DIR}/bgg_ratings_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/bgg_ratings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/bgg_rankings/GameItem/*' \
-    --out-path "feeds/bgg_rankings/GameItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/bgg_rankings/GameItem/*" \
+    --out-path "${FEEDS_DIR}/bgg_rankings/GameItem/${DATE}-merged.jl" \
     --keys published_at bgg_id \
     --key-types date int \
     --latest scraped_at \
     --latest-types date \
     --concat \
-    >> 'logs/bgg_rankings_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/bgg_rankings_merge.log>.\\n"
+    >> "${LOGS_DIR}/bgg_rankings_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/bgg_rankings_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/bgg_hotness/GameItem/*' \
-    --out-path "feeds/bgg_hotness/GameItem/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/bgg_hotness/GameItem/*" \
+    --out-path "${FEEDS_DIR}/bgg_hotness/GameItem/${DATE}-merged.jl" \
     --keys published_at bgg_id \
     --key-types date int \
     --latest scraped_at \
     --latest-types date \
     --concat \
-    >> 'logs/bgg_hotness_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/bgg_hotness_merge.log>.\\n"
+    >> "${LOGS_DIR}/bgg_hotness_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/bgg_hotness_merge.log>.\\n"
 
 nohup python3 -m board_game_scraper.merge \
-    'feeds/news/*.jl,feeds/news/*/*/*.jl' \
-    --out-path "feeds/news/${DATE}_merged.jl" \
+    "${FEEDS_DIR}/news/*.jl" "${FEEDS_DIR}/news/*/*/*.jl" \
+    --out-path "${FEEDS_DIR}/news/${DATE}-merged.jl" \
     --keys article_id \
     --key-types string \
     --latest published_at scraped_at \
     --latest-types date date \
     --concat \
-    >> 'logs/news_merge.log' 2>&1 &
-echo -e "Started! Follow logs from <$(pwd)/logs/news_merge.log>.\\n"
-
-cd "${SAVEDIR}"
+    >> "${LOGS_DIR}/news_merge.log" 2>&1 &
+echo -e "Started! Follow logs from <${LOGS_DIR}/news_merge.log>.\\n"

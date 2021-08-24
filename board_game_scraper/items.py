@@ -170,6 +170,7 @@ class GameItem(TypedItem):
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
+    image_url_download = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     image_file = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     video_url = Field(
         dtype=list,
@@ -341,6 +342,13 @@ class GameItem(TypedItem):
         input_processor=POS_INT_PROCESSOR,
         default=None,
     )
+    add_rank = Field(
+        dtype=list,
+        input_processor=IDENTITY,
+        output_processor=IDENTITY,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
     num_votes = Field(
         dtype=int,
         dtype_convert=parse_int,
@@ -463,7 +471,9 @@ class UserItem(TypedItem):
     JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
 
     item_id = Field(
-        dtype=int, dtype_convert=parse_int, input_processor=POS_INT_PROCESSOR,
+        dtype=int,
+        dtype_convert=parse_int,
+        input_processor=POS_INT_PROCESSOR,
     )
 
     bgg_user_name = Field(
@@ -506,6 +516,7 @@ class UserItem(TypedItem):
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
+    image_url_download = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     image_file = Field(serializer=JSON_SERIALIZER, parser=parse_json)
 
     published_at = Field(

@@ -22,7 +22,12 @@ import yaml
 
 from pytility import clear_list, parse_float, parse_int
 from scrapy.utils.misc import arg_to_iter, load_object
-from smart_open import smart_open
+
+try:
+    # pylint: disable=redefined-builtin
+    from smart_open import open
+except ImportError:
+    pass
 
 from .items import GameItem
 from .utils import parse_json, serialize_json
@@ -126,7 +131,7 @@ def _load_games(*args):
             LOGGER.info("reading from file <%s>", file)
 
             try:
-                with smart_open(file, "r") as file_obj:
+                with open(file) as file_obj:
                     games = map(parse_json, file_obj)
                     games = filter(None, games)
                     games = map(GameItem.parse, games)
@@ -194,7 +199,7 @@ def _train_gazetteer(
 
     if training_file and smart_exists(training_file):
         LOGGER.info("reading existing training from <%s>", training_file)
-        with smart_open(training_file, "r") as file_obj:
+        with open(training_file) as file_obj:
             gazetteer.prepare_training(
                 data_1=data_1, data_2=data_2, training_file=file_obj, sample_size=50_000
             )
@@ -215,7 +220,7 @@ def _train_gazetteer(
 
     if training_file:
         LOGGER.info("write training data back to <%s>", training_file)
-        with smart_open(training_file, "w") as file_obj:
+        with open(training_file, "w") as file_obj:
             # bug in dedupe preventing training from being serialized correctly
             # gazetteer.write_training(file_obj)
             if pretty_print:
@@ -223,9 +228,9 @@ def _train_gazetteer(
             else:
                 _write_training(gazetteer, file_obj)
         # if pretty_print:
-        #     with smart_open(training_file, "r") as file_obj:
+        #     with open(training_file) as file_obj:
         #         training = parse_json(file_obj)
-        #     with smart_open(training_file, "w") as file_obj:
+        #     with open(training_file, "w") as file_obj:
         #         serialize_json(obj=training, file=file_obj, sort_keys=True, indent=4)
 
     LOGGER.info("done labelling, begin training")
@@ -294,7 +299,7 @@ def link_games(
 
         if isinstance(gazetteer, str):
             LOGGER.info("saving gazetteer model to <%s>", gazetteer)
-            with smart_open(gazetteer, "wb") as file_obj:
+            with open(gazetteer, "wb") as file_obj:
                 gazetteer_trained.write_settings(file_obj)
 
         gazetteer = gazetteer_trained
@@ -302,7 +307,7 @@ def link_games(
 
     elif isinstance(gazetteer, str):
         LOGGER.info("reading gazetteer model from <%s>", gazetteer)
-        with smart_open(gazetteer, "rb") as file_obj:
+        with open(gazetteer, "rb") as file_obj:
             gazetteer = dedupe.StaticGazetteer(file_obj)
 
     gazetteer.index(data_canonical)
@@ -336,7 +341,7 @@ def link_games(
             key: sorted(value) for key, value in links.items() if key and value
         }
         json_formats = {"sort_keys": True, "indent": 4} if pretty_print else {}
-        with smart_open(output, "w") as file_obj:
+        with open(output, "w") as file_obj:
             serialize_json(obj=links_sorted, file=file_obj, **json_formats)
         del links_sorted
 

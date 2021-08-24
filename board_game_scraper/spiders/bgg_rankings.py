@@ -6,10 +6,12 @@ import os
 import re
 
 from datetime import datetime, timezone
+from itertools import product
 from random import randint
 
 from pytility import normalize_space, parse_date, parse_int
 from scrapy import Request, Spider
+from scrapy.utils.misc import arg_to_iter
 
 from ..items import GameItem
 from ..loaders import GameLoader
@@ -65,6 +67,22 @@ def _extract_bgg_id(url):
     return extract_bgg_id(url)
 
 
+def _start_urls(
+    paths,
+    bgg_domains=(
+        "http://boardgamegeek.com/",
+        "https://boardgamegeek.com/",
+        "http://www.boardgamegeek.com/",
+        "https://www.boardgamegeek.com/",
+    ),
+    prefix_urls=("https://web.archive.org/web/{date}/", ""),
+):
+    for prefix_url, bgg_domain, path in product(
+        arg_to_iter(prefix_urls), arg_to_iter(bgg_domains), arg_to_iter(paths)
+    ):
+        yield prefix_url + bgg_domain + path
+
+
 def _parse_date(date, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
     try:
         date = datetime.strptime(date, format_str)
@@ -81,7 +99,13 @@ def _parse_date(date, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
 
 
 def _extract_date(url, tzinfo=timezone.utc, format_str=WEB_ARCHIVE_DATE_FORMAT):
-    url = parse_url(url, ("archive.org", "web.archive.org",),)
+    url = parse_url(
+        url,
+        (
+            "archive.org",
+            "web.archive.org",
+        ),
+    )
 
     if not url:
         return None
@@ -104,16 +128,7 @@ class BggRankingsSpider(Spider):
         "top50.php3",
         "topn.php3?count=50",
     )
-    bgg_urls = (
-        tuple(f"http://boardgamegeek.com/{path}" for path in bgg_paths)
-        + tuple(f"https://boardgamegeek.com/{path}" for path in bgg_paths)
-        + tuple(f"http://www.boardgamegeek.com/{path}" for path in bgg_paths)
-        + tuple(f"https://www.boardgamegeek.com/{path}" for path in bgg_paths)
-    )
-    start_urls = (
-        tuple(f"https://web.archive.org/web/{{date}}/{url}" for url in bgg_urls)
-        + bgg_urls
-    )
+    start_urls = tuple(_start_urls(bgg_paths))
     item_classes = (GameItem,)
 
     custom_settings = {
@@ -151,7 +166,14 @@ class BggRankingsSpider(Spider):
 
         start_date_str = start_date.strftime(WEB_ARCHIVE_DATE_FORMAT)
 
-        for start_url in self.start_urls:
+        start_urls = (
+            tuple(_start_urls(self.bgg_path))
+            if hasattr(self, "bgg_path") and self.bgg_path
+            else self.start_urls
+        )
+        self.logger.info("Start URLs: %s", start_urls)
+
+        for start_url in start_urls:
             yield Request(
                 url=start_url.format(date=start_date_str),
                 callback=self.parse,
@@ -238,7 +260,9 @@ class BggRankingsSpider(Spider):
 
             ldr = GameLoader(
                 item=GameItem(
-                    bgg_id=bgg_id, published_at=published_at, scraped_at=scraped_at,
+                    bgg_id=bgg_id,
+                    published_at=published_at,
+                    scraped_at=scraped_at,
                 ),
                 selector=row,
                 response=response,

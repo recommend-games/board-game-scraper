@@ -32,10 +32,14 @@ URL_HOMEPAGE = "https://recommend.games/"
 URL_DOCUMENTATION = (
     "https://gitlab.com/recommend.games/board-game-scraper/blob/master/README.md"
 )
-URL_FUNDING = None
-URL_THANKS = None
+URL_FUNDING = "https://paypal.me/mschepke"
+URL_THANKS = "https://saythanks.io/to/mk.schepke%40gmail.com"
 URL_SOURCE = "https://gitlab.com/recommend.games/board-game-scraper"
 URL_TRACKER = "https://gitlab.com/recommend.games/board-game-scraper/issues"
+URL_EXAMPLES = None
+URL_CHANGELOG = None
+URL_MAILING = None
+URL_TWITTER = "https://twitter.com/recommend_games"
 EMAIL = "markus@recommend.games"
 AUTHOR = "Markus Shepherd"
 REQUIRES_PYTHON = ">=3.6.0"
@@ -56,16 +60,15 @@ REQUIRED = (
     "pytrie",
     "pyyaml",
     "requests",
-    "scrapy",
+    "scrapy<2.1.0",
     "scrapy-extensions",
-    "smart-open",
     "twisted",
     "w3lib",
 )
 
 # What packages are optional?
 EXTRAS = {
-    # 'fancy feature': ['django'],
+    "cloud": ("smart-open>=1.8.1",),
 }
 
 # The rest you shouldn't have to touch too much :)
@@ -144,18 +147,28 @@ setup(
     url=URL_HOMEPAGE,
     project_urls={
         "Documentation": URL_DOCUMENTATION,
-        # "Funding": URL_FUNDING,
-        # "Say Thanks!": URL_THANKS,
+        "Funding": URL_FUNDING,
+        "Say Thanks!": URL_THANKS,
         "Source": URL_SOURCE,
         "Tracker": URL_TRACKER,
+        # "Examples": URL_EXAMPLES,
+        # "Changelog": URL_CHANGELOG,
+        # "Mailing List": URL_MAILING,
+        "Twitter": URL_TWITTER,
     },
     python_requires=REQUIRES_PYTHON,
     packages=find_packages(exclude=("tests", "*.tests", "*.tests.*", "tests.*")),
     # If your package is a single module, use this instead of 'packages':
     # py_modules=(),
-    # entry_points={
-    #     'console_scripts': ['mycli=mymodule:cli'],
-    # },
+    entry_points={
+        "console_scripts": (
+            "bg-scraper=board_game_scraper.__main__:main",
+            "bg-merge=board_game_scraper.merge:main",
+            "bg-full-merge=board_game_scraper.full_merge:main",
+            "bg-news=board_game_scraper.news:main",
+            "bg-pull=board_game_scraper.pubsub_pull:main",
+        ),
+    },
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,

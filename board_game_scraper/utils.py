@@ -8,7 +8,8 @@ import os
 import re
 
 from datetime import datetime, timezone
-from functools import partial
+from functools import lru_cache
+from pathlib import Path
 from types import GeneratorType
 from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
 from urllib.parse import ParseResult, parse_qs, unquote_plus, urlparse
@@ -17,7 +18,6 @@ from pytility import (
     arg_to_iter,
     clear_list,
     normalize_space,
-    parse_float,
     parse_int,
     take_first,
     to_str,
@@ -25,6 +25,12 @@ from pytility import (
 )
 from scrapy.item import BaseItem, Item
 from w3lib.html import replace_entities
+
+try:
+    # pylint: disable=redefined-builtin
+    from smart_open import open
+except ImportError:
+    pass
 
 LOGGER = logging.getLogger(__name__)
 
@@ -98,7 +104,7 @@ def now(tzinfo=None):
     return result if tzinfo is None else result.astimezone(tzinfo)
 
 
-def serialize_date(date, tzinfo=None):
+def serialize_date(date: Any, tzinfo: Optional[timezone] = None) -> Optional[str]:
     """seralize a date into ISO format if possible"""
 
     parsed = parse_date(date, tzinfo)
@@ -150,12 +156,7 @@ def serialize_json(obj, file=None, **kwargs):
         path_dir = os.path.abspath(os.path.split(file)[0])
         os.makedirs(path_dir, exist_ok=True)
 
-        try:
-            from smart_open import smart_open
-        except ImportError:
-            smart_open = open
-
-        with smart_open(file, "w") as json_file:
+        with open(file, "w") as json_file:
             return json.dump(obj, json_file, **kwargs)
 
     if file is not None:
@@ -165,22 +166,26 @@ def serialize_json(obj, file=None, **kwargs):
     return json.dumps(obj, **kwargs)
 
 
-def str_to_parser(string):
-    """ parser from key string """
-    string = to_lower(string)
-    if not string:
-        return to_str
-    return (
-        parse_int
-        if string == "int"
-        else parse_float
-        if string == "float"
-        else partial(parse_date, tzinfo=timezone.utc)
-        if string == "date"
-        else to_lower
-        if string in ("istr", "istring")
-        else to_str
-    )
+def date_from_file(
+    path: Union[bytes, str, os.PathLike, None],
+    tzinfo: Optional[timezone] = None,
+    format_str: Optional[str] = None,
+) -> Optional[datetime]:
+    """Parse a date from a file."""
+
+    if not path:
+        return None
+
+    path = Path(path).resolve()
+    LOGGER.info("Reading date from path <%s>", path)
+
+    try:
+        with path.open() as file_obj:
+            date = normalize_space(next(file_obj, None))
+    except Exception:
+        date = None
+
+    return parse_date(date=date, tzinfo=tzinfo, format_str=format_str)
 
 
 def validate_range(value, lower=None, upper=None):
@@ -389,3 +394,18 @@ def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
         "spielen_id": clear_list(map(extract_spielen_id, urls)),
         "bga_id": clear_list(map(extract_bga_id, urls)),
     }
+
+
+@lru_cache(maxsize=8)
+def pubsub_client():
+    """Google Cloud PubSub client."""
+
+    try:
+        from google.cloud import pubsub
+
+        return pubsub.SubscriberClient()
+
+    except Exception:
+        LOGGER.exception("unable to initialise PubSub client")
+
+    return None
