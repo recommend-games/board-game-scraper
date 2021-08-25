@@ -3,7 +3,6 @@
 """ merge different sources """
 
 import argparse
-import json
 import logging
 import math
 import os
@@ -18,6 +17,7 @@ from urllib.parse import urlparse
 from pkg_resources import resource_stream
 
 import dedupe
+import jmespath
 import yaml
 
 from pytility import clear_list, parse_float, parse_int
@@ -37,7 +37,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def abs_comp(field_1, field_2):
-    """ returns absolute value of difference if both arguments are valid, else inf """
+    """returns absolute value of difference if both arguments are valid, else inf"""
     field_1 = parse_float(field_1)
     field_2 = parse_float(field_2)
     return math.inf if field_1 is None or field_2 is None else abs(field_1 - field_2)
@@ -62,7 +62,7 @@ VALUE_ID_FIELDS = ("designer", "artist", "publisher")
 
 
 def smart_exists(path, raise_exc=False):
-    """ returns True if given path exists """
+    """returns True if given path exists"""
 
     url = urlparse(path)
 
@@ -154,34 +154,19 @@ def _make_data(games, id_field="id", id_prefix=None):
     return {_make_id(game, id_field, id_prefix): game for game in games}
 
 
-def _process_item(item):
-    if isinstance(item, dict):
-        return {k: _process_item(v) for k, v in item.items()}
-    if isinstance(item, (frozenset, list, set, tuple)):
-        item = type(item)(_process_item(v) for v in item)
-    try:
-        return dedupe.serializer._to_json(item)
-    except TypeError:
-        pass
-    return item
-
-
-def _process_game(game, fields=DEDUPE_FIELDS):
-    return {field["field"]: game.get(field["field"]) for field in fields}
-
-
-def _process_training(training):
+def _remove_from_training(training, key, keep):
     # training = {"distinct": [(item_1, item_2), ...], "match": [(item_1, item_2), ...]}
-    training = {
-        key: [[_process_game(game) for game in pair] for pair in pairs]
-        for key, pairs in training.items()
+    path = jmespath.compile(f"[].{key}")
+    keep = frozenset(arg_to_iter(keep))
+    LOGGER.info("Keeping %d distinct values in field <%s>", len(keep), key)
+    return {
+        kind: [
+            pair
+            for pair in pairs
+            if pair and (frozenset(path.search(pair) or ()) <= keep)
+        ]
+        for kind, pairs in training.items()
     }
-    return _process_item(training)
-
-
-def _write_training(model, file_obj, **json_kwargs):
-    training_pairs = _process_training(model.training_pairs)
-    json.dump(obj=training_pairs, fp=file_obj, **json_kwargs)
 
 
 def _train_gazetteer(
@@ -201,16 +186,29 @@ def _train_gazetteer(
         LOGGER.info("reading existing training from <%s>", training_file)
         with open(training_file) as file_obj:
             gazetteer.prepare_training(
-                data_1=data_1, data_2=data_2, training_file=file_obj, sample_size=50_000
+                data_1=data_1,
+                data_2=data_2,
+                training_file=file_obj,
+                sample_size=100_000,
             )
     else:
-        gazetteer.prepare_training(data_1=data_1, data_2=data_2, sample_size=50_000)
+        gazetteer.prepare_training(data_1=data_1, data_2=data_2, sample_size=100_000)
 
     if add_bgg_labels:
         labeled_pairs = dedupe.training_data_link(data_1, data_2, common_key="bgg_id")
         labeled_pairs["distinct"] = []
         LOGGER.info(
-            "Adding %d matches obtained via their BGG ID", len(labeled_pairs["match"])
+            "Found %d matches obtained via their BGG ID in total",
+            len(labeled_pairs["match"]),
+        )
+        labeled_pairs = _remove_from_training(
+            training=labeled_pairs,
+            key="bgg_id",
+            keep=(game["bgg_id"] for game in data_1.values() if game.get("bgg_id")),
+        )
+        LOGGER.info(
+            "Adding %d matches obtained via their BGG ID after removing non-existing games",
+            len(labeled_pairs["match"]),
         )
         gazetteer.mark_pairs(labeled_pairs)
 
@@ -220,22 +218,19 @@ def _train_gazetteer(
 
     if training_file:
         LOGGER.info("write training data back to <%s>", training_file)
+
         with open(training_file, "w") as file_obj:
-            # bug in dedupe preventing training from being serialized correctly
-            # gazetteer.write_training(file_obj)
-            if pretty_print:
-                _write_training(gazetteer, file_obj, sort_keys=True, indent=4)
-            else:
-                _write_training(gazetteer, file_obj)
-        # if pretty_print:
-        #     with open(training_file) as file_obj:
-        #         training = parse_json(file_obj)
-        #     with open(training_file, "w") as file_obj:
-        #         serialize_json(obj=training, file=file_obj, sort_keys=True, indent=4)
+            gazetteer.write_training(file_obj)
+
+        if pretty_print:
+            with open(training_file) as file_obj:
+                training = parse_json(file_obj)
+            with open(training_file, "w") as file_obj:
+                serialize_json(obj=training, file=file_obj, sort_keys=True, indent=4)
 
     LOGGER.info("done labelling, begin training")
+    gazetteer.index(data_1)
     gazetteer.train(recall=0.9, index_predicates=True)
-
     gazetteer.cleanup_training()
 
     return gazetteer
@@ -258,7 +253,7 @@ def link_games(
     output=None,
     pretty_print=True,
 ):
-    """ find links for games """
+    """find links for games"""
 
     paths = tuple(arg_to_iter(paths))
     if len(paths) < 2:
@@ -309,6 +304,8 @@ def link_games(
         LOGGER.info("reading gazetteer model from <%s>", gazetteer)
         with open(gazetteer, "rb") as file_obj:
             gazetteer = dedupe.StaticGazetteer(file_obj)
+
+    LOGGER.info(gazetteer)
 
     gazetteer.index(data_canonical)
 
@@ -398,6 +395,7 @@ def _main():
     )
 
     LOGGER.info(args)
+    LOGGER.info(DEDUPE_FIELDS)
 
     link_games(
         gazetteer=args.gazetteer_file,
