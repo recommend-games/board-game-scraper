@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 
 services:
     bga:
@@ -309,7 +309,7 @@ services:
         stop_signal: SIGINT
 
     news:
-        image: registry.gitlab.com/mshepherd/news-scraper:0.17.21
+        image: registry.gitlab.com/mshepherd/news-scraper:0.18.0
         container_name: bg-scraper-news
         volumes:
             - ./feeds/news/output:/root/output
