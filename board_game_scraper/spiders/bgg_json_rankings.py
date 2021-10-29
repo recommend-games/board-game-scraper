@@ -20,7 +20,7 @@ class BggGeekListSpider(Spider):
     name = "bgg_json_rankings"
     allowed_domains = ("geekdo.com",)
     start_urls = (
-        "file:///Users/markus/Recommend.Games/board-game-data/rankings/bgg/bgg/20211026-073800.csv",
+        "file:///Users/markus/Recommend.Games/board-game-data/rankings/bgg/bgg_strategy/20211027-133924.csv",
     )
     item_classes = (GameItem,)
 
@@ -55,7 +55,7 @@ class BggGeekListSpider(Spider):
             for bgg_id in self.parse_csv(response.text):
                 yield Request(
                     url="https://api.geekdo.com/api/historicalrankgraph"
-                    + f"?objectid={bgg_id}&objecttype=thing&rankobjectid=1",
+                    + f"?objectid={bgg_id}&objecttype=thing&rankobjectid=5497",
                     callback=self.parse_game,
                 )
 
