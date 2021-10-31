@@ -77,6 +77,7 @@ def _parse_args():
         "--file-tag", "-t", default=os.getenv("SCRAPER_FILE_TAG"), help="TODO"
     )
     parser.add_argument("--dont-run-before", "-d", help="TODO")
+    parser.add_argument("--max-sleep-process", "-m", type=float, help="TODO")
     parser.add_argument(
         "--verbose",
         "-v",
@@ -132,9 +133,22 @@ def main():
     if dont_run_before:
         LOGGER.info("Don't run before %s", dont_run_before.isoformat())
         sleep_seconds = dont_run_before.timestamp() - now().timestamp()
+        sleep_seconds = (
+            min(sleep_seconds, args.max_sleep_process)
+            if args.max_sleep_process
+            else sleep_seconds
+        )
         if sleep_seconds > 0:
             LOGGER.info("Going to sleep for %.1f seconds", sleep_seconds)
             sleep(sleep_seconds)
+        sleep(1)  # just make sure we don't
+        if now() < dont_run_before:
+            LOGGER.info(
+                "It's now <%s>, but we're not supposed to run before <%s>, aborting",
+                now(),
+                dont_run_before,
+            )
+            return
 
     states = _find_states(
         job_dir, state_file=settings.get("STATE_TAG_FILE") or ".state"
