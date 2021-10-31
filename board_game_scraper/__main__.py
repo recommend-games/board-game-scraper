@@ -100,29 +100,16 @@ def main():
     LOGGER.info(remainder)
 
     base_dir = Path(settings["BASE_DIR"]).resolve()
-    cache_dir = base_dir / ".scrapy" / "httpcache"
-    feeds_dir = Path(args.feeds_dir) if args.feeds_dir else base_dir / "feeds"
-    feeds_dir = feeds_dir.resolve()
-    feeds_dir_scraper = (
-        feeds_dir / args.feeds_subdir if args.feeds_subdir else feeds_dir / args.spider
-    )
-    file_tag = normalize_space(args.file_tag)
-    out_file = feeds_dir_scraper / "%(class)s" / f"%(time)s{file_tag}.jl"
 
-    LOGGER.info("Output file will be <%s>", out_file)
-
-    from_settings = job_dir_from_settings(settings)
+    job_dir_settings = job_dir_from_settings(settings)
     job_dir = (
         Path(args.job_dir)
         if args.job_dir
-        else Path(from_settings)
-        if from_settings
+        else Path(job_dir_settings)
+        if job_dir_settings
         else base_dir / "jobs" / args.spider
     )
     job_dir = job_dir.resolve()
-
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    feeds_dir_scraper.mkdir(parents=True, exist_ok=True)
     job_dir.mkdir(parents=True, exist_ok=True)
 
     dont_run_before_file = job_dir / ".dont_run_before"
@@ -149,6 +136,20 @@ def main():
                 dont_run_before,
             )
             return
+
+    cache_dir = base_dir / ".scrapy" / "httpcache"
+    feeds_dir = Path(args.feeds_dir) if args.feeds_dir else base_dir / "feeds"
+    feeds_dir = feeds_dir.resolve()
+    feeds_dir_scraper = (
+        feeds_dir / args.feeds_subdir if args.feeds_subdir else feeds_dir / args.spider
+    )
+    file_tag = normalize_space(args.file_tag)
+    out_file = feeds_dir_scraper / "%(class)s" / f"%(time)s{file_tag}.jl"
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    feeds_dir_scraper.mkdir(parents=True, exist_ok=True)
+
+    LOGGER.info("Output file will be <%s>", out_file)
 
     states = _find_states(
         job_dir, state_file=settings.get("STATE_TAG_FILE") or ".state"
