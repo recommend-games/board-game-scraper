@@ -74,7 +74,10 @@ def _parse_args():
     parser.add_argument("--feeds-dir", "-f", help="TODO")
     parser.add_argument("--feeds-subdir", "-F", help="TODO")
     parser.add_argument(
-        "--file-tag", "-t", default=os.getenv("SCRAPER_FILE_TAG"), help="TODO"
+        "--file-tag",
+        "-t",
+        default=os.getenv("SCRAPER_FILE_TAG"),
+        help="TODO",
     )
     parser.add_argument("--dont-run-before", "-d", help="TODO")
     parser.add_argument("--max-sleep-process", "-m", type=float, help="TODO")
@@ -113,9 +116,13 @@ def main():
     job_dir.mkdir(parents=True, exist_ok=True)
 
     dont_run_before_file = job_dir / ".dont_run_before"
-    dont_run_before = parse_date(
-        args.dont_run_before, tzinfo=timezone.utc
-    ) or date_from_file(dont_run_before_file, tzinfo=timezone.utc)
+    dont_run_before = (
+        parse_date(
+            args.dont_run_before,
+            tzinfo=timezone.utc,
+        )
+        or date_from_file(dont_run_before_file, tzinfo=timezone.utc)
+    )
 
     if dont_run_before:
         LOGGER.info("Don't run before %s", dont_run_before.isoformat())
@@ -152,14 +159,17 @@ def main():
     LOGGER.info("Output file will be <%s>", out_file)
 
     states = _find_states(
-        job_dir, state_file=settings.get("STATE_TAG_FILE") or ".state"
+        job_dir,
+        state_file=settings.get("STATE_TAG_FILE") or ".state",
     )
 
     running = sorted(sub_dir for sub_dir, state in states.items() if state == "running")
 
     if len(running) > 1:
         LOGGER.warning(
-            "Found %d running jobs %s, please check and fix!", len(running), running
+            "Found %d running jobs %s, please check and fix!",
+            len(running),
+            running,
         )
         return
 
