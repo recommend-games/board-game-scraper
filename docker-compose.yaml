@@ -25,6 +25,8 @@ services:
         build: '.'
         command: ['bash', 'scrape_rankings.sh']
         env_file: .env
+        environment:
+            MAX_SLEEP_PROCESS: 60
         volumes:
             - ./feeds:/app/feeds
         restart: unless-stopped
@@ -37,6 +39,8 @@ services:
         build: '.'
         command: ['bash', 'scrape_sites.sh']
         env_file: .env
+        environment:
+            MAX_SLEEP_PROCESS: 60
         volumes:
             - ./feeds:/app/feeds
         restart: unless-stopped
