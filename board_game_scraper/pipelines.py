@@ -27,11 +27,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DataTypePipeline:
-    """ convert fields to their required data type """
+    """convert fields to their required data type"""
 
     # pylint: disable=no-self-use,unused-argument
     def process_item(self, item, spider):
-        """ convert to data type """
+        """convert to data type"""
 
         for field in item.fields:
             dtype = item.fields[field].get("dtype")
@@ -59,11 +59,11 @@ class DataTypePipeline:
 
 
 class ResolveLabelPipeline:
-    """ resolve labels """
+    """resolve labels"""
 
     @classmethod
     def from_crawler(cls, crawler):
-        """ init from crawler """
+        """init from crawler"""
 
         url = crawler.settings.get("RESOLVE_LABEL_URL")
         fields = crawler.settings.getlist("RESOLVE_LABEL_FIELDS")
@@ -130,7 +130,7 @@ class ResolveLabelPipeline:
         return deferred
 
     def process_item(self, item, spider):
-        """ resolve IDs to labels in specified fields """
+        """resolve IDs to labels in specified fields"""
 
         if not any(item.get(field) for field in self.fields):
             return item
@@ -144,7 +144,7 @@ class ResolveLabelPipeline:
 
 
 class ResolveImagePipeline:
-    """ resolve image URLs """
+    """resolve image URLs"""
 
     fields = ("image_url",)
     hostnames = (
@@ -177,7 +177,7 @@ class ResolveImagePipeline:
 
     # pylint: disable=unused-argument
     def process_item(self, item, spider):
-        """ resolve resource image URLs to actual file locations """
+        """resolve resource image URLs to actual file locations"""
         for field in self.fields:
             if item.get(field):
                 item[field] = clear_list(map(self._parse_url, arg_to_iter(item[field])))

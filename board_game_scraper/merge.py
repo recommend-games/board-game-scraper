@@ -111,7 +111,7 @@ def merge_files(
     concat_output=False,
     log_level=None,
 ):
-    """ merge files into one """
+    """merge files into one"""
 
     spark = _spark_session(log_level=log_level)
 

@@ -22,7 +22,7 @@ from ..utils import (
 
 
 class WikidataSpider(Spider):
-    """ Wikidata spider """
+    """Wikidata spider"""
 
     name = "wikidata"
     allowed_domains = ("wikidata.org",)
@@ -115,7 +115,7 @@ class WikidataSpider(Spider):
             yield Request(self._api_url(query), callback=self.parse_games, priority=1)
 
     def start_requests(self):
-        """ generate start requests """
+        """generate start requests"""
 
         types = getattr(self, "game_types", None)
 

@@ -132,7 +132,7 @@ def split_file(
     limits=LIMIT,
     construct=False,
 ):
-    """ split input file along prefixes """
+    """split input file along prefixes"""
 
     trie = None
 

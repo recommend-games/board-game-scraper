@@ -20,11 +20,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class PullQueueExtension(LoopingExtension):
-    """ periodically pull from a queue """
+    """periodically pull from a queue"""
 
     @classmethod
     def from_crawler(cls, crawler):
-        """ init from crawler """
+        """init from crawler"""
 
         if not crawler.settings.getbool("PULL_QUEUE_ENABLED"):
             raise NotConfigured
@@ -122,7 +122,7 @@ class PullQueueExtension(LoopingExtension):
 
     # pylint: disable=no-self-use
     def process_message(self, message, spider, encoding="utf-8"):
-        """ schedule collection request for user name """
+        """schedule collection request for user name"""
 
         LOGGER.debug("processing message <%s>", message)
 
@@ -152,11 +152,11 @@ class PullQueueExtension(LoopingExtension):
 
 
 class StateTag:
-    """ writes a tag into JOBDIR with the state of the spider """
+    """writes a tag into JOBDIR with the state of the spider"""
 
     @classmethod
     def from_crawler(cls, crawler):
-        """ init from crawler """
+        """init from crawler"""
 
         jobdir = job_dir(crawler.settings)
 
@@ -217,7 +217,7 @@ class DontRunBeforeTag:
 
     @classmethod
     def from_crawler(cls, crawler):
-        """ init from crawler """
+        """init from crawler"""
 
         tag_file = crawler.settings.get("DONT_RUN_BEFORE_FILE")
         date = parse_date(

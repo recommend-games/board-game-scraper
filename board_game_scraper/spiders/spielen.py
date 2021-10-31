@@ -28,7 +28,7 @@ def _parse_int(text):
 
 
 class SpielenSpider(Spider):
-    """ Spielen.de spider """
+    """Spielen.de spider"""
 
     name = "spielen"
     allowed_domains = ("spielen.de",)

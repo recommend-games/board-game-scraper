@@ -104,7 +104,7 @@ def _value_id_rank(items, sep=":"):
 
 
 class BggSpider(Spider):
-    """ BoardGameGeek spider """
+    """BoardGameGeek spider"""
 
     name = "bgg"
     allowed_domains = ("boardgamegeek.com",)
@@ -140,7 +140,7 @@ class BggSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        """ initialise spider from crawler """
+        """initialise spider from crawler"""
 
         kwargs.pop("settings", None)
         spider = cls(*args, settings=crawler.settings, **kwargs)
@@ -240,7 +240,7 @@ class BggSpider(Spider):
     def collection_request(
         self, user_name, *, meta=None, played=None, from_request=None, **kwargs
     ):
-        """ make a collection request for that user """
+        """make a collection request for that user"""
 
         user_name = user_name.lower()
         url = self._api_url(
