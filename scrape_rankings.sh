@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xo pipefail
+set -exo pipefail
 
 MAX_SLEEP_PROCESS="${MAX_SLEEP_PROCESS:-0}"
 
