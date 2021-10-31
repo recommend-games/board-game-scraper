@@ -141,7 +141,7 @@ def main():
         if sleep_seconds > 0:
             LOGGER.info("Going to sleep for %.1f seconds", sleep_seconds)
             sleep(sleep_seconds)
-        sleep(1)  # just make sure we don't
+        sleep(1)  # just to be sure
         if now() < dont_run_before:
             LOGGER.info(
                 "It's now <%s>, but we're not supposed to run before <%s>, aborting",
