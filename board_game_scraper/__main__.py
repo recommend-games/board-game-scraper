@@ -5,6 +5,7 @@
 import argparse
 import logging
 import os
+import sys
 
 from datetime import timezone
 from pathlib import Path
@@ -92,8 +93,7 @@ def _parse_args():
     return parser.parse_known_args()
 
 
-def main():
-    """Command line entry point."""
+def _main():
 
     settings = get_project_settings()
     configure_logging(settings)
@@ -213,6 +213,16 @@ def main():
         execute(argv=command)
     finally:
         garbage_collect()
+
+
+def main():
+    """Command line entry point."""
+
+    try:
+        _main()
+    except KeyboardInterrupt:
+        LOGGER.info("Process got interrupted, aborting")
+        sys.exit(1)  # TODO make this configurable
 
 
 if __name__ == "__main__":
