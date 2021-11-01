@@ -94,16 +94,16 @@ def _parse_args():
     return parser.parse_known_args()
 
 
-class Process:
+class BGScrapeProcess:
     """Board game scraper process."""
 
     exit_code: int
-    logger = LOGGER
+    logger: logging.Logger = LOGGER
 
     def __init__(self):
         signal.signal(signal.SIGUSR1, self.signal_handler)
         self.exit_code = 0
-        self.logger = logging.getLogger("Process")
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def signal_handler(self, signum, _):
         """Handle signal."""
@@ -249,7 +249,7 @@ class Process:
 
 def main():
     """Command line entry point."""
-    Process().main()
+    BGScrapeProcess().main()
 
 
 if __name__ == "__main__":
