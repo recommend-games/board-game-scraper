@@ -5,6 +5,7 @@
 import argparse
 import logging
 import os
+import signal
 import sys
 
 from datetime import timezone
@@ -93,136 +94,160 @@ def _parse_args():
     return parser.parse_known_args()
 
 
-def _main():
+class Process:
+    exit_code: int
+    logger = LOGGER
 
-    settings = get_project_settings()
-    configure_logging(settings)
+    def __init__(self):
+        signal.signal(signal.SIGUSR1, self.signal_handler)
+        self.exit_code = 0
+        self.logger = logging.getLogger("Process")
 
-    args, remainder = _parse_args()
-    LOGGER.info(args)
-    LOGGER.info(remainder)
+    def signal_handler(self, signum, _):
+        """Handle signal."""
+        self.logger("Received signal <%d>", signum)
+        self.exit_code = 1
+        signal.raise_signal(signal.SIGINT)
 
-    base_dir = Path(settings["BASE_DIR"]).resolve()
+    def run(self):
+        """Main process."""
 
-    job_dir_settings = job_dir_from_settings(settings)
-    job_dir = (
-        Path(args.job_dir)
-        if args.job_dir
-        else Path(job_dir_settings)
-        if job_dir_settings
-        else base_dir / "jobs" / args.spider
-    )
-    job_dir = job_dir.resolve()
-    job_dir.mkdir(parents=True, exist_ok=True)
+        settings = get_project_settings()
+        configure_logging(settings)
 
-    dont_run_before_file = job_dir / ".dont_run_before"
-    dont_run_before = (
-        parse_date(
-            args.dont_run_before,
-            tzinfo=timezone.utc,
+        args, remainder = _parse_args()
+        LOGGER.info(args)
+        LOGGER.info(remainder)
+
+        base_dir = Path(settings["BASE_DIR"]).resolve()
+
+        job_dir_settings = job_dir_from_settings(settings)
+        job_dir = (
+            Path(args.job_dir)
+            if args.job_dir
+            else Path(job_dir_settings)
+            if job_dir_settings
+            else base_dir / "jobs" / args.spider
         )
-        or date_from_file(dont_run_before_file, tzinfo=timezone.utc)
-    )
+        job_dir = job_dir.resolve()
+        job_dir.mkdir(parents=True, exist_ok=True)
 
-    if dont_run_before:
-        LOGGER.info("Don't run before %s", dont_run_before.isoformat())
-        sleep_seconds = dont_run_before.timestamp() - now().timestamp()
-        sleep_seconds = (
-            min(sleep_seconds, args.max_sleep_process)
-            if args.max_sleep_process
-            else sleep_seconds
+        dont_run_before_file = job_dir / ".dont_run_before"
+        dont_run_before = (
+            parse_date(
+                args.dont_run_before,
+                tzinfo=timezone.utc,
+            )
+            or date_from_file(dont_run_before_file, tzinfo=timezone.utc)
         )
-        if sleep_seconds > 0:
-            LOGGER.info("Going to sleep for %.1f seconds", sleep_seconds)
-            sleep(sleep_seconds)
-        sleep(1)  # just to be sure
-        if now() < dont_run_before:
-            LOGGER.info(
-                "It's now <%s>, but we're not supposed to run before <%s>, aborting",
-                now(),
-                dont_run_before,
+
+        if dont_run_before:
+            LOGGER.info("Don't run before %s", dont_run_before.isoformat())
+            sleep_seconds = dont_run_before.timestamp() - now().timestamp()
+            sleep_seconds = (
+                min(sleep_seconds, args.max_sleep_process)
+                if args.max_sleep_process
+                else sleep_seconds
+            )
+            if sleep_seconds > 0:
+                LOGGER.info("Going to sleep for %.1f seconds", sleep_seconds)
+                sleep(sleep_seconds)
+            sleep(1)  # just to be sure
+            if now() < dont_run_before:
+                LOGGER.info(
+                    "It's now <%s>, but we're not supposed to run before <%s>, aborting",
+                    now(),
+                    dont_run_before,
+                )
+                return
+
+        cache_dir = base_dir / ".scrapy" / "httpcache"
+        feeds_dir = Path(args.feeds_dir) if args.feeds_dir else base_dir / "feeds"
+        feeds_dir = feeds_dir.resolve()
+        feeds_dir_scraper = (
+            feeds_dir / args.feeds_subdir
+            if args.feeds_subdir
+            else feeds_dir / args.spider
+        )
+        file_tag = normalize_space(args.file_tag)
+        out_file = feeds_dir_scraper / "%(class)s" / f"%(time)s{file_tag}.jl"
+
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        feeds_dir_scraper.mkdir(parents=True, exist_ok=True)
+
+        LOGGER.info("Output file will be <%s>", out_file)
+
+        states = _find_states(
+            job_dir,
+            state_file=settings.get("STATE_TAG_FILE") or ".state",
+        )
+
+        running = sorted(
+            sub_dir for sub_dir, state in states.items() if state == "running"
+        )
+
+        if len(running) > 1:
+            LOGGER.warning(
+                "Found %d running jobs %s, please check and fix!",
+                len(running),
+                running,
             )
             return
 
-    cache_dir = base_dir / ".scrapy" / "httpcache"
-    feeds_dir = Path(args.feeds_dir) if args.feeds_dir else base_dir / "feeds"
-    feeds_dir = feeds_dir.resolve()
-    feeds_dir_scraper = (
-        feeds_dir / args.feeds_subdir if args.feeds_subdir else feeds_dir / args.spider
-    )
-    file_tag = normalize_space(args.file_tag)
-    out_file = feeds_dir_scraper / "%(class)s" / f"%(time)s{file_tag}.jl"
+        if running:
+            LOGGER.info("Found a running job <%s>, skipping...", running[0])
+            return
 
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    feeds_dir_scraper.mkdir(parents=True, exist_ok=True)
-
-    LOGGER.info("Output file will be <%s>", out_file)
-
-    states = _find_states(
-        job_dir,
-        state_file=settings.get("STATE_TAG_FILE") or ".state",
-    )
-
-    running = sorted(sub_dir for sub_dir, state in states.items() if state == "running")
-
-    if len(running) > 1:
-        LOGGER.warning(
-            "Found %d running jobs %s, please check and fix!",
-            len(running),
-            running,
+        resumable = sorted(
+            sub_dir for sub_dir, state in states.items() if state in RESUMABLE_STATES
         )
-        return
 
-    if running:
-        LOGGER.info("Found a running job <%s>, skipping...", running[0])
-        return
+        if len(resumable) > 1:
+            LOGGER.warning(
+                "Found %d resumable jobs %s, please check and fix!",
+                len(resumable),
+                resumable,
+            )
+            return
 
-    resumable = sorted(
-        sub_dir for sub_dir, state in states.items() if state in RESUMABLE_STATES
-    )
+        if resumable:
+            LOGGER.info("Resuming previous job <%s>", resumable[0])
 
-    if len(resumable) > 1:
-        LOGGER.warning(
-            "Found %d resumable jobs %s, please check and fix!",
-            len(resumable),
-            resumable,
-        )
-        return
+        job_tag = resumable[0] if resumable else now().strftime(DATE_FORMAT)
+        curr_job = job_dir / job_tag
 
-    if resumable:
-        LOGGER.info("Resuming previous job <%s>", resumable[0])
+        command = [
+            "scrapy",
+            "crawl",
+            args.spider,
+            "--output",
+            str(out_file),
+            "--set",
+            f"JOBDIR={curr_job}",
+            "--set",
+            f"DONT_RUN_BEFORE_FILE={dont_run_before_file}",
+        ] + remainder
 
-    job_tag = resumable[0] if resumable else now().strftime(DATE_FORMAT)
-    curr_job = job_dir / job_tag
+        LOGGER.info("Executing command %r", command)
 
-    command = [
-        "scrapy",
-        "crawl",
-        args.spider,
-        "--output",
-        str(out_file),
-        "--set",
-        f"JOBDIR={curr_job}",
-        "--set",
-        f"DONT_RUN_BEFORE_FILE={dont_run_before_file}",
-    ] + remainder
+        try:
+            execute(argv=command)
+        finally:
+            garbage_collect()
 
-    LOGGER.info("Executing command %r", command)
-
-    try:
-        execute(argv=command)
-    finally:
-        garbage_collect()
+    def main(self):
+        """Command line entry point."""
+        try:
+            self.run()
+        except KeyboardInterrupt:
+            LOGGER.info("Process got interrupted, aborting")
+            self.exit_code = 1  # TODO make this configurable
+        sys.exit(self.exit_code)
 
 
 def main():
     """Command line entry point."""
-
-    try:
-        _main()
-    except KeyboardInterrupt:
-        LOGGER.info("Process got interrupted, aborting")
-        sys.exit(1)  # TODO make this configurable
+    Process().main()
 
 
 if __name__ == "__main__":
