@@ -97,18 +97,20 @@ def _parse_args():
 class BGScrapeProcess:
     """Board game scraper process."""
 
-    exit_code: int
     logger: logging.Logger = LOGGER
+    interrupted_exit_code: int = 0
+    exit_code: int
 
-    def __init__(self):
+    def __init__(self, interrupted_exit_code: int = 0):
         signal.signal(signal.SIGUSR1, self.signal_handler)
+        self.interrupted_exit_code = interrupted_exit_code
         self.exit_code = 0
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def signal_handler(self, signum, _):
         """Handle signal."""
         self.logger("Received signal <%d>", signum)
-        self.exit_code = 1
+        self.exit_code = self.interrupted_exit_code
         signal.raise_signal(signal.SIGINT)
 
     def run(self):
@@ -243,7 +245,7 @@ class BGScrapeProcess:
             self.run()
         except KeyboardInterrupt:
             self.logger.info("Process got interrupted, aborting")
-            self.exit_code = 1  # TODO make this configurable
+            self.exit_code = self.interrupted_exit_code
         sys.exit(self.exit_code)
 
 
