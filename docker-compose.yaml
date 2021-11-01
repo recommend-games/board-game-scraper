@@ -31,7 +31,7 @@ services:
             - ./feeds:/app/feeds
         restart: unless-stopped
         stop_grace_period: 30m
-        stop_signal: SIGINT
+        stop_signal: SIGUSR1
 
     sites:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
@@ -45,7 +45,7 @@ services:
             - ./feeds:/app/feeds
         restart: unless-stopped
         stop_grace_period: 30m
-        stop_signal: SIGINT
+        stop_signal: SIGUSR1
 
     news:
         image: registry.gitlab.com/mshepherd/news-scraper:0.18.0

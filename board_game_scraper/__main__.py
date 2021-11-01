@@ -84,6 +84,12 @@ def _parse_args():
     parser.add_argument("--dont-run-before", "-d", help="TODO")
     parser.add_argument("--max-sleep-process", "-m", type=float, help="TODO")
     parser.add_argument(
+        "--interrupted-exit-code",
+        "-e",
+        type=int,
+        help="exit code to raise if scraping gets interrupted",
+    )
+    parser.add_argument(
         "--verbose",
         "-v",
         action="count",
@@ -109,7 +115,7 @@ class BGScrapeProcess:
 
     def signal_handler(self, signum, _):
         """Handle signal."""
-        self.logger("Received signal <%d>", signum)
+        self.logger.warning("Received signal <%d>", signum)
         self.exit_code = self.interrupted_exit_code
         signal.raise_signal(signal.SIGINT)
 
@@ -122,6 +128,13 @@ class BGScrapeProcess:
         args, remainder = _parse_args()
         self.logger.info(args)
         self.logger.info(remainder)
+
+        if args.interrupted_exit_code is not None:
+            self.interrupted_exit_code = args.interrupted_exit_code
+            self.logger.info(
+                "Will use exit code <%d> if interrupted",
+                self.interrupted_exit_code,
+            )
 
         base_dir = Path(settings["BASE_DIR"]).resolve()
 
