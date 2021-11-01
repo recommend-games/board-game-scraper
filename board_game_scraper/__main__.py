@@ -95,6 +95,8 @@ def _parse_args():
 
 
 class Process:
+    """Board game scraper process."""
+
     exit_code: int
     logger = LOGGER
 
@@ -116,8 +118,8 @@ class Process:
         configure_logging(settings)
 
         args, remainder = _parse_args()
-        LOGGER.info(args)
-        LOGGER.info(remainder)
+        self.logger.info(args)
+        self.logger.info(remainder)
 
         base_dir = Path(settings["BASE_DIR"]).resolve()
 
@@ -142,7 +144,7 @@ class Process:
         )
 
         if dont_run_before:
-            LOGGER.info("Don't run before %s", dont_run_before.isoformat())
+            self.logger.info("Don't run before %s", dont_run_before.isoformat())
             sleep_seconds = dont_run_before.timestamp() - now().timestamp()
             sleep_seconds = (
                 min(sleep_seconds, args.max_sleep_process)
@@ -150,11 +152,11 @@ class Process:
                 else sleep_seconds
             )
             if sleep_seconds > 0:
-                LOGGER.info("Going to sleep for %.1f seconds", sleep_seconds)
+                self.logger.info("Going to sleep for %.1f seconds", sleep_seconds)
                 sleep(sleep_seconds)
             sleep(1)  # just to be sure
             if now() < dont_run_before:
-                LOGGER.info(
+                self.logger.info(
                     "It's now <%s>, but we're not supposed to run before <%s>, aborting",
                     now(),
                     dont_run_before,
@@ -175,7 +177,7 @@ class Process:
         cache_dir.mkdir(parents=True, exist_ok=True)
         feeds_dir_scraper.mkdir(parents=True, exist_ok=True)
 
-        LOGGER.info("Output file will be <%s>", out_file)
+        self.logger.info("Output file will be <%s>", out_file)
 
         states = _find_states(
             job_dir,
@@ -187,7 +189,7 @@ class Process:
         )
 
         if len(running) > 1:
-            LOGGER.warning(
+            self.logger.warning(
                 "Found %d running jobs %s, please check and fix!",
                 len(running),
                 running,
@@ -195,7 +197,7 @@ class Process:
             return
 
         if running:
-            LOGGER.info("Found a running job <%s>, skipping...", running[0])
+            self.logger.info("Found a running job <%s>, skipping...", running[0])
             return
 
         resumable = sorted(
@@ -203,7 +205,7 @@ class Process:
         )
 
         if len(resumable) > 1:
-            LOGGER.warning(
+            self.logger.warning(
                 "Found %d resumable jobs %s, please check and fix!",
                 len(resumable),
                 resumable,
@@ -211,7 +213,7 @@ class Process:
             return
 
         if resumable:
-            LOGGER.info("Resuming previous job <%s>", resumable[0])
+            self.logger.info("Resuming previous job <%s>", resumable[0])
 
         job_tag = resumable[0] if resumable else now().strftime(DATE_FORMAT)
         curr_job = job_dir / job_tag
@@ -228,7 +230,7 @@ class Process:
             f"DONT_RUN_BEFORE_FILE={dont_run_before_file}",
         ] + remainder
 
-        LOGGER.info("Executing command %r", command)
+        self.logger.info("Executing command %r", command)
 
         try:
             execute(argv=command)
@@ -240,7 +242,7 @@ class Process:
         try:
             self.run()
         except KeyboardInterrupt:
-            LOGGER.info("Process got interrupted, aborting")
+            self.logger.info("Process got interrupted, aborting")
             self.exit_code = 1  # TODO make this configurable
         sys.exit(self.exit_code)
 
