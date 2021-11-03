@@ -37,15 +37,16 @@ services:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-sites
         build: '.'
-        command: ['bash', 'scrape_sites.sh']
+        command: ['python', 'scrape_sites.py']
         env_file: .env
         environment:
             MAX_SLEEP_PROCESS: 60
+            LOG_LEVEL: INFO
         volumes:
             - ./feeds:/app/feeds
         restart: unless-stopped
         stop_grace_period: 30m
-        stop_signal: SIGUSR1
+        stop_signal: SIGINT
 
     news:
         image: registry.gitlab.com/mshepherd/news-scraper:0.18.0

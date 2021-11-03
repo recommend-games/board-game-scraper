@@ -7,7 +7,6 @@ import os
 import signal
 import sys
 
-from functools import partial
 from subprocess import Popen
 
 from pytility import parse_int
@@ -19,20 +18,20 @@ CLOSESPIDER_TIMEOUT = 36_000  # 10h
 DONT_RUN_BEFORE_SEC = 21_600  # 6h
 
 CMDS = [
-    [
-        "python3",
-        "-m",
-        "board_game_scraper",
-        "bga",
-        "--max-sleep-process",
-        f"{MAX_SLEEP_PROCESS}",
-        "--interrupted-exit-code",
-        "1",
-        "--set",
-        f"CLOSESPIDER_TIMEOUT={CLOSESPIDER_TIMEOUT}",
-        "--set",
-        f"DONT_RUN_BEFORE_SEC={DONT_RUN_BEFORE_SEC}",
-    ],
+    # [
+    #     "python",
+    #     "-m",
+    #     "board_game_scraper",
+    #     "bga",
+    #     "--max-sleep-process",
+    #     f"{MAX_SLEEP_PROCESS}",
+    #     "--interrupted-exit-code",
+    #     "1",
+    #     "--set",
+    #     f"CLOSESPIDER_TIMEOUT={CLOSESPIDER_TIMEOUT}",
+    #     "--set",
+    #     f"DONT_RUN_BEFORE_SEC={DONT_RUN_BEFORE_SEC}",
+    # ],
     [
         "python",
         "-m",
@@ -92,12 +91,6 @@ CMDS = [
 ]
 
 
-def forward_signal(signum, _, *, proc):
-    """Forward signal to child process."""
-    LOGGER.info("Received signal <%d>, forwarding to child process", signum)
-    proc.send_signal(signum)
-
-
 def run_cmds(cmds, fwd_signals=(signal.SIGINT, signal.SIGTERM, signal.SIGUSR1)):
     """Run a subprocess."""
 
@@ -108,15 +101,34 @@ def run_cmds(cmds, fwd_signals=(signal.SIGINT, signal.SIGTERM, signal.SIGUSR1)):
     )
 
     LOGGER.info(fwd_signals)
+
     for cmd in cmds:
         LOGGER.info(cmd)
+
         with Popen(cmd) as proc:
-            handler = partial(forward_signal, proc=proc)
+            proc.interrupted = True
+
+            def _forward_signal(signum, _, *, proc=proc):
+                proc.interrupted = True
+                LOGGER.info(
+                    "Received signal <%d>, let the child process handle it",
+                    signum,
+                )
+                LOGGER.warning(
+                    "Scraping will stop after the current process has finished"
+                )
+
             for sig in fwd_signals:
-                signal.signal(sig, handler)
+                signal.signal(sig, _forward_signal)
+
             LOGGER.info("Started process <%d>", proc.pid)
             proc.communicate()
+
         LOGGER.info("Process finished with exitcode <%d>", proc.returncode)
+
+        if proc.returncode != 0 or proc.interrupted:
+            LOGGER.warning("Process got interrupted, aborting!")
+            break
 
 
 if __name__ == "__main__":
