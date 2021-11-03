@@ -106,10 +106,9 @@ def run_cmds(cmds, fwd_signals=(signal.SIGINT, signal.SIGTERM, signal.SIGUSR1)):
         LOGGER.info(cmd)
 
         with Popen(cmd) as proc:
-            proc.interrupted = True
+            proc.interrupted = False
 
             def _forward_signal(signum, _, *, proc=proc):
-                proc.interrupted = True
                 LOGGER.info(
                     "Received signal <%d>, let the child process handle it",
                     signum,
@@ -117,6 +116,8 @@ def run_cmds(cmds, fwd_signals=(signal.SIGINT, signal.SIGTERM, signal.SIGUSR1)):
                 LOGGER.warning(
                     "Scraping will stop after the current process has finished"
                 )
+                proc.interrupted = True
+                proc.send_signal(signum)
 
             for sig in fwd_signals:
                 signal.signal(sig, _forward_signal)
