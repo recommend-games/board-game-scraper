@@ -74,6 +74,7 @@ FEED_EXPORT_FIELDS = (
     "bayes_rating",
     "worst_rating",
     "best_rating",
+    "page_views",
     "complexity",
     "easiest_complexity",
     "hardest_complexity",
