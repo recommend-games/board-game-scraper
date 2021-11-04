@@ -5,7 +5,7 @@
 import json
 import re
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
@@ -15,10 +15,10 @@ from ..loaders import GameJsonLoader
 from ..utils import extract_meta, json_from_response, now, parse_url
 
 
-def _parse_date(date, format_str="%Y%m%d%H", tzinfo=timezone.utc):
+def _parse_date(date_str, format_str="%Y%m%d%H", tzinfo=timezone.utc):
     try:
-        date = datetime.strptime(date, format_str)
-        return date.replace(tzinfo=tzinfo)
+        date_obj = datetime.strptime(date_str, format_str)
+        return date_obj.replace(tzinfo=tzinfo)
     except Exception:
         pass
     return None
@@ -40,13 +40,19 @@ class WikiStatsSpider(Spider):
     path_regex = re.compile(r"^/wiki/(.+)$")
 
     def parse(self, response):
-        """TODO contract."""
+        """
+        @url file:///Users/markus/Recommend.Games/board-game-data/scraped/wikidata_GameItem.jl
+        @returns requests 12000
+        @returns items 0 0
+        """
 
         text = response.text if hasattr(response, "text") else None
 
         if not text:
             self.logger.warning("Empty response: %r", response)
             return
+
+        today = date.today().strftime("%Y%m%d")
 
         for line in text.splitlines():
             game = json.loads(line)
@@ -66,7 +72,7 @@ class WikiStatsSpider(Spider):
                 request_url = (
                     "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
                     + f"{url.hostname}/all-access/all-agents/{path_match.group(1)}"
-                    + "/daily/20000101/20211104"
+                    + f"/daily/20000101/{today}"
                 )
                 yield Request(
                     url=request_url,
@@ -75,7 +81,12 @@ class WikiStatsSpider(Spider):
                 )
 
     def parse_article(self, response):
-        """TODO contract."""
+        """
+        @url https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/all-agents/Catan/daily/20000101/20211104
+        @returns requests 0 0
+        @returns items 2300
+        @scrapes page_views published_at scraped_at
+        """
 
         meta = extract_meta(response)
         game = meta.get("game") or {}
@@ -87,7 +98,7 @@ class WikiStatsSpider(Spider):
             ldr = GameJsonLoader(item=GameItem(game), json_obj=item, response=response)
             ldr.add_value("external_link", external_link)
             ldr.add_jmes("page_views", "views")
-            ldr.add_value("published_at", _parse_date(date=item.get("timestamp")))
+            ldr.add_value("published_at", _parse_date(item.get("timestamp")))
             ldr.add_value("scraped_at", scraped_at)
 
             yield ldr.load_item()
