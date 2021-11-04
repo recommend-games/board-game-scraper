@@ -34,10 +34,15 @@ class WikiStatsSpider(Spider):
     )
     item_classes = (GameItem,)
 
-    custom_settings = {"ROBOTSTXT_OBEY": False}
-
     domain_regex = re.compile(r"^[a-z]{2,3}\.wikipedia\.org$")
     path_regex = re.compile(r"^/wiki/(.+)$")
+
+    custom_settings = {
+        "DOWNLOAD_DELAY": 0.1,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 16,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 8,
+        "LIMIT_IMAGES_TO_DOWNLOAD": 0,
+    }
 
     def parse(self, response):
         """
