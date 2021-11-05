@@ -32,15 +32,29 @@ class WikiStatsSpider(Spider):
     start_urls = (
         "file:///Users/markus/Recommend.Games/board-game-data/scraped/wikidata_GameItem.jl",
     )
+
     item_classes = (GameItem,)
+    item_fields_to_copy = frozenset(
+        (
+            "name",
+            "bgg_id",
+            "freebase_id",
+            "wikidata_id",
+            "wikipedia_id",
+            "dbpedia_id",
+            "luding_id",
+            "spielen_id",
+            "bga_id",
+        )
+    )
 
     domain_regex = re.compile(r"^[a-z]{2,3}\.wikipedia\.org$")
     path_regex = re.compile(r"^/wiki/(.+)$")
 
     custom_settings = {
-        "DOWNLOAD_DELAY": 0.1,
-        "CONCURRENT_REQUESTS_PER_DOMAIN": 16,
-        "AUTOTHROTTLE_TARGET_CONCURRENCY": 8,
+        "DOWNLOAD_DELAY": 1,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 32,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 16,
         "LIMIT_IMAGES_TO_DOWNLOAD": 0,
     }
 
@@ -95,13 +109,14 @@ class WikiStatsSpider(Spider):
 
         meta = extract_meta(response)
         game = meta.get("game") or {}
-        external_link = meta.get("external_link")
+        game = {k: v for k, v in game.items() if k in self.item_fields_to_copy}
+        wikipedia_url = meta.get("external_link")
         result = json_from_response(response)
         scraped_at = now()
 
         for item in arg_to_iter(result.get("items")):
             ldr = GameJsonLoader(item=GameItem(game), json_obj=item, response=response)
-            ldr.add_value("external_link", external_link)
+            ldr.add_value("url", wikipedia_url)
             ldr.add_jmes("page_views", "views")
             ldr.add_value("published_at", _parse_date(item.get("timestamp")))
             ldr.add_value("scraped_at", scraped_at)
