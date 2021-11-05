@@ -6,6 +6,7 @@ import json
 import re
 
 from datetime import date, datetime, timezone
+from urllib.parse import unquote_plus
 
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
@@ -40,7 +41,6 @@ class WikiStatsSpider(Spider):
             "bgg_id",
             "freebase_id",
             "wikidata_id",
-            "wikipedia_id",
             "dbpedia_id",
             "luding_id",
             "spielen_id",
@@ -48,7 +48,7 @@ class WikiStatsSpider(Spider):
         )
     )
 
-    domain_regex = re.compile(r"^[a-z]{2,3}\.wikipedia\.org$")
+    domain_regex = re.compile(r"^([a-z]{2,3})\.wikipedia\.org$")
     path_regex = re.compile(r"^/wiki/(.+)$")
 
     custom_settings = {
@@ -80,12 +80,14 @@ class WikiStatsSpider(Spider):
                 url = parse_url(external_link)
 
                 domain_match = self.domain_regex.match(url.hostname)
-                if not domain_match:
-                    continue
-
                 path_match = self.path_regex.match(url.path)
 
-                if not path_match or not path_match.group(1):
+                if (
+                    not domain_match
+                    or not domain_match.group(1)
+                    or not path_match
+                    or not path_match.group(1)
+                ):
                     continue
 
                 request_url = (
@@ -96,7 +98,12 @@ class WikiStatsSpider(Spider):
                 yield Request(
                     url=request_url,
                     callback=self.parse_article,
-                    meta={"game": game, "external_link": external_link},
+                    meta={
+                        "game": game,
+                        "wiki_url": external_link,
+                        "wiki_language": domain_match.group(1),
+                        "wiki_article": path_match.group(1),
+                    },
                 )
 
     def parse_article(self, response):
@@ -109,14 +116,23 @@ class WikiStatsSpider(Spider):
 
         meta = extract_meta(response)
         game = meta.get("game") or {}
+        wiki_url = meta.get("wiki_url")
+        wiki_language = meta.get("wiki_language")
+        wiki_article = meta.get("wiki_article")
+
         game = {k: v for k, v in game.items() if k in self.item_fields_to_copy}
-        wikipedia_url = meta.get("external_link")
+        game["wikipedia_id"] = (
+            f"{wiki_language}:{unquote_plus(wiki_article)}"
+            if wiki_language and wiki_article
+            else None
+        )
+
         result = json_from_response(response)
         scraped_at = now()
 
         for item in arg_to_iter(result.get("items")):
             ldr = GameJsonLoader(item=GameItem(game), json_obj=item, response=response)
-            ldr.add_value("url", wikipedia_url)
+            ldr.add_value("url", wiki_url)
             ldr.add_jmes("page_views", "views")
             ldr.add_value("published_at", _parse_date(item.get("timestamp")))
             ldr.add_value("scraped_at", scraped_at)
