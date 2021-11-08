@@ -93,9 +93,8 @@ def _remove_empty(data, remove_false=False):
     return data
 
 
-def merge_files(
+def merge_data(
     in_paths,
-    out_path,
     keys="id",
     key_types=None,
     latest=None,
@@ -108,10 +107,9 @@ def merge_files(
     sort_latest=False,
     sort_fields=None,
     sort_descending=False,
-    concat_output=False,
     log_level=None,
 ):
-    """ merge files into one """
+    """Merge files into one dataframe."""
 
     spark = _spark_session(log_level=log_level)
 
@@ -123,9 +121,8 @@ def merge_files(
     in_paths = list(map(str, arg_to_iter(in_paths)))
 
     LOGGER.info(
-        "Merging items from %s into <%s> with Spark session %r",
+        "Merging items from %s with Spark session %r",
         f"[{len(in_paths) } paths]" if len(in_paths) > 10 else in_paths,
-        out_path,
         spark,
     )
 
@@ -228,7 +225,48 @@ def merge_files(
         LOGGER.info("Use sorted column names: %s", fieldnames)
     data = data.select(*fieldnames)
 
-    data = _remove_empty(data)
+    return _remove_empty(data)
+
+
+def merge_files(
+    in_paths,
+    out_path,
+    keys="id",
+    key_types=None,
+    latest=None,
+    latest_types=None,
+    latest_min=None,
+    latest_required=False,
+    fieldnames=None,
+    fieldnames_exclude=None,
+    sort_keys=False,
+    sort_latest=False,
+    sort_fields=None,
+    sort_descending=False,
+    concat_output=False,
+    log_level=None,
+):
+    """Merge files into one file."""
+
+    # TODO check out file before going through the trouble of merging
+    LOGGER.info("Merging items into <%s>", out_path)
+
+    data = merge_data(
+        in_paths=in_paths,
+        keys=keys,
+        key_types=key_types,
+        latest=latest,
+        latest_types=latest_types,
+        latest_min=latest_min,
+        latest_required=latest_required,
+        fieldnames=fieldnames,
+        fieldnames_exclude=fieldnames_exclude,
+        sort_keys=sort_keys,
+        sort_latest=sort_latest,
+        sort_fields=sort_fields,
+        sort_descending=sort_descending,
+        log_level=log_level,
+    )
 
     if concat_output:
         with tempfile.TemporaryDirectory() as temp_path:
