@@ -327,12 +327,15 @@ def main():
     LOGGER.info(args)
 
     for spider in args.spiders:
-        _stop_merge_start(
-            spider=spider,
-            compose_file=args.compose_file,
-            timeout=args.timeout,
-            cool_down=args.cool_down,
-        )
+        try:
+            _stop_merge_start(
+                spider=spider,
+                compose_file=args.compose_file,
+                timeout=args.timeout,
+                cool_down=args.cool_down,
+            )
+        except Exception:
+            LOGGER.exception("There was an error when processing spider <%s>", spider)
 
 
 if __name__ == "__main__":
