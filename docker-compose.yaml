@@ -1,21 +1,21 @@
 version: '3'
 
 services:
-    bga:
-        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
-        container_name: bg-scraper-bga
-        build: '.'
-        command: ['python', '-m', 'board_game_scraper', 'bga']
-        env_file: .env
-        environment:
-            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
-            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
-        volumes:
-            - ./feeds:/app/feeds
-            - ./images:/app/images
-        restart: unless-stopped
-        stop_grace_period: 15m
-        stop_signal: SIGINT
+    # bga:
+    #     image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+    #     container_name: bg-scraper-bga
+    #     build: '.'
+    #     command: ['python', '-m', 'board_game_scraper', 'bga']
+    #     env_file: .env
+    #     environment:
+    #         CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+    #         DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+    #     volumes:
+    #         - ./feeds:/app/feeds
+    #         - ./images:/app/images
+    #     restart: unless-stopped
+    #     stop_grace_period: 15m
+    #     stop_signal: SIGINT
 
     bgg:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
