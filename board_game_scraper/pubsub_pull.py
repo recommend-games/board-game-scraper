@@ -24,11 +24,17 @@ from .utils import now, pubsub_client
 LOGGER = logging.getLogger(__name__)
 
 
-def _process_messages_csv(messages, output, header=False, encoding="utf-8"):
+def _process_messages_csv(
+    messages,
+    output,
+    header=False,
+    message_col="message",
+    encoding="utf-8",
+):
     writer = csv.writer(output)
 
     if header:
-        writer.writerow(("date", "user"))
+        writer.writerow(("date", message_col))
 
     for message in messages:
         try:
@@ -159,6 +165,7 @@ def main():
                     messages=response.received_messages,
                     output=sys.stdout,
                     header=args.header and (i == 0),
+                    message_col="user",  # TODO make argument
                 )
             )
         else:
@@ -182,6 +189,7 @@ def main():
                         messages=response.received_messages,
                         output=out_file,
                         header=args.header,
+                        message_col="user",  # TODO make argument
                     )
                 )
 
