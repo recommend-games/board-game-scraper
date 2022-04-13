@@ -24,7 +24,7 @@ from .utils import now, pubsub_client
 LOGGER = logging.getLogger(__name__)
 
 
-def _process_messages(messages, output, header=False, encoding="utf-8"):
+def _process_messages_csv(messages, output, header=False, encoding="utf-8"):
     writer = csv.writer(output)
 
     if header:
@@ -155,7 +155,7 @@ def main():
 
         if not args.out_path or args.out_path == "-":
             ack_ids = tuple(
-                _process_messages(
+                _process_messages_csv(
                     messages=response.received_messages,
                     output=sys.stdout,
                     header=args.header and (i == 0),
@@ -178,7 +178,7 @@ def main():
             LOGGER.info("writing results to <%s>", out_path)
             with open(out_path, "w", newline="") as out_file:
                 ack_ids = tuple(
-                    _process_messages(
+                    _process_messages_csv(
                         messages=response.received_messages,
                         output=out_file,
                         header=args.header,
