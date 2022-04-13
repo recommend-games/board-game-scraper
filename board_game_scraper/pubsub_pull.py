@@ -29,6 +29,7 @@ def _process_messages_csv(
     output,
     header=False,
     message_col="message",
+    message_process=None,
     encoding="utf-8",
 ):
     writer = csv.writer(output)
@@ -39,9 +40,11 @@ def _process_messages_csv(
     for message in messages:
         try:
             date = message.message.publish_time.replace(nanosecond=0).isoformat()
-            user = normalize_space(message.message.data.decode(encoding)).lower()
-            if date and user:
-                writer.writerow((date, user))
+            content = message.message.data.decode(encoding)
+            if callable(message_process):
+                content = message_process(content)
+            if date and content:
+                writer.writerow((date, content))
                 yield message.ack_id
             else:
                 LOGGER.error("there was a problem processing message %r", message)
@@ -166,6 +169,8 @@ def main():
                     output=sys.stdout,
                     header=args.header and (i == 0),
                     message_col="user",  # TODO make argument
+                    # TODO make flexible
+                    message_process=lambda m: normalize_space(m).lower(),
                 )
             )
         else:
@@ -190,6 +195,8 @@ def main():
                         output=out_file,
                         header=args.header,
                         message_col="user",  # TODO make argument
+                        # TODO make flexible
+                        message_process=lambda m: normalize_space(m).lower(),
                     )
                 )
 
