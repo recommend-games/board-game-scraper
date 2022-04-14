@@ -53,6 +53,27 @@ def _process_messages_csv(
             LOGGER.exception("unable to process message %r", message)
 
 
+def _process_messages_raw(
+    messages,
+    output,
+    message_process=None,
+    encoding="utf-8",
+):
+    for message in messages:
+        try:
+            content = message.message.data.decode(encoding)
+            if callable(message_process):
+                content = message_process(content)
+            if content:
+                output.write(content)
+                yield message.ack_id
+            else:
+                LOGGER.error("there was a problem processing message %r", message)
+
+        except Exception:
+            LOGGER.exception("unable to process message %r", message)
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(
         description="Pull logs from Google Cloud PubSub queue."
