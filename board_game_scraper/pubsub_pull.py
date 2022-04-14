@@ -66,6 +66,7 @@ def _process_messages_raw(
                 content = message_process(content)
             if content:
                 output.write(content)
+                output.write("\n")
                 yield message.ack_id
             else:
                 LOGGER.error("there was a problem processing message %r", message)
