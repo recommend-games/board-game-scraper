@@ -104,8 +104,14 @@ def _parse_args():
     )
     parser.add_argument(
         "--message-col",
-        "-m",
+        "-C",
         help="Label of the message column",
+    )
+    parser.add_argument(
+        "--message-process",
+        "-P",
+        choices=("lower",),
+        help="How to process the message",
     )
     parser.add_argument(
         "--batch-size",
@@ -165,6 +171,13 @@ def main():
         LOGGER.info("going to sleep for %.1f seconds", args.sleep)
         sleep(args.sleep)
 
+    message_col = args.message_col or "message"
+
+    if args.message_process == "lower":
+        message_process = lambda m: normalize_space(m).lower()
+    else:
+        message_process = None
+
     client = pubsub_client()
     # pylint: disable=no-member
     subscription_path = client.subscription_path(args.project, args.subscription)
@@ -195,9 +208,8 @@ def main():
                     messages=response.received_messages,
                     output=sys.stdout,
                     header=args.header and (i == 0),
-                    message_col=args.message_col,
-                    # TODO make flexible
-                    message_process=lambda m: normalize_space(m).lower(),
+                    message_col=message_col,
+                    message_process=message_process,
                 )
             )
         else:
@@ -221,9 +233,8 @@ def main():
                         messages=response.received_messages,
                         output=out_file,
                         header=args.header,
-                        message_col=args.message_col,
-                        # TODO make flexible
-                        message_process=lambda m: normalize_space(m).lower(),
+                        message_col=message_col,
+                        message_process=message_process,
                     )
                 )
 
