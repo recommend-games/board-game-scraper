@@ -103,6 +103,11 @@ def _parse_args():
         help="include CSV header",
     )
     parser.add_argument(
+        "--message-col",
+        "-m",
+        help="Label of the message column",
+    )
+    parser.add_argument(
         "--batch-size",
         "-b",
         type=int,
@@ -190,7 +195,7 @@ def main():
                     messages=response.received_messages,
                     output=sys.stdout,
                     header=args.header and (i == 0),
-                    message_col="user",  # TODO make argument
+                    message_col=args.message_col,
                     # TODO make flexible
                     message_process=lambda m: normalize_space(m).lower(),
                 )
@@ -216,7 +221,7 @@ def main():
                         messages=response.received_messages,
                         output=out_file,
                         header=args.header,
-                        message_col="user",  # TODO make argument
+                        message_col=args.message_col,
                         # TODO make flexible
                         message_process=lambda m: normalize_space(m).lower(),
                     )
