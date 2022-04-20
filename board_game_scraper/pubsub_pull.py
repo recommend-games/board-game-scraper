@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 
+from functools import partial
 from itertools import count
 from time import sleep
 from typing import Optional
@@ -26,6 +27,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _process_messages_csv(
+    *,
     messages,
     output,
     header=False,
@@ -55,11 +57,14 @@ def _process_messages_csv(
 
 
 def _process_messages_raw(
+    *,
     messages,
     output,
+    header=False,
     message_process=None,
     encoding="utf-8",
 ):
+    del header  # required to align with _process_messages_csv
     for message in messages:
         try:
             content = message.message.data.decode(encoding)
@@ -184,10 +189,6 @@ def main():
     output_format = args.format or _format_from_path(args.out_path) or "raw"
     LOGGER.info("Using output format <%s>", output_format)
 
-    if args.sleep:
-        LOGGER.info("going to sleep for %.1f seconds", args.sleep)
-        sleep(args.sleep)
-
     message_col = args.message_col or "message"
 
     if args.message_process == "lower":
@@ -196,6 +197,20 @@ def main():
         message_process = normalize_space
     else:
         message_process = None
+
+    process_messages = (
+        partial(
+            _process_messages_csv,
+            message_col=message_col,
+            message_process=message_process,
+        )
+        if output_format == "csv"
+        else partial(_process_messages_raw, message_process=message_process)
+    )
+
+    if args.sleep:
+        LOGGER.info("going to sleep for %.1f seconds", args.sleep)
+        sleep(args.sleep)
 
     client = pubsub_client()
     # pylint: disable=no-member
@@ -223,12 +238,10 @@ def main():
 
         if not args.out_path or args.out_path == "-":
             ack_ids = tuple(
-                _process_messages_csv(
+                process_messages(
                     messages=response.received_messages,
                     output=sys.stdout,
                     header=args.header and (i == 0),
-                    message_col=message_col,
-                    message_process=message_process,
                 )
             )
         else:
@@ -248,12 +261,10 @@ def main():
             LOGGER.info("writing results to <%s>", out_path)
             with open(out_path, "w", newline="") as out_file:
                 ack_ids = tuple(
-                    _process_messages_csv(
+                    process_messages(
                         messages=response.received_messages,
                         output=out_file,
                         header=args.header,
-                        message_col=message_col,
-                        message_process=message_process,
                     )
                 )
 
