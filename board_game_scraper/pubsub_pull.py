@@ -10,6 +10,7 @@ import sys
 
 from itertools import count
 from time import sleep
+from typing import Optional
 
 from pytility import normalize_space
 
@@ -75,6 +76,13 @@ def _process_messages_raw(
             LOGGER.exception("unable to process message %r", message)
 
 
+def _format_from_path(path: Optional[str]) -> Optional[str]:
+    if not path:
+        return None
+    ext = path.rsplit(".", 1)[-1]
+    return ext.lower()
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(
         description="Pull logs from Google Cloud PubSub queue."
@@ -97,6 +105,12 @@ def _parse_args():
         help="Output location",
     )
     parser.add_argument(
+        "--format",
+        "-f",
+        choices=("csv", "raw"),
+        help="Output format",
+    )
+    parser.add_argument(
         "--header",
         "-H",
         action="store_true",
@@ -110,7 +124,7 @@ def _parse_args():
     parser.add_argument(
         "--message-process",
         "-P",
-        choices=("lower",),
+        choices=("lower", "normalize"),
         help="How to process the message",
     )
     parser.add_argument(
@@ -167,6 +181,9 @@ def main():
         LOGGER.error("Google Cloud PubSub project and subscription are required")
         sys.exit(1)
 
+    output_format = args.format or _format_from_path(args.out_path) or "raw"
+    LOGGER.info("Using output format <%s>", output_format)
+
     if args.sleep:
         LOGGER.info("going to sleep for %.1f seconds", args.sleep)
         sleep(args.sleep)
@@ -175,6 +192,8 @@ def main():
 
     if args.message_process == "lower":
         message_process = lambda m: normalize_space(m).lower()
+    elif args.message_process == "normalize":
+        message_process = normalize_space
     else:
         message_process = None
 
@@ -238,7 +257,7 @@ def main():
                     )
                 )
 
-        LOGGER.info("%d message(s) succesfully processed", len(ack_ids))
+        LOGGER.info("%d message(s) successfully processed", len(ack_ids))
 
         if ack_ids and not args.no_ack:
             LOGGER.info(
