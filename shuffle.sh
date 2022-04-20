@@ -12,7 +12,8 @@ else
     SERVICES=$(shuf --echo "$@")
 fi
 
-echo "Running services <${SERVICES[@]}> from compose file <${COMPOSE_FILE}>…"
+echo "Running these services from compose file <${COMPOSE_FILE}>:"
+echo "${SERVICES[@]}"
 
 for SERVICE in ${SERVICES}
 do
