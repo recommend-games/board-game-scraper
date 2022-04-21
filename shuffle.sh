@@ -6,13 +6,12 @@ BASE_DIR="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 COMPOSE_FILE="${BASE_DIR}/docker-compose.yaml"
 SLEEP_TIME=600
 
+echo "Running these services from compose file <${COMPOSE_FILE}>:"
 if [ $# -eq 0 ] || [[ "${1}" == 'all' ]]; then
-    SERVICES=$(docker compose ps --services | shuf)
+    SERVICES=$(docker compose --file "${COMPOSE_FILE}" ps --services --all | shuf)
 else
     SERVICES=$(shuf --echo "$@")
 fi
-
-echo "Running these services from compose file <${COMPOSE_FILE}>:"
 echo "${SERVICES[@]}"
 
 for SERVICE in ${SERVICES}
