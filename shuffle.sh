@@ -21,3 +21,5 @@ do
     echo "Going to sleep for ${SLEEP_TIME} seconds…"
     sleep "${SLEEP_TIME}s"
 done
+
+echo "Done."
