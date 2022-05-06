@@ -21,9 +21,9 @@ USERS_BUCKET="${GC_PROJECT}-logs"
 RESPONSES_BUCKET="${GC_PROJECT}-responses"
 
 echo "Syncing GCS bucket <${USERS_BUCKET}> with <${USERS_DIR}>…"
-gsutil -m rsync -r "gs://${USERS_BUCKET}/" "${USERS_DIR}/"
+gsutil -m -o "GSUtil:parallel_process_count=1" rsync -r "gs://${USERS_BUCKET}/" "${USERS_DIR}/"
 
 echo "Syncing GCS bucket <${RESPONSES_BUCKET}> with <${RESPONSES_DIR}>…"
-gsutil -m rsync -r "gs://${RESPONSES_BUCKET}/" "${RESPONSES_DIR}/"
+gsutil -m -o "GSUtil:parallel_process_count=1" rsync -r "gs://${RESPONSES_BUCKET}/" "${RESPONSES_DIR}/"
 
 echo "Done."
