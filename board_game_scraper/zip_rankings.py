@@ -7,7 +7,7 @@ import logging
 import sys
 import zipfile
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional, Union
 
@@ -19,36 +19,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DUMMY_DATE = datetime(1970, 1, 1)
 DATE_FORMAT = "%Y-%m-%dT%H-%M-%S"
 LOGGER = logging.getLogger(__name__)
-
-
-def file_date(
-    path: Union[Path, str],
-    *,
-    format_str: Optional[str] = None,
-) -> Optional[datetime]:
-    """TODO."""
-
-    path = Path(path)
-
-    if format_str:
-        # TODO not the most efficient way to do this
-        dummy_date = DUMMY_DATE.strftime(format_str)
-
-        date_from_name = parse_date(
-            date=path.name[: len(dummy_date)],
-            tzinfo=timezone.utc,
-            format_str=format_str,
-        )
-
-        if date_from_name is not None:
-            return date_from_name
-
-    file_stats = path.stat()
-    return (
-        parse_date(date=file_stats.st_ctime, tzinfo=timezone.utc)
-        or parse_date(date=file_stats.st_mtime, tzinfo=timezone.utc)
-        or parse_date(date=file_stats.st_atime, tzinfo=timezone.utc)
-    )
 
 
 def zip_ranking_files(
@@ -87,6 +57,65 @@ def zip_ranking_files(
                 filename=rankings_file,
                 arcname=rankings_file.relative_to(rankings_dir),
             )
+
+    LOGGER.info("Done.")
+
+
+def file_date(
+    path: Union[Path, str],
+    *,
+    format_str: Optional[str] = None,
+) -> Optional[datetime]:
+    """TODO."""
+
+    path = Path(path)
+
+    if format_str:
+        # TODO not the most efficient way to do this
+        dummy_date = DUMMY_DATE.strftime(format_str)
+
+        date_from_name = parse_date(
+            date=path.name[: len(dummy_date)],
+            tzinfo=timezone.utc,
+            format_str=format_str,
+        )
+
+        if date_from_name is not None:
+            return date_from_name
+
+    file_stats = path.stat()
+    return (
+        parse_date(date=file_stats.st_ctime, tzinfo=timezone.utc)
+        or parse_date(date=file_stats.st_mtime, tzinfo=timezone.utc)
+        or parse_date(date=file_stats.st_atime, tzinfo=timezone.utc)
+    )
+
+
+def delete_older_files(
+    *,
+    dir_path: Union[Path, str],
+    file_glob: str,
+    older_than: timedelta,
+    dry_run: bool = False,
+):
+    """TODO."""
+    dir_path = Path(dir_path).resolve()
+    cutoff_date = now() - older_than
+
+    LOGGER.info(
+        "Deleting file in <%s> matching glob <%s> older than <%s>",
+        dir_path,
+        file_glob,
+        cutoff_date,
+    )
+
+    for file_path in dir_path.glob(file_glob):
+        if file_date(path=file_path, format_str=DATE_FORMAT) < cutoff_date:
+            if dry_run:
+                LOGGER.info("[Dry run] Deleting <%s>…", file_path)
+            else:
+                LOGGER.info("Deleting <%s>…", file_path)
+                file_path.unlink()
 
     LOGGER.info("Done.")
 
@@ -159,6 +188,14 @@ def main():
         output_file=out_path,
         dry_run=args.dry_run,
     )
+
+    if args.delete_files_older_than_days:
+        delete_older_files(
+            dir_path=args.in_dir,
+            file_glob=args.glob,
+            older_than=timedelta(days=args.delete_files_older_than_days),
+            dry_run=args.dry_run,
+        )
 
 
 if __name__ == "__main__":
