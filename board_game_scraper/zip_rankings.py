@@ -7,13 +7,45 @@ import logging
 import sys
 import zipfile
 
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
+
+from pytility import parse_date
 
 from .utils import now
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+DUMMY_DATE = datetime(1970, 1, 1)
 LOGGER = logging.getLogger(__name__)
+
+
+def file_date(
+    path: Union[Path, str],
+    *,
+    format_str="%Y-%m-%dT%H-%M-%S",
+) -> Optional[datetime]:
+    """TODO."""
+
+    path = Path(path)
+    # TODO not the most efficient way to do this
+    dummy_date = DUMMY_DATE.strftime(format_str)
+
+    date_from_name = parse_date(
+        date=path.name[: len(dummy_date)],
+        tzinfo=timezone.utc,
+        format_str=format_str,
+    )
+
+    if date_from_name is not None:
+        return date_from_name
+
+    file_stats = path.stat()
+    return (
+        parse_date(date=file_stats.st_ctime, tzinfo=timezone.utc)
+        or parse_date(date=file_stats.st_mtime, tzinfo=timezone.utc)
+        or parse_date(date=file_stats.st_atime, tzinfo=timezone.utc)
+    )
 
 
 def zip_ranking_files(
@@ -21,7 +53,7 @@ def zip_ranking_files(
     rankings_dir: Union[Path, str],
     rankings_file_glob: str,
     output_file: Union[Path, str],
-    dry_run: bool = False
+    dry_run: bool = False,
 ) -> None:
     """TODO."""
 
@@ -70,6 +102,12 @@ def _parse_args():
         "--glob",
         "-g",
         default="bgg_rankings*/GameItem/*.jl",
+        help="TODO",
+    )
+    parser.add_argument(
+        "--delete-files-older-than-days",
+        "-D",
+        type=int,
         help="TODO",
     )
     parser.add_argument(
