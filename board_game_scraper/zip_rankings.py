@@ -17,28 +17,31 @@ from .utils import now
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DUMMY_DATE = datetime(1970, 1, 1)
+DATE_FORMAT = "%Y-%m-%dT%H-%M-%S"
 LOGGER = logging.getLogger(__name__)
 
 
 def file_date(
     path: Union[Path, str],
     *,
-    format_str="%Y-%m-%dT%H-%M-%S",
+    format_str: Optional[str] = None,
 ) -> Optional[datetime]:
     """TODO."""
 
     path = Path(path)
-    # TODO not the most efficient way to do this
-    dummy_date = DUMMY_DATE.strftime(format_str)
 
-    date_from_name = parse_date(
-        date=path.name[: len(dummy_date)],
-        tzinfo=timezone.utc,
-        format_str=format_str,
-    )
+    if format_str:
+        # TODO not the most efficient way to do this
+        dummy_date = DUMMY_DATE.strftime(format_str)
 
-    if date_from_name is not None:
-        return date_from_name
+        date_from_name = parse_date(
+            date=path.name[: len(dummy_date)],
+            tzinfo=timezone.utc,
+            format_str=format_str,
+        )
+
+        if date_from_name is not None:
+            return date_from_name
 
     file_stats = path.stat()
     return (
