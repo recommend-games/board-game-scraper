@@ -21,6 +21,7 @@ def zip_ranking_files(
     rankings_dir: Union[Path, str],
     rankings_file_glob: str,
     output_file: Union[Path, str],
+    dry_run: bool = False
 ) -> None:
     """TODO."""
 
@@ -33,6 +34,12 @@ def zip_ranking_files(
         rankings_file_glob,
         output_file,
     )
+
+    if dry_run:
+        for rankings_file in rankings_dir.glob(rankings_file_glob):
+            LOGGER.info("[Dry run] Compressing file <%s>…", rankings_file)
+        LOGGER.info("Done.")
+        return
 
     with zipfile.ZipFile(
         file=output_file,
@@ -66,6 +73,12 @@ def _parse_args():
         help="TODO",
     )
     parser.add_argument(
+        "--dry-run",
+        "-n",
+        action="store_true",
+        help="TODO",
+    )
+    parser.add_argument(
         "--verbose",
         "-v",
         action="count",
@@ -91,17 +104,19 @@ def main():
 
     out_file = now().strftime(args.out_file)
     out_dir = Path(args.out_dir).resolve()
-    out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / out_file
 
-    if out_path.exists():
-        LOGGER.info("Output file <%s> already exists, aborting…", out_path)
-        sys.exit(1)
+    if not args.dry_run:
+        if out_path.exists():
+            LOGGER.info("Output file <%s> already exists, aborting…", out_path)
+            sys.exit(1)
+        out_dir.mkdir(parents=True, exist_ok=True)
 
     zip_ranking_files(
         rankings_dir=args.in_dir,
         rankings_file_glob=args.glob,
         output_file=out_path,
+        dry_run=args.dry_run,
     )
 
 
