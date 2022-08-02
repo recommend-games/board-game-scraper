@@ -107,6 +107,7 @@
 
 # other
 **/*.bk
+**/*backup*/
 **/data*/
 **/logs/
 **/tests/
