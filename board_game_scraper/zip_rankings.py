@@ -28,7 +28,7 @@ def zip_ranking_files(
     output_file: Union[Path, str],
     dry_run: bool = False,
 ) -> None:
-    """TODO."""
+    """Zip the ranking files in a given directory."""
 
     rankings_dir = Path(rankings_dir).resolve()
     output_file = Path(output_file).resolve()
@@ -66,7 +66,7 @@ def file_date(
     *,
     format_str: Optional[str] = None,
 ) -> Optional[datetime]:
-    """TODO."""
+    """Get the date from a given file, either from its name or the access stats."""
 
     path = Path(path)
 
@@ -98,7 +98,7 @@ def delete_older_files(
     older_than: timedelta,
     dry_run: bool = False,
 ):
-    """TODO."""
+    """Delete files in a directory older than a given age."""
     dir_path = Path(dir_path).resolve()
     cutoff_date = now() - older_than
 
@@ -121,39 +121,49 @@ def delete_older_files(
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="TODO")
-    parser.add_argument("--out-dir", "-d", default=BASE_DIR / "backup", help="TODO")
+    parser = argparse.ArgumentParser(description="Zip ranking files.")
+    parser.add_argument(
+        "--out-dir",
+        "-d",
+        default=BASE_DIR / "backup",
+        help="Output directory",
+    )
     parser.add_argument(
         "--out-file",
         "-f",
         default="bgg-rankings-%Y-%m-%d.zip",
-        help="TODO",
+        help="Output file name",
     )
-    parser.add_argument("--in-dir", "-i", default=BASE_DIR / "feeds", help="TODO")
+    parser.add_argument(
+        "--in-dir",
+        "-i",
+        default=BASE_DIR / "feeds",
+        help="Input directory",
+    )
     parser.add_argument(
         "--glob",
         "-g",
         default="bgg_rankings*/GameItem/*.jl",
-        help="TODO",
+        help="File glob for input files",
     )
     parser.add_argument(
         "--delete-files-older-than-days",
         "-D",
         type=int,
-        help="TODO",
+        help="If given, files older than this will be deleted after zipping",
     )
     parser.add_argument(
         "--dry-run",
         "-n",
         action="store_true",
-        help="TODO",
+        help="Dry run, don't write or delete anything",
     )
     parser.add_argument(
         "--verbose",
         "-v",
         action="count",
         default=0,
-        help="log level (repeat for more verbosity)",
+        help="Log level (repeat for more verbosity)",
     )
 
     return parser.parse_args()
