@@ -28,7 +28,8 @@ def update_news(
     path_feeds,
     path_merged,
     path_split,
-    s3_dst,
+    split_git_update=False,
+    s3_dst=None,
     split_size=None,
     log_level=None,
 ):
@@ -39,13 +40,15 @@ def update_news(
     path_split = Path(path_split).resolve()
 
     LOGGER.info(
-        "Sync from <%s>, merge from <%s> into <%s>, split into <%s>, upload to <%s>",
+        "Sync from <%s>, merge from <%s> into <%s>, split into <%s>",
         s3_src,
         path_feeds,
         path_merged,
         path_split,
-        s3_dst,
     )
+
+    if s3_dst:
+        LOGGER.info("Upload results to <%s>", s3_dst)
 
     LOGGER.info("Deleting existing dir <%s>", path_split.parent)
     rmtree(path_split.parent, ignore_errors=True)
@@ -72,7 +75,10 @@ def update_news(
     )
 
     split_files(
-        path_in=path_merged, path_out=path_split, size=split_size, exclude_empty=True
+        path_in=path_merged,
+        path_out=path_split,
+        size=split_size,
+        exclude_empty=True,
     )
 
     LOGGER.info("S3 sync from <%s> to <%s>", path_split.parent, s3_dst)
