@@ -24,7 +24,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def update_news(
-    s3_src, path_feeds, path_merged, path_split, s3_dst, split_size=None, log_level=None
+    s3_src,
+    path_feeds,
+    path_merged,
+    path_split,
+    s3_dst,
+    split_size=None,
+    log_level=None,
 ):
     """News syncing, merging, splitting, and uploading."""
 
@@ -96,7 +102,7 @@ def update_news(
 
 def _parse_args():
     parser = argparse.ArgumentParser(
-        description="News syncing, merging, splitting, and uploading."
+        description="News syncing, merging, splitting, and uploading.",
     )
     parser.add_argument(
         "--src-bucket",
@@ -111,7 +117,10 @@ def _parse_args():
         help="S3 bucket to upload to",
     )
     parser.add_argument(
-        "--feeds", "-f", default=BASE_DIR / "feeds" / "news", help="Scraped items"
+        "--feeds",
+        "-f",
+        default=BASE_DIR / "feeds" / "news",
+        help="Scraped items",
     )
     parser.add_argument(
         "--merged",
@@ -133,7 +142,9 @@ def _parse_args():
         help="number of items in each result file",
     )
     parser.add_argument(
-        "--dont-run-before", "-d", help="Either a date or a file with date information"
+        "--dont-run-before",
+        "-d",
+        help="Either a date or a file with date information",
     )
     parser.add_argument(
         "--interval",

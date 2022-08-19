@@ -89,15 +89,12 @@ class BggGeekListSpider(Spider):
         )
         rank = parse_int(rank_text[:-1]) if rank_text else None
 
-        return (
-            self.parse_game(
-                item=item,
-                response=response,
-                rank=rank,
-                **kwargs,
-            )
-            or self.parse_geeklist(item=item, response=response)
-        )
+        return self.parse_game(
+            item=item,
+            response=response,
+            rank=rank,
+            **kwargs,
+        ) or self.parse_geeklist(item=item, response=response)
 
     def parse(self, response):
         """
