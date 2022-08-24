@@ -12,6 +12,7 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import run
 from time import sleep
+from typing import Optional, Union
 
 from pytility import parse_date
 
@@ -21,6 +22,27 @@ from .utils import date_from_file, now
 
 LOGGER = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _get_git_repo(path: Union[Path, str, None]):
+    if not path:
+        return None
+
+    path = Path(path).resolve()
+
+    try:
+        from git import InvalidGitRepositoryError, NoSuchPathError, Repo
+    except ImportError:
+        LOGGER.exception("Unable to import Git library")
+        return None
+
+    try:
+        repo = Repo(path=path, search_parent_directories=True)
+    except (InvalidGitRepositoryError, NoSuchPathError):
+        LOGGER.exception("Path <%s> does not point to a valid Git repo", path)
+        return None
+
+    return repo
 
 
 def update_news(
@@ -47,6 +69,14 @@ def update_news(
         path_merged,
         path_split,
     )
+
+    if split_git_update:
+        repo = _get_git_repo(path_split)
+        if repo is None:
+            split_git_update = False
+            LOGGER.error("Unable to update Git repo <%s>", path_split)
+        else:
+            LOGGER.info("Update Git repo <%s>", path_split)
 
     if s3_dst:
         LOGGER.info("Upload results to <%s>", s3_dst)
