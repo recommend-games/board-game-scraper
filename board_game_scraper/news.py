@@ -12,7 +12,7 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import run
 from time import sleep
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from pytility import parse_date
 
@@ -20,11 +20,17 @@ from .merge import merge_files
 from .split import split_files
 from .utils import date_from_file, now
 
+if TYPE_CHECKING:
+    try:
+        from git import Repo
+    except ImportError:
+        pass
+
 LOGGER = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-def _get_git_repo(path: Union[Path, str, None]):
+def _get_git_repo(path: Union[Path, str, None]) -> Optional["Repo"]:
     if not path:
         return None
 
