@@ -24,6 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def update_news(
+    *,
     s3_src,
     path_feeds,
     path_merged,
@@ -81,27 +82,28 @@ def update_news(
         exclude_empty=True,
     )
 
-    LOGGER.info("S3 sync from <%s> to <%s>", path_split.parent, s3_dst)
-    run(
-        [
-            "aws",
-            "s3",
-            "sync",
-            "--acl",
-            "public-read",
-            "--exclude",
-            ".gitignore",
-            "--exclude",
-            ".DS_Store",
-            "--exclude",
-            ".bucket",
-            "--size-only",
-            "--delete",
-            os.path.join(path_split.parent, ""),
-            s3_dst,
-        ],
-        check=True,
-    )
+    if s3_dst:
+        LOGGER.info("S3 sync from <%s> to <%s>", path_split.parent, s3_dst)
+        run(
+            [
+                "aws",
+                "s3",
+                "sync",
+                "--acl",
+                "public-read",
+                "--exclude",
+                ".gitignore",
+                "--exclude",
+                ".DS_Store",
+                "--exclude",
+                ".bucket",
+                "--size-only",
+                "--delete",
+                os.path.join(path_split.parent, ""),
+                s3_dst,
+            ],
+            check=True,
+        )
 
     LOGGER.info("Done updating news.")
 
@@ -119,7 +121,7 @@ def _parse_args():
     parser.add_argument(
         "--dst-bucket",
         "-B",
-        default="news.recommend.games",
+        # default="news.recommend.games",
         help="S3 bucket to upload to",
     )
     parser.add_argument(
@@ -209,7 +211,7 @@ def main():
         path_feeds=args.feeds,
         path_merged=args.merged,
         path_split=args.split,
-        s3_dst=f"s3://{args.dst_bucket}/",
+        s3_dst=f"s3://{args.dst_bucket}/" if args.dst_bucket else None,
         split_size=args.split_size,
         log_level="DEBUG"
         if args.verbose > 1
