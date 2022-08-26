@@ -96,7 +96,14 @@ def update_news(
             path_git = Path(repo.working_dir).resolve()
             git_rel_path = path_split.parent.relative_to(path_git)
             LOGGER.info("%sUpdate Git repo <%s>", dry_run_prefix, path_git)
-            # TODO git pull
+            try:
+                repo.remotes[0].pull(ff_only=True)
+            except Exception:
+                LOGGER.exception(
+                    "Unable to pull from remote <%s> to repo <%s>",
+                    repo.remotes[0],
+                    path_git,
+                )
 
     if s3_dst:
         LOGGER.info("%sUpload results to <%s>", dry_run_prefix, s3_dst)
