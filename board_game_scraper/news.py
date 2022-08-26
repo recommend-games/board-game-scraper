@@ -81,12 +81,18 @@ def update_news(
     )
 
     if split_git_update:
-        repo = _get_git_repo(path_split)
-        if repo is None:
+        repo = _get_git_repo(path_split.parent)
+        if repo is None or not repo.working_dir:
             split_git_update = False
-            LOGGER.error("%sUnable to update Git repo <%s>", dry_run_prefix, path_split)
+            path_git = None
+            LOGGER.error(
+                "%sUnable to update Git repo <%s>",
+                dry_run_prefix,
+                path_split.parent,
+            )
         else:
-            LOGGER.info("%sUpdate Git repo <%s>", dry_run_prefix, path_split)
+            path_git = Path(repo.working_dir).resolve()
+            LOGGER.info("%sUpdate Git repo <%s>", dry_run_prefix, path_git)
 
     if s3_dst:
         LOGGER.info("%sUpload results to <%s>", dry_run_prefix, s3_dst)
@@ -197,6 +203,12 @@ def _parse_args():
         help="number of items in each result file",
     )
     parser.add_argument(
+        "--git",
+        "-g",
+        action="store_true",
+        help="Update the Git repo of the split files",
+    )
+    parser.add_argument(
         "--dont-run-before",
         "-d",
         help="Either a date or a file with date information",
@@ -251,7 +263,7 @@ def main():
             dont_run_before.isoformat(),
             args.dont_run_before,
         )
-        with open(args.dont_run_before, "w") as file_obj:
+        with open(args.dont_run_before, "w", encoding="utf-8") as file_obj:
             file_obj.write(dont_run_before.isoformat())
 
     update_news(
@@ -261,6 +273,7 @@ def main():
         path_split=args.split,
         s3_dst=f"s3://{args.dst_bucket}/" if args.dst_bucket else None,
         split_size=args.split_size,
+        split_git_update=args.git,
         log_level="DEBUG"
         if args.verbose > 1
         else "INFO"
