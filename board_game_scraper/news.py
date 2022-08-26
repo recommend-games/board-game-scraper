@@ -158,6 +158,7 @@ def update_news(
             repo.index.add(str(git_rel_path))
             repo.index.commit(
                 f"Automatic commit by <{__name__}> {date.today().isoformat()}",
+                skip_hooks=True,
             )
             for remote in repo.remotes:
                 remote.push()
