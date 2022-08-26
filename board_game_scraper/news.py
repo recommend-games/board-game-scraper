@@ -117,16 +117,22 @@ def update_news(
         if repo is None:
             rmtree(path_split.parent, ignore_errors=True)
         else:
-            deleted_files = repo.index.remove(
-                items=[str(git_rel_path)],
-                working_tree=True,
-                r=True,
-            )
-            LOGGER.info(
-                "Deleted %d files from <%s>",
-                len(deleted_files),
-                path_split.parent,
-            )
+            try:
+                deleted_files = repo.index.remove(
+                    items=[str(git_rel_path)],
+                    working_tree=True,
+                    r=True,
+                )
+                LOGGER.info(
+                    "Deleted %d files from <%s>",
+                    len(deleted_files),
+                    path_split.parent,
+                )
+            except Exception:
+                LOGGER.exception(
+                    "Unable to remove path <%s> from Git",
+                    path_split.parent,
+                )
 
         path_feeds.mkdir(parents=True, exist_ok=True)
         path_merged.parent.mkdir(parents=True, exist_ok=True)
