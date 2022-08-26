@@ -83,6 +83,7 @@ def update_news(
     if split_git_update:
         repo = _get_git_repo(path_split.parent)
         if repo is None or not repo.working_dir:
+            repo = None
             split_git_update = False
             path_git = None
             LOGGER.error(
@@ -99,7 +100,16 @@ def update_news(
 
     LOGGER.info("%sDeleting existing dir <%s>", dry_run_prefix, path_split.parent)
     if not dry_run:
-        rmtree(path_split.parent, ignore_errors=True)
+        if repo is None:
+            rmtree(path_split.parent, ignore_errors=True)
+        else:
+            rel_path = str(path_split.parent.relative_to(path_git))
+            deleted_files = repo.index.remove(rel_path, working_tree=True, r=True)
+            LOGGER.info(
+                "Deleted %d files from <%s>",
+                len(deleted_files),
+                path_split.parent,
+            )
 
         path_feeds.mkdir(parents=True, exist_ok=True)
         path_merged.parent.mkdir(parents=True, exist_ok=True)
