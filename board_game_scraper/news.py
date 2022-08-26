@@ -43,6 +43,7 @@ def _get_git_repo(path: Union[Path, str, None]) -> Optional["Repo"]:
         return None
 
     try:
+        LOGGER.info("Trying to find Git repo at <%s> or its parents", path)
         repo = Repo(path=path, search_parent_directories=True)
     except (InvalidGitRepositoryError, NoSuchPathError):
         LOGGER.exception("Path <%s> does not point to a valid Git repo", path)
@@ -92,18 +93,21 @@ def update_news(
                 dry_run_prefix,
                 path_split.parent,
             )
+
         else:
             path_git = Path(repo.working_dir).resolve()
             git_rel_path = path_split.parent.relative_to(path_git)
             LOGGER.info("%sUpdate Git repo <%s>", dry_run_prefix, path_git)
-            try:
-                repo.remotes[0].pull(ff_only=True)
-            except Exception:
-                LOGGER.exception(
-                    "Unable to pull from remote <%s> to repo <%s>",
-                    repo.remotes[0],
-                    path_git,
-                )
+            if not dry_run:
+                LOGGER.info("Pulling latest commits from remote <%s>", repo.remotes[0])
+                try:
+                    repo.remotes[0].pull(ff_only=True)
+                except Exception:
+                    LOGGER.exception(
+                        "Unable to pull from remote <%s> to repo <%s>",
+                        repo.remotes[0],
+                        path_git,
+                    )
 
     if s3_dst:
         LOGGER.info("%sUpload results to <%s>", dry_run_prefix, s3_dst)
@@ -114,7 +118,9 @@ def update_news(
             rmtree(path_split.parent, ignore_errors=True)
         else:
             deleted_files = repo.index.remove(
-                str(git_rel_path), working_tree=True, r=True
+                items=[git_rel_path],
+                working_tree=True,
+                r=True,
             )
             LOGGER.info(
                 "Deleted %d files from <%s>",
@@ -153,20 +159,34 @@ def update_news(
         dry_run=dry_run,
     )
 
-    if repo is not None:
-        try:
-            repo.index.add(str(git_rel_path))
-            repo.index.commit(
-                f"Automatic commit by <{__name__}> {date.today().isoformat()}",
-                skip_hooks=True,
-            )
-            for remote in repo.remotes:
-                remote.push()
-        except Exception:
-            LOGGER.exception(
-                "There was a problem commit or pushing to Git repo <%s>",
-                path_git,
-            )
+    if repo is not None and git_rel_path:
+        message = f"Automatic commit by <{__name__}> {date.today().isoformat()}"
+        LOGGER.info(
+            "%sCommitting changes to repo <%s> with message <%s>",
+            dry_run_prefix,
+            path_git,
+            message,
+        )
+        if not dry_run:
+            try:
+                repo.index.add(items=[git_rel_path])
+                repo.index.commit(message=message, skip_hooks=True)
+            except Exception:
+                LOGGER.exception(
+                    "There was a problem commit to Git repo <%s>",
+                    path_git,
+                )
+
+        for remote in repo.remotes:
+            LOGGER.info("%sPushing changes to remote <%s>", dry_run_prefix, remote)
+            if not dry_run:
+                try:
+                    remote.push()
+                except Exception:
+                    LOGGER.exception(
+                        "There was a problem pushing to remote <%s>",
+                        remote,
+                    )
 
     if s3_dst:
         LOGGER.info(
