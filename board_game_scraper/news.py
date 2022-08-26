@@ -61,15 +61,19 @@ def update_news(
     s3_dst=None,
     split_size=None,
     log_level=None,
+    dry_run: bool = False,
 ):
     """News syncing, merging, splitting, and uploading."""
+
+    dry_run_prefix = "[DRY RUN] " if dry_run else ""
 
     path_feeds = Path(path_feeds).resolve()
     path_merged = Path(path_merged).resolve()
     path_split = Path(path_split).resolve()
 
     LOGGER.info(
-        "Sync from <%s>, merge from <%s> into <%s>, split into <%s>",
+        "%sSync from <%s>, merge from <%s> into <%s>, split into <%s>",
+        dry_run_prefix,
         s3_src,
         path_feeds,
         path_merged,
@@ -80,22 +84,24 @@ def update_news(
         repo = _get_git_repo(path_split)
         if repo is None:
             split_git_update = False
-            LOGGER.error("Unable to update Git repo <%s>", path_split)
+            LOGGER.error("%sUnable to update Git repo <%s>", dry_run_prefix, path_split)
         else:
-            LOGGER.info("Update Git repo <%s>", path_split)
+            LOGGER.info("%sUpdate Git repo <%s>", dry_run_prefix, path_split)
 
     if s3_dst:
-        LOGGER.info("Upload results to <%s>", s3_dst)
+        LOGGER.info("%sUpload results to <%s>", dry_run_prefix, s3_dst)
 
-    LOGGER.info("Deleting existing dir <%s>", path_split.parent)
-    rmtree(path_split.parent, ignore_errors=True)
+    LOGGER.info("%sDeleting existing dir <%s>", dry_run_prefix, path_split.parent)
+    if not dry_run:
+        rmtree(path_split.parent, ignore_errors=True)
 
-    path_feeds.mkdir(parents=True, exist_ok=True)
-    path_merged.parent.mkdir(parents=True, exist_ok=True)
-    path_split.parent.mkdir(parents=True, exist_ok=True)
+        path_feeds.mkdir(parents=True, exist_ok=True)
+        path_merged.parent.mkdir(parents=True, exist_ok=True)
+        path_split.parent.mkdir(parents=True, exist_ok=True)
 
-    LOGGER.info("S3 sync from <%s> to <%s>", s3_src, path_feeds)
-    run(["aws", "s3", "sync", s3_src, os.path.join(path_feeds, "")], check=True)
+    LOGGER.info("%sS3 sync from <%s> to <%s>", dry_run_prefix, s3_src, path_feeds)
+    if not dry_run:
+        run(["aws", "s3", "sync", s3_src, os.path.join(path_feeds, "")], check=True)
 
     merge_files(
         in_paths=path_feeds.rglob("*.jl"),
@@ -109,6 +115,7 @@ def update_news(
         sort_descending=True,
         concat_output=True,
         log_level=log_level,
+        dry_run=dry_run,
     )
 
     split_files(
@@ -116,32 +123,36 @@ def update_news(
         path_out=path_split,
         size=split_size,
         exclude_empty=True,
+        dry_run=dry_run,
     )
 
     if s3_dst:
-        LOGGER.info("S3 sync from <%s> to <%s>", path_split.parent, s3_dst)
-        run(
-            [
-                "aws",
-                "s3",
-                "sync",
-                "--acl",
-                "public-read",
-                "--exclude",
-                ".gitignore",
-                "--exclude",
-                ".DS_Store",
-                "--exclude",
-                ".bucket",
-                "--size-only",
-                "--delete",
-                os.path.join(path_split.parent, ""),
-                s3_dst,
-            ],
-            check=True,
+        LOGGER.info(
+            "%sS3 sync from <%s> to <%s>", dry_run_prefix, path_split.parent, s3_dst
         )
+        if not dry_run:
+            run(
+                [
+                    "aws",
+                    "s3",
+                    "sync",
+                    "--acl",
+                    "public-read",
+                    "--exclude",
+                    ".gitignore",
+                    "--exclude",
+                    ".DS_Store",
+                    "--exclude",
+                    ".bucket",
+                    "--size-only",
+                    "--delete",
+                    os.path.join(path_split.parent, ""),
+                    s3_dst,
+                ],
+                check=True,
+            )
 
-    LOGGER.info("Done updating news.")
+    LOGGER.info("%sDone updating news.", dry_run_prefix)
 
 
 def _parse_args():
@@ -197,6 +208,7 @@ def _parse_args():
         default=10 * 60,  # 10 minutes
         help="number of seconds to wait before next run",
     )
+    parser.add_argument("--dry-run", "-n", action="store_true", help="dry run")
     parser.add_argument(
         "--verbose",
         "-v",
@@ -254,6 +266,7 @@ def main():
         else "INFO"
         if args.verbose > 0
         else "WARN",
+        dry_run=args.dry_run,
     )
 
 
