@@ -7,7 +7,7 @@ import logging
 import os.path
 import sys
 
-from datetime import timedelta, timezone
+from datetime import date, timedelta, timezone
 from pathlib import Path
 from shutil import rmtree
 from subprocess import run
@@ -86,6 +86,7 @@ def update_news(
             repo = None
             split_git_update = False
             path_git = None
+            git_rel_path = None
             LOGGER.error(
                 "%sUnable to update Git repo <%s>",
                 dry_run_prefix,
@@ -93,7 +94,9 @@ def update_news(
             )
         else:
             path_git = Path(repo.working_dir).resolve()
+            git_rel_path = path_split.parent.relative_to(path_git)
             LOGGER.info("%sUpdate Git repo <%s>", dry_run_prefix, path_git)
+            # TODO git pull
 
     if s3_dst:
         LOGGER.info("%sUpload results to <%s>", dry_run_prefix, s3_dst)
@@ -103,8 +106,9 @@ def update_news(
         if repo is None:
             rmtree(path_split.parent, ignore_errors=True)
         else:
-            rel_path = str(path_split.parent.relative_to(path_git))
-            deleted_files = repo.index.remove(rel_path, working_tree=True, r=True)
+            deleted_files = repo.index.remove(
+                str(git_rel_path), working_tree=True, r=True
+            )
             LOGGER.info(
                 "Deleted %d files from <%s>",
                 len(deleted_files),
@@ -142,9 +146,26 @@ def update_news(
         dry_run=dry_run,
     )
 
+    if repo is not None:
+        try:
+            repo.index.add(str(git_rel_path))
+            repo.index.commit(
+                f"Automatic commit by <{__name__}> {date.today().isoformat()}",
+            )
+            for remote in repo.remotes:
+                remote.push()
+        except Exception:
+            LOGGER.exception(
+                "There was a problem commit or pushing to Git repo <%s>",
+                path_git,
+            )
+
     if s3_dst:
         LOGGER.info(
-            "%sS3 sync from <%s> to <%s>", dry_run_prefix, path_split.parent, s3_dst
+            "%sS3 sync from <%s> to <%s>",
+            dry_run_prefix,
+            path_split.parent,
+            s3_dst,
         )
         if not dry_run:
             run(
@@ -256,8 +277,12 @@ def main():
     LOGGER.info(args)
 
     dont_run_before = parse_date(
-        args.dont_run_before, tzinfo=timezone.utc
-    ) or date_from_file(args.dont_run_before, tzinfo=timezone.utc)
+        args.dont_run_before,
+        tzinfo=timezone.utc,
+    ) or date_from_file(
+        args.dont_run_before,
+        tzinfo=timezone.utc,
+    )
 
     if dont_run_before:
         LOGGER.info("Don't run before %s", dont_run_before.isoformat())
