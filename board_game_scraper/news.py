@@ -118,7 +118,7 @@ def update_news(
             rmtree(path_split.parent, ignore_errors=True)
         else:
             deleted_files = repo.index.remove(
-                items=[git_rel_path],
+                items=[str(git_rel_path)],
                 working_tree=True,
                 r=True,
             )
@@ -169,7 +169,7 @@ def update_news(
         )
         if not dry_run:
             try:
-                repo.index.add(items=[git_rel_path])
+                repo.index.add(items=[str(git_rel_path)])
                 repo.index.commit(message=message, skip_hooks=True)
             except Exception:
                 LOGGER.exception(
