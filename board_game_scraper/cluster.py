@@ -37,7 +37,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def abs_comp(field_1, field_2):
-    """ returns absolute value of difference if both arguments are valid, else inf """
+    """returns absolute value of difference if both arguments are valid, else inf"""
     field_1 = parse_float(field_1)
     field_2 = parse_float(field_2)
     return math.inf if field_1 is None or field_2 is None else abs(field_1 - field_2)
@@ -62,7 +62,7 @@ VALUE_ID_FIELDS = ("designer", "artist", "publisher")
 
 
 def smart_exists(path, raise_exc=False):
-    """ returns True if given path exists """
+    """returns True if given path exists"""
 
     url = urlparse(path)
 
@@ -248,7 +248,7 @@ def link_games(
     output=None,
     pretty_print=True,
 ):
-    """ find links for games """
+    """find links for games"""
 
     paths = tuple(arg_to_iter(paths))
     if len(paths) < 2:

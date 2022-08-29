@@ -91,7 +91,7 @@ def _serialize_bool(item):
 
 
 class GameItem(TypedItem):
-    """ item representing a game """
+    """item representing a game"""
 
     JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
     JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
@@ -465,7 +465,7 @@ class GameItem(TypedItem):
 
 
 class UserItem(TypedItem):
-    """ item representing a user """
+    """item representing a user"""
 
     JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
     JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
@@ -542,7 +542,7 @@ class UserItem(TypedItem):
 
 
 class RatingItem(TypedItem):
-    """ item representing a rating """
+    """item representing a rating"""
 
     JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
     BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool

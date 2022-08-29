@@ -41,7 +41,7 @@ def _sparql_xpath(
 
 
 class DBpediaSpider(Spider):
-    """ DBpedia spider """
+    """DBpedia spider"""
 
     name = "dbpedia"
     allowed_domains = ("dbpedia.org",)
@@ -300,7 +300,7 @@ class DBpediaSpider(Spider):
             yield Request(self._api_url(query), callback=self.parse_games, priority=1)
 
     def start_requests(self):
-        """ generate start requests """
+        """generate start requests"""
 
         dbp_types = getattr(self, "game_types", None) or ()
         wd_types = getattr(WikidataSpider, "game_types", None) or ()

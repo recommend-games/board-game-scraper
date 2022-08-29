@@ -51,13 +51,13 @@ REGEX_BGA_ID = re.compile(r"^.*/game/([a-zA-Z0-9]+)(/.*)?$")
 
 
 def to_lower(string):
-    """ safely convert to lower case string, else return None """
+    """safely convert to lower case string, else return None"""
     string = to_str(string)
     return string.lower() if string is not None else None
 
 
 def identity(obj: Any) -> Any:
-    """ do nothing """
+    """do nothing"""
     return obj
 
 
@@ -72,12 +72,12 @@ def _replace_utf_entities(match):
 
 
 def replace_utf_entities(string):
-    """ replace XML entities weirdly encoded """
+    """replace XML entities weirdly encoded"""
     return REGEX_ENTITIES.sub(_replace_utf_entities, string)
 
 
 def replace_all_entities(string):
-    """ replace all XML entities, even poorly encoded """
+    """replace all XML entities, even poorly encoded"""
     # hack because BGG encodes 'Ü' as '&amp;#195;&amp;#156;' (d'oh!)
     # note that this may corrupt text that's actually encoded correctly!
     return replace_entities(
@@ -88,7 +88,7 @@ def replace_all_entities(string):
 
 
 def extract_query_param(url: Union[str, ParseResult], field: str) -> Optional[str]:
-    """ extract a specific field from URL query parameters """
+    """extract a specific field from URL query parameters"""
 
     url = urlparse(url) if isinstance(url, str) else url
     query = parse_qs(url.query)
@@ -98,7 +98,7 @@ def extract_query_param(url: Union[str, ParseResult], field: str) -> Optional[st
 
 
 def now(tzinfo=None):
-    """ current time in UTC or given timezone """
+    """current time in UTC or given timezone"""
 
     result = datetime.utcnow().replace(microsecond=0, tzinfo=timezone.utc)
     return result if tzinfo is None else result.astimezone(tzinfo)
@@ -189,7 +189,7 @@ def date_from_file(
 
 
 def validate_range(value, lower=None, upper=None):
-    """ validate that the given value is between lower and upper """
+    """validate that the given value is between lower and upper"""
     try:
         if (lower is None or lower <= value) and (upper is None or value <= upper):
             return value
@@ -247,7 +247,7 @@ def parse_url(
     url: Union[str, ParseResult, None],
     hostnames: Optional[Iterable[Union[str, Pattern]]] = None,
 ) -> Optional[ParseResult]:
-    """ parse URL and optionally filter for hosts """
+    """parse URL and optionally filter for hosts"""
     url = urlparse(url) if isinstance(url, str) else url
     hostnames = tuple(arg_to_iter(hostnames))
     return (
@@ -279,7 +279,7 @@ def validate_url(
 
 
 def extract_bgg_id(url: Union[str, ParseResult, None]) -> Optional[int]:
-    """ extract BGG ID from URL """
+    """extract BGG ID from URL"""
     url = parse_url(url, ("boardgamegeek.com", "www.boardgamegeek.com"))
     if not url:
         return None
@@ -289,7 +289,7 @@ def extract_bgg_id(url: Union[str, ParseResult, None]) -> Optional[int]:
 
 
 def extract_bgg_user_name(url: Union[str, ParseResult, None]) -> Optional[str]:
-    """ extract BGG user name from url """
+    """extract BGG user name from url"""
     url = parse_url(url, ("boardgamegeek.com", "www.boardgamegeek.com"))
     if not url:
         return None
@@ -301,7 +301,7 @@ def extract_bgg_user_name(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 
 def extract_wikidata_id(url: Union[str, ParseResult, None]) -> Optional[str]:
-    """ extract Wikidata ID from URL """
+    """extract Wikidata ID from URL"""
     url = parse_url(url, ("wikidata.org", "www.wikidata.org", "wikidata.dbpedia.org"))
     if not url:
         return None
@@ -310,7 +310,7 @@ def extract_wikidata_id(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 
 def extract_wikipedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
-    """ extract Wikipedia ID from URL """
+    """extract Wikipedia ID from URL"""
     url = parse_url(url, ("en.wikipedia.org", "en.m.wikipedia.org"))
     return (
         unquote_plus(url.path[6:]) or None
@@ -320,7 +320,7 @@ def extract_wikipedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 
 def extract_dbpedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
-    """ extract DBpedia ID from URL """
+    """extract DBpedia ID from URL"""
     url = parse_url(url, ("dbpedia.org", "www.dbpedia.org", REGEX_DBPEDIA_DOMAIN))
     if not url:
         return None
@@ -329,7 +329,7 @@ def extract_dbpedia_id(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 
 def extract_luding_id(url: Union[str, ParseResult, None]) -> Optional[int]:
-    """ extract Luding ID from URL """
+    """extract Luding ID from URL"""
     url = parse_url(url, ("luding.org", "www.luding.org"))
     if not url:
         return None
@@ -342,7 +342,7 @@ def extract_luding_id(url: Union[str, ParseResult, None]) -> Optional[int]:
 
 
 def extract_spielen_id(url: Union[str, ParseResult, None]) -> Optional[str]:
-    """ extract Spielen.de ID from URL """
+    """extract Spielen.de ID from URL"""
     url = parse_url(
         url, ("gesellschaftsspiele.spielen.de", "www.gesellschaftsspiele.spielen.de")
     )
@@ -356,7 +356,7 @@ def extract_spielen_id(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 
 def extract_freebase_id(url: Union[str, ParseResult, None]) -> Optional[str]:
-    """ extract Freebase ID from URL """
+    """extract Freebase ID from URL"""
     url = parse_url(url, ("rdf.freebase.com", "freebase.com"))
     if not url:
         return None
@@ -369,7 +369,7 @@ def extract_freebase_id(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 
 def extract_bga_id(url: Union[str, ParseResult, None]) -> Optional[str]:
-    """ extract Board Game Atlas ID from URL """
+    """extract Board Game Atlas ID from URL"""
     url = parse_url(url, ("boardgameatlas.com", "www.boardgameatlas.com"))
     if not url:
         return None
@@ -382,7 +382,7 @@ def extract_bga_id(url: Union[str, ParseResult, None]) -> Optional[str]:
 
 
 def extract_ids(*urls: Optional[str]) -> Dict[str, List[Union[int, str]]]:
-    """ extract all possible IDs from all the URLs """
+    """extract all possible IDs from all the URLs"""
     urls = tuple(map(urlparse, urls))
     return {
         "bgg_id": clear_list(map(extract_bgg_id, urls)),

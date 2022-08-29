@@ -16,7 +16,7 @@ from ..utils import extract_ids, extract_query_param
 
 
 class LudingSpider(Spider):
-    """ Luding spider """
+    """Luding spider"""
 
     name = "luding"
     allowed_domains = ("luding.org",)
