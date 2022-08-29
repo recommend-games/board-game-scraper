@@ -73,29 +73,15 @@ def _load_items(iterable, fields=None, exclude_empty=False):
             yield _filter_fields(item=item, fields=fields, exclude_empty=exclude_empty)
 
 
-def split_files(
-    path_in,
-    path_out=None,
-    size=None,
-    fields=FIELDS,
-    exclude_empty=False,
-    dry_run: bool = False,
-):
+def split_files(path_in, path_out=None, size=None, fields=FIELDS, exclude_empty=False):
     """Split a JSON lines file into JSON files of a given size."""
-
-    dry_run_prefix = "[DRY RUN] " if dry_run else ""
 
     path_in = Path(path_in).resolve()
     path_out = "-" if path_out is None or path_out == "-" else Path(path_out).resolve()
 
-    LOGGER.info(
-        "%sReading items from <%s> splitting them into <%s>",
-        dry_run_prefix,
-        path_in,
-        path_out,
-    )
+    LOGGER.info("Reading items from <%s> splitting them into <%s>", path_in, path_out)
 
-    if not dry_run and path_out != "-":
+    if path_out != "-":
         path_out.parent.mkdir(parents=True, exist_ok=True)
 
     items = tuple(_load_items(path_in, fields=fields, exclude_empty=exclude_empty))
@@ -103,7 +89,7 @@ def split_files(
     total = len(items)
     count = 0
 
-    LOGGER.info("%sRead %d items from <%s>", dry_run_prefix, total, path_in)
+    LOGGER.info("Read %d items from <%s>", total, path_in)
 
     for i, batch in enumerate(batches):
         batch = list(batch)
@@ -121,12 +107,11 @@ def split_files(
 
         else:
             out_path = str(path_out).format(number=i)
-            LOGGER.info("%sWriting batch #%d to <%s>", dry_run_prefix, i, out_path)
-            if not dry_run:
-                with open(out_path, "w") as out_file:
-                    json.dump(result, out_file, sort_keys=True)
+            LOGGER.info("Writing batch #%d to <%s>", i, out_path)
+            with open(out_path, "w") as out_file:
+                json.dump(result, out_file, sort_keys=True)
 
-    LOGGER.info("%sDone splitting.", dry_run_prefix)
+    LOGGER.info("Done splitting.")
 
 
 def _parse_args():
@@ -134,7 +119,6 @@ def _parse_args():
     parser.add_argument("infile", help="input file")
     parser.add_argument("--batch", "-b", type=int, help="batch size")
     parser.add_argument("--outfile", "-o", help="output file path")
-    parser.add_argument("--dry-run", "-n", action="store_true", help="dry run")
     parser.add_argument(
         "--verbose",
         "-v",
@@ -163,7 +147,6 @@ def _main():
         size=args.batch,
         fields=FIELDS,
         exclude_empty=True,
-        dry_run=args.dry_run,
     )
 
 

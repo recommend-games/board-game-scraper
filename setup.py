@@ -69,7 +69,6 @@ REQUIRED = (
 # What packages are optional?
 EXTRAS = {
     "cloud": ("smart-open>=1.8.1",),
-    "git": ("gitpython",),
 }
 
 # The rest you shouldn't have to touch too much :)
