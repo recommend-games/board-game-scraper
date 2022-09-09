@@ -319,6 +319,7 @@ def _parse_args():
     parser.add_argument(
         "--concat", "-c", action="store_true", help="concatenate output into one file"
     )
+    parser.add_argument("--dry-run", "-n", action="store_true", help="dry run")
     parser.add_argument(
         "--verbose",
         "-v",
@@ -372,6 +373,7 @@ def main():
         else "INFO"
         if args.verbose > 0
         else "WARN",
+        dry_run=args.dry_run,
     )
 
 
