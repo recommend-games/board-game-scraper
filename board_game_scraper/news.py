@@ -109,6 +109,9 @@ def update_news(
                         path_git,
                     )
 
+    else:
+        repo = None
+
     if s3_dst:
         LOGGER.info("%sUpload results to <%s>", dry_run_prefix, s3_dst)
 
