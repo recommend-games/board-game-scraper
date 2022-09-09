@@ -118,7 +118,9 @@ def merge_files(
 
     if dry_run:
         LOGGER.info(
-            "[DRY RUN] Merging items from [%d paths] into <%s>", len(in_paths), out_path
+            "[DRY RUN] Merging items from [%d paths] into <%s>",
+            len(in_paths),
+            out_path,
         )
         for in_path in in_paths:
             LOGGER.info("[DRY RUN] Merging file <%s>", in_path)
