@@ -36,7 +36,7 @@ def merge_config(
     kwargs.setdefault("key_types", "int" if spider in ("bgg", "luding") else "str")
     kwargs.setdefault("latest", "scraped_at")
     kwargs.setdefault("latest_types", "date")
-    kwargs.setdefault("latest_min", curr_date - timedelta(days=90))
+    # kwargs.setdefault("latest_min", curr_date - timedelta(days=360))
     kwargs.setdefault("concat_output", True)
 
     if parse_bool(full):

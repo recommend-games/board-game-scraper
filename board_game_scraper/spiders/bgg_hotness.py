@@ -24,6 +24,8 @@ class BggHotnessSpider(Spider):
     custom_settings = {
         "DOWNLOAD_DELAY": 0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1024,
+        "CONCURRENT_REQUESTS_PER_IP": 1024,
+        "AUTOTHROTTLE_ENABLED": False,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 1024,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
     }
