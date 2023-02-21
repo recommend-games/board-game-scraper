@@ -28,7 +28,7 @@ twisted = "*"
 "w3lib" = "*"
 
 [dev-packages]
-black = "*"
+black = "==21.4b2"
 docker = "*"
 mypy = "*"
 pre-commit = "*"
@@ -36,4 +36,3 @@ psutil = "*"
 pylint = "*"
 pytimeparse = "*"
 twine = "*"
-gitpython = "*"
