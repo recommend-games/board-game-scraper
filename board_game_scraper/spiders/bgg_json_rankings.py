@@ -4,6 +4,7 @@ import csv
 
 from datetime import timezone
 from io import StringIO
+from pathlib import Path
 
 from pytility import parse_date, parse_int
 from scrapy import Request, Spider
@@ -18,7 +19,14 @@ class BggJsonSpider(Spider):
     name = "bgg_json_rankings"
     allowed_domains = ("geekdo.com",)
     start_urls = (
-        "file:///Users/markus/Recommend.Games/board-game-data/rankings/bgg/bgg_strategy/20211027-133924.csv",
+        (
+            Path(__file__).parent.parent.parent.parent
+            / "board-game-data"
+            / "scraped"
+            / "bgg_GameItem.csv"
+        )
+        .resolve()
+        .as_uri(),
     )
     item_classes = (GameItem,)
 
