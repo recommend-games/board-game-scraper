@@ -84,10 +84,16 @@ class BggJsonSpider(Spider):
         @scrapes TODO
         """
 
-        game_type_id = self.get_game_type_id()
+        game_type = self.get_game_type()
+        game_type_id = self.get_game_type_id(game_type)
         if not game_type_id:
-            self.logger.error("Invalid game type <%s>", self.get_game_type())
+            self.logger.error("Invalid game type <%s>, aborting", game_type)
             return
+        self.logger.info(
+            "Scraping rankings for game type <%s> (ID %d)",
+            game_type,
+            game_type_id,
+        )
 
         try:
             for bgg_id, name in self.parse_csv(response.text):
