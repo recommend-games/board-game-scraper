@@ -113,6 +113,7 @@ class BggJsonSpider(Spider):
             )
 
     def parse_game(self, response):
+        # pylint: disable=line-too-long
         """
         @url https://api.geekdo.com/api/historicalrankgraph?objectid=13&objecttype=thing&rankobjectid=1
         @returns items 5000
