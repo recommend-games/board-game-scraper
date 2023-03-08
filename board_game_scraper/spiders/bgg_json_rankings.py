@@ -61,7 +61,7 @@ class BggJsonSpider(Spider):
     }
 
     def get_game_type(self) -> str:
-        """TODO."""
+        """Get the game type from settings."""
         return (
             getattr(self, "game_type", None)
             or self.settings.get("GAME_TYPE")
@@ -70,7 +70,7 @@ class BggJsonSpider(Spider):
         )
 
     def get_game_type_id(self, game_type: Optional[str] = None) -> Optional[int]:
-        """TODO."""
+        """Get the object ID corresponding to the game type."""
         game_type = game_type or self.get_game_type()
         return self.game_types.get(game_type)
 
