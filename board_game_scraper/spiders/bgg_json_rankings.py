@@ -50,7 +50,6 @@ class BggJsonSpider(Spider):
         "DELAYED_RETRY_HTTP_CODES": (202,),
         "DELAYED_RETRY_DELAY": 30.0,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
-        "ROBOTSTXT_OBEY": False,
         "ITEM_PIPELINES": {"scrapy_extensions.ValidatePipeline": None},
     }
 
