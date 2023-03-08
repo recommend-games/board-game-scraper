@@ -33,7 +33,7 @@ class BggJsonSpider(Spider):
 
     url = (
         "https://api.geekdo.com/api/historicalrankgraph"
-        + "?objectid={bgg_id}&objecttype=thing&rankobjectid={game_type_id}"
+        + "?objectid={item_id}&objecttype=thing&rankobjectid={game_type_id}"
     )
     game_types = {
         "overall": 1,
@@ -46,6 +46,7 @@ class BggJsonSpider(Spider):
         "party": 5498,
         "family": 5499,
     }
+    id_field = "bgg_id"
 
     custom_settings = {
         "DOWNLOAD_DELAY": 0.5,
@@ -68,13 +69,14 @@ class BggJsonSpider(Spider):
         game_type = game_type or self.get_game_type()
         return self.game_types.get(game_type)
 
-    def parse_csv(self, text, id_field="bgg_id"):
+    def parse_csv(self, text, id_field=None):
         """Parse a CSV string for IDs."""
+        id_field = id_field or self.id_field
         file = StringIO(text, newline="")
         for game in csv.DictReader(file):
-            id_ = parse_int(game.get(id_field))
-            if id_:
-                yield id_, game.get("name")
+            item_id = parse_int(game.get(id_field))
+            if item_id:
+                yield item_id, game.get("name")
 
     def parse(self, response):
         """
@@ -96,10 +98,10 @@ class BggJsonSpider(Spider):
         )
 
         try:
-            for bgg_id, name in self.parse_csv(response.text):
-                meta = {"name": name, "bgg_id": bgg_id}
+            for item_id, name in self.parse_csv(response.text):
+                meta = {"name": name, "item_id": item_id}
                 yield Request(
-                    url=self.url.format(game_type_id=game_type_id, bgg_id=bgg_id),
+                    url=self.url.format(game_type_id=game_type_id, item_id=item_id),
                     callback=self.parse_game,
                     meta=meta,
                 )
@@ -117,13 +119,13 @@ class BggJsonSpider(Spider):
         data = result.get("data") or ()
 
         name = response.meta.get("name")
-        bgg_id = parse_int(response.meta.get("bgg_id")) or parse_int(
+        item_id = parse_int(response.meta.get("item_id")) or parse_int(
             extract_query_param(response.url, "objectid")
         )
 
-        if not bgg_id:
+        if not item_id:
             self.logger.warning(
-                "Unable to extract BGG ID from <%s>, skipping…",
+                "Unable to extract item ID from <%s>, skipping…",
                 response.url,
             )
             return
@@ -134,7 +136,7 @@ class BggJsonSpider(Spider):
             published_at = parse_date(date / 1000, tzinfo=timezone.utc)
             yield GameItem(
                 name=name,
-                bgg_id=bgg_id,
+                bgg_id=item_id,
                 rank=rank,
                 published_at=published_at,
                 scraped_at=scraped_at,
