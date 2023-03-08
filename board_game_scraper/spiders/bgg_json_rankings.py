@@ -13,22 +13,16 @@ from scrapy import Request, Spider
 from ..items import GameItem
 from ..utils import extract_query_param, json_from_response, now
 
+BASE_DIR = Path(__file__).parent.parent.parent.parent.resolve()
+GAMES_FILE = (BASE_DIR / "board-game-data" / "scraped" / "bgg_GameItem.csv").resolve()
+
 
 class BggJsonSpider(Spider):
     """BoardGameGeek JSON spider."""
 
     name = "bgg_json_rankings"
     allowed_domains = ("geekdo.com",)
-    start_urls = (
-        (
-            Path(__file__).parent.parent.parent.parent
-            / "board-game-data"
-            / "scraped"
-            / "bgg_GameItem.csv"
-        )
-        .resolve()
-        .as_uri(),
-    )
+    start_urls = (GAMES_FILE.as_uri(),)
     item_classes = (GameItem,)
 
     url = (
@@ -84,13 +78,19 @@ class BggJsonSpider(Spider):
                 yield item_id, game.get("name")
 
     def parse(self, response):
-        """TODO."""
+        """
+        @url file:///Users/markus/Recommend.Games/board-game-data/scraped/bgg_GameItem.csv
+        @returns items 0 0
+        @returns requests 100000
+        """
 
         game_type = self.get_game_type()
         game_type_id = self.get_game_type_id(game_type)
+
         if not game_type_id:
             self.logger.error("Invalid game type <%s>, aborting", game_type)
             return
+
         self.logger.info(
             "Scraping rankings for game type <%s> (ID %d)",
             game_type,
