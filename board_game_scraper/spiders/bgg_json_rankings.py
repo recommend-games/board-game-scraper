@@ -1,7 +1,7 @@
 """BoardGameGeek JSON spider."""
 
 import csv
-
+import os
 from datetime import timezone
 from io import StringIO
 from pathlib import Path
@@ -62,7 +62,12 @@ class BggJsonSpider(Spider):
 
     def get_game_type(self) -> str:
         """TODO."""
-        return self.settings.get("GAME_TYPE") or "overall"
+        return (
+            getattr(self, "game_type", None)
+            or self.settings.get("GAME_TYPE")
+            or os.getenv("GAME_TYPE")
+            or "overall"
+        )
 
     def get_game_type_id(self, game_type: Optional[str] = None) -> Optional[int]:
         """TODO."""
