@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """BoardGameGeek JSON spider."""
 
 import csv
@@ -14,8 +12,8 @@ from ..items import GameItem
 from ..utils import extract_query_param, json_from_response, now
 
 
-class BggGeekListSpider(Spider):
-    """BoardGameGeek GeekList spider."""
+class BggJsonSpider(Spider):
+    """BoardGameGeek JSON spider."""
 
     name = "bgg_json_rankings"
     allowed_domains = ("geekdo.com",)
