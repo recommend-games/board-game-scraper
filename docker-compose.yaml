@@ -293,6 +293,28 @@ services:
         stop_grace_period: 15m
         stop_signal: SIGINT
 
+    bgg-rankings-json-children:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-children
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_children',
+            '-a', 'game_type=children',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
     dbpedia:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-dbpedia
