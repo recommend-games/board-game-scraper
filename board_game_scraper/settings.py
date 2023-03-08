@@ -199,7 +199,7 @@ EXTENSIONS = {
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     "board_game_scraper.pipelines.DataTypePipeline": 100,
-    # "scrapy_extensions.ValidatePipeline": 200,
+    "scrapy_extensions.ValidatePipeline": 200,
     "board_game_scraper.pipelines.ResolveLabelPipeline": 300,
     "board_game_scraper.pipelines.ResolveImagePipeline": 400,
     "board_game_scraper.pipelines.LimitImagesPipeline": 500,

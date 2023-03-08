@@ -33,6 +33,7 @@ class BggGeekListSpider(Spider):
         "DELAYED_RETRY_DELAY": 5.0,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
         "ROBOTSTXT_OBEY": False,
+        "ITEM_PIPELINES": {"scrapy_extensions.ValidatePipeline": None},
     }
 
     def parse_csv(self, text, id_field="bgg_id"):
