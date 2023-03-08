@@ -136,6 +136,13 @@ class BggJsonSpider(Spider):
             )
             return
 
+        if not data:
+            self.logger.debug(
+                "No data for item ID <%d>, consider removing the request",
+                item_id,
+            )
+            return
+
         scraped_at = now()
 
         for date, rank in data:
