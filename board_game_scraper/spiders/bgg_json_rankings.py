@@ -5,6 +5,7 @@ import csv
 from datetime import timezone
 from io import StringIO
 from pathlib import Path
+from typing import Optional
 
 from pytility import parse_date, parse_int
 from scrapy import Request, Spider
@@ -30,7 +31,10 @@ class BggJsonSpider(Spider):
     )
     item_classes = (GameItem,)
 
-    url = "https://api.geekdo.com/api/historicalrankgraph?objectid={bgg_id}&objecttype=thing&rankobjectid={game_type_id}"
+    url = (
+        "https://api.geekdo.com/api/historicalrankgraph"
+        + "?objectid={bgg_id}&objecttype=thing&rankobjectid={game_type_id}"
+    )
     game_types = {
         "overall": 1,
         "war": 4664,
