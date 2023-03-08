@@ -40,7 +40,7 @@ class BggJsonSpider(Spider):
         for game in csv.DictReader(file):
             id_ = parse_int(game.get(id_field))
             if id_:
-                yield id_
+                yield id_, game.get("name")
 
     def parse(self, response):
         """
@@ -51,16 +51,19 @@ class BggJsonSpider(Spider):
         """
 
         try:
-            for bgg_id in self.parse_csv(response.text):
+            for bgg_id, name in self.parse_csv(response.text):
+                meta = {"name": name, "bgg_id": bgg_id}
                 yield Request(
                     url="https://api.geekdo.com/api/historicalrankgraph"
                     + f"?objectid={bgg_id}&objecttype=thing&rankobjectid=5497",
                     callback=self.parse_game,
+                    meta=meta,
                 )
 
         except Exception:
             self.logger.exception(
-                "Response <%s> cannot be processed as CSV", response.url
+                "Response <%s> cannot be processed as CSV",
+                response.url,
             )
 
     def parse_game(self, response):
@@ -68,12 +71,25 @@ class BggJsonSpider(Spider):
 
         result = json_from_response(response)
         data = result.get("data") or ()
-        bgg_id = parse_int(extract_query_param(response.url, "objectid"))
+
+        name = response.meta.get("name")
+        bgg_id = parse_int(response.meta.get("bgg_id")) or parse_int(
+            extract_query_param(response.url, "objectid")
+        )
+
+        if not bgg_id:
+            self.logger.warning(
+                "Unable to extract BGG ID from <%s>, skipping…",
+                response.url,
+            )
+            return
+
         scraped_at = now()
 
         for date, rank in data:
             published_at = parse_date(date / 1000, tzinfo=timezone.utc)
             yield GameItem(
+                name=name,
                 bgg_id=bgg_id,
                 rank=rank,
                 published_at=published_at,
