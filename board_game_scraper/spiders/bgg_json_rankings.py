@@ -43,12 +43,12 @@ class BggJsonSpider(Spider):
     id_field = "bgg_id"
 
     custom_settings = {
-        "DOWNLOAD_DELAY": 0.5,
+        "DOWNLOAD_DELAY": 10.0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
         "DELAYED_RETRY_ENABLED": True,
         "DELAYED_RETRY_HTTP_CODES": (202,),
-        "DELAYED_RETRY_DELAY": 5.0,
+        "DELAYED_RETRY_DELAY": 30.0,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
         "ROBOTSTXT_OBEY": False,
         "ITEM_PIPELINES": {"scrapy_extensions.ValidatePipeline": None},
