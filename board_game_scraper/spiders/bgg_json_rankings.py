@@ -31,14 +31,14 @@ class BggJsonSpider(Spider):
     )
     game_types = {
         "overall": 1,
-        "war": 4664,
-        "children": 4665,
         "abstract": 4666,
+        "children": 4665,
         "customizable": 4667,
-        "thematic": 5496,
-        "strategy": 5497,
-        "party": 5498,
         "family": 5499,
+        "party": 5498,
+        "strategy": 5497,
+        "thematic": 5496,
+        "war": 4664,
     }
     id_field = "bgg_id"
 
