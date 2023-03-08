@@ -84,12 +84,7 @@ class BggJsonSpider(Spider):
                 yield item_id, game.get("name")
 
     def parse(self, response):
-        """
-        @url TODO
-        @returns items TODO TODO
-        @returns requests TODO TODO
-        @scrapes TODO
-        """
+        """TODO."""
 
         game_type = self.get_game_type()
         game_type_id = self.get_game_type_id(game_type)
@@ -118,7 +113,12 @@ class BggJsonSpider(Spider):
             )
 
     def parse_game(self, response):
-        """TODO."""
+        """
+        @url https://api.geekdo.com/api/historicalrankgraph?objectid=13&objecttype=thing&rankobjectid=1
+        @returns items 5000
+        @returns requests 0 0
+        @scrapes bgg_id rank published_at scraped_at
+        """
 
         result = json_from_response(response)
         data = result.get("data") or ()
