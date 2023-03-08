@@ -7,11 +7,12 @@ import logging
 import os.path
 import sys
 
-from datetime import timedelta, timezone
+from datetime import date, timedelta, timezone
 from pathlib import Path
 from shutil import rmtree
 from subprocess import run
 from time import sleep
+from typing import TYPE_CHECKING, Optional, Union
 
 from pytility import parse_date
 
@@ -19,37 +20,130 @@ from .merge import merge_files
 from .split import split_files
 from .utils import date_from_file, now
 
+if TYPE_CHECKING:
+    try:
+        from git import Repo
+    except ImportError:
+        pass
+
 LOGGER = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _get_git_repo(path: Union[Path, str, None]) -> Optional["Repo"]:
+    if not path:
+        return None
+
+    path = Path(path).resolve()
+
+    try:
+        from git import InvalidGitRepositoryError, NoSuchPathError, Repo
+    except ImportError:
+        LOGGER.exception("Unable to import Git library")
+        return None
+
+    try:
+        LOGGER.info("Trying to find Git repo at <%s> or its parents", path)
+        repo = Repo(path=path, search_parent_directories=True)
+    except (InvalidGitRepositoryError, NoSuchPathError):
+        LOGGER.exception("Path <%s> does not point to a valid Git repo", path)
+        return None
+
+    return repo
+
+
 def update_news(
-    s3_src, path_feeds, path_merged, path_split, s3_dst, split_size=None, log_level=None
+    *,
+    s3_src,
+    path_feeds,
+    path_merged,
+    path_split,
+    split_git_update=False,
+    s3_dst=None,
+    split_size=None,
+    log_level=None,
+    dry_run: bool = False,
 ):
     """News syncing, merging, splitting, and uploading."""
+
+    dry_run_prefix = "[DRY RUN] " if dry_run else ""
 
     path_feeds = Path(path_feeds).resolve()
     path_merged = Path(path_merged).resolve()
     path_split = Path(path_split).resolve()
 
     LOGGER.info(
-        "Sync from <%s>, merge from <%s> into <%s>, split into <%s>, upload to <%s>",
+        "%sSync from <%s>, merge from <%s> into <%s>, split into <%s>",
+        dry_run_prefix,
         s3_src,
         path_feeds,
         path_merged,
         path_split,
-        s3_dst,
     )
 
-    LOGGER.info("Deleting existing dir <%s>", path_split.parent)
-    rmtree(path_split.parent, ignore_errors=True)
+    if split_git_update:
+        repo = _get_git_repo(path_split.parent)
+        if repo is None or not repo.working_dir:
+            repo = None
+            split_git_update = False
+            path_git = None
+            git_rel_path = None
+            LOGGER.error(
+                "%sUnable to update Git repo <%s>",
+                dry_run_prefix,
+                path_split.parent,
+            )
 
-    path_feeds.mkdir(parents=True, exist_ok=True)
-    path_merged.parent.mkdir(parents=True, exist_ok=True)
-    path_split.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            path_git = Path(repo.working_dir).resolve()
+            git_rel_path = path_split.parent.relative_to(path_git)
+            LOGGER.info("%sUpdate Git repo <%s>", dry_run_prefix, path_git)
+            if not dry_run:
+                LOGGER.info("Pulling latest commits from remote <%s>", repo.remotes[0])
+                try:
+                    repo.remotes[0].pull(ff_only=True)
+                except Exception:
+                    LOGGER.exception(
+                        "Unable to pull from remote <%s> to repo <%s>",
+                        repo.remotes[0],
+                        path_git,
+                    )
 
-    LOGGER.info("S3 sync from <%s> to <%s>", s3_src, path_feeds)
-    run(["aws", "s3", "sync", s3_src, os.path.join(path_feeds, "")], check=True)
+    else:
+        repo = None
+
+    if s3_dst:
+        LOGGER.info("%sUpload results to <%s>", dry_run_prefix, s3_dst)
+
+    LOGGER.info("%sDeleting existing dir <%s>", dry_run_prefix, path_split.parent)
+    if not dry_run:
+        if repo is None:
+            rmtree(path_split.parent, ignore_errors=True)
+        else:
+            try:
+                deleted_files = repo.index.remove(
+                    items=[str(git_rel_path)],
+                    working_tree=True,
+                    r=True,
+                )
+                LOGGER.info(
+                    "Deleted %d files from <%s>",
+                    len(deleted_files),
+                    path_split.parent,
+                )
+            except Exception:
+                LOGGER.exception(
+                    "Unable to remove path <%s> from Git",
+                    path_split.parent,
+                )
+
+        path_feeds.mkdir(parents=True, exist_ok=True)
+        path_merged.parent.mkdir(parents=True, exist_ok=True)
+        path_split.parent.mkdir(parents=True, exist_ok=True)
+
+    LOGGER.info("%sS3 sync from <%s> to <%s>", dry_run_prefix, s3_src, path_feeds)
+    if not dry_run:
+        run(["aws", "s3", "sync", s3_src, os.path.join(path_feeds, "")], check=True)
 
     merge_files(
         in_paths=path_feeds.rglob("*.jl"),
@@ -63,40 +157,81 @@ def update_news(
         sort_descending=True,
         concat_output=True,
         log_level=log_level,
+        dry_run=dry_run,
     )
 
     split_files(
-        path_in=path_merged, path_out=path_split, size=split_size, exclude_empty=True
+        path_in=path_merged,
+        path_out=path_split,
+        size=split_size,
+        exclude_empty=True,
+        dry_run=dry_run,
     )
 
-    LOGGER.info("S3 sync from <%s> to <%s>", path_split.parent, s3_dst)
-    run(
-        [
-            "aws",
-            "s3",
-            "sync",
-            "--acl",
-            "public-read",
-            "--exclude",
-            ".gitignore",
-            "--exclude",
-            ".DS_Store",
-            "--exclude",
-            ".bucket",
-            "--size-only",
-            "--delete",
-            os.path.join(path_split.parent, ""),
+    if repo is not None and git_rel_path:
+        message = f"Automatic commit by <{__name__}> {date.today().isoformat()}"
+        LOGGER.info(
+            "%sCommitting changes to repo <%s> with message <%s>",
+            dry_run_prefix,
+            path_git,
+            message,
+        )
+        if not dry_run:
+            try:
+                repo.index.add(items=[str(git_rel_path)])
+                repo.index.commit(message=message, skip_hooks=True)
+            except Exception:
+                LOGGER.exception(
+                    "There was a problem commit to Git repo <%s>",
+                    path_git,
+                )
+
+        for remote in repo.remotes:
+            LOGGER.info("%sPushing changes to remote <%s>", dry_run_prefix, remote)
+            if not dry_run:
+                try:
+                    remote.push()
+                except Exception:
+                    LOGGER.exception(
+                        "There was a problem pushing to remote <%s>",
+                        remote,
+                    )
+
+    if s3_dst:
+        LOGGER.info(
+            "%sS3 sync from <%s> to <%s>",
+            dry_run_prefix,
+            path_split.parent,
             s3_dst,
-        ],
-        check=True,
-    )
+        )
+        if not dry_run:
+            run(
+                [
+                    "aws",
+                    "s3",
+                    "sync",
+                    "--acl",
+                    "public-read",
+                    "--exclude",
+                    ".gitignore",
+                    "--exclude",
+                    ".DS_Store",
+                    "--exclude",
+                    ".bucket",
+                    "--size-only",
+                    "--delete",
+                    os.path.join(path_split.parent, ""),
+                    s3_dst,
+                ],
+                check=True,
+            )
 
-    LOGGER.info("Done updating news.")
+    LOGGER.info("%sDone updating news.", dry_run_prefix)
 
 
 def _parse_args():
     parser = argparse.ArgumentParser(
-        description="News syncing, merging, splitting, and uploading."
+        description="News syncing, merging, splitting, and uploading.",
     )
     parser.add_argument(
         "--src-bucket",
@@ -107,11 +242,14 @@ def _parse_args():
     parser.add_argument(
         "--dst-bucket",
         "-B",
-        default="news.recommend.games",
+        # default="news.recommend.games",
         help="S3 bucket to upload to",
     )
     parser.add_argument(
-        "--feeds", "-f", default=BASE_DIR / "feeds" / "news", help="Scraped items"
+        "--feeds",
+        "-f",
+        default=BASE_DIR / "feeds" / "news",
+        help="Scraped items",
     )
     parser.add_argument(
         "--merged",
@@ -133,7 +271,15 @@ def _parse_args():
         help="number of items in each result file",
     )
     parser.add_argument(
-        "--dont-run-before", "-d", help="Either a date or a file with date information"
+        "--git",
+        "-g",
+        action="store_true",
+        help="Update the Git repo of the split files",
+    )
+    parser.add_argument(
+        "--dont-run-before",
+        "-d",
+        help="Either a date or a file with date information",
     )
     parser.add_argument(
         "--interval",
@@ -142,6 +288,7 @@ def _parse_args():
         default=10 * 60,  # 10 minutes
         help="number of seconds to wait before next run",
     )
+    parser.add_argument("--dry-run", "-n", action="store_true", help="dry run")
     parser.add_argument(
         "--verbose",
         "-v",
@@ -167,8 +314,12 @@ def main():
     LOGGER.info(args)
 
     dont_run_before = parse_date(
-        args.dont_run_before, tzinfo=timezone.utc
-    ) or date_from_file(args.dont_run_before, tzinfo=timezone.utc)
+        args.dont_run_before,
+        tzinfo=timezone.utc,
+    ) or date_from_file(
+        args.dont_run_before,
+        tzinfo=timezone.utc,
+    )
 
     if dont_run_before:
         LOGGER.info("Don't run before %s", dont_run_before.isoformat())
@@ -184,7 +335,7 @@ def main():
             dont_run_before.isoformat(),
             args.dont_run_before,
         )
-        with open(args.dont_run_before, "w") as file_obj:
+        with open(args.dont_run_before, "w", encoding="utf-8") as file_obj:
             file_obj.write(dont_run_before.isoformat())
 
     update_news(
@@ -192,13 +343,15 @@ def main():
         path_feeds=args.feeds,
         path_merged=args.merged,
         path_split=args.split,
-        s3_dst=f"s3://{args.dst_bucket}/",
+        s3_dst=f"s3://{args.dst_bucket}/" if args.dst_bucket else None,
         split_size=args.split_size,
+        split_git_update=args.git,
         log_level="DEBUG"
         if args.verbose > 1
         else "INFO"
         if args.verbose > 0
         else "WARN",
+        dry_run=args.dry_run,
     )
 
 

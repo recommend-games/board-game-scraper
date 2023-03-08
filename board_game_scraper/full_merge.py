@@ -36,7 +36,7 @@ def merge_config(
     kwargs.setdefault("key_types", "int" if spider in ("bgg", "luding") else "str")
     kwargs.setdefault("latest", "scraped_at")
     kwargs.setdefault("latest_types", "date")
-    kwargs.setdefault("latest_min", curr_date - timedelta(days=90))
+    # kwargs.setdefault("latest_min", curr_date - timedelta(days=360))
     kwargs.setdefault("concat_output", True)
 
     if parse_bool(full):
@@ -327,12 +327,15 @@ def main():
     LOGGER.info(args)
 
     for spider in args.spiders:
-        _stop_merge_start(
-            spider=spider,
-            compose_file=args.compose_file,
-            timeout=args.timeout,
-            cool_down=args.cool_down,
-        )
+        try:
+            _stop_merge_start(
+                spider=spider,
+                compose_file=args.compose_file,
+                timeout=args.timeout,
+                cool_down=args.cool_down,
+            )
+        except Exception:
+            LOGGER.exception("There was an error when processing spider <%s>", spider)
 
 
 if __name__ == "__main__":

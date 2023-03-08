@@ -69,6 +69,7 @@ REQUIRED = (
 # What packages are optional?
 EXTRAS = {
     "cloud": ("smart-open>=1.8.1",),
+    "git": ("gitpython",),
 }
 
 # The rest you shouldn't have to touch too much :)
@@ -167,6 +168,7 @@ setup(
             "bg-full-merge=board_game_scraper.full_merge:main",
             "bg-news=board_game_scraper.news:main",
             "bg-pull=board_game_scraper.pubsub_pull:main",
+            "bg-zip-rankings=board_game_scraper.zip_rankings:main",
         ),
     },
     install_requires=REQUIRED,

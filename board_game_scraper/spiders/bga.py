@@ -43,7 +43,7 @@ def _extract_requests(response=None):
 
 
 class BgaSpider(Spider):
-    """ Board Game Atlas spider """
+    """Board Game Atlas spider"""
 
     name = "bga"
     allowed_domains = ("boardgameatlas.com",)
@@ -61,7 +61,7 @@ class BgaSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        """ initialise spider from crawler """
+        """initialise spider from crawler"""
 
         kwargs.setdefault("settings", crawler.settings)
         spider = cls(*args, **kwargs)
@@ -107,7 +107,7 @@ class BgaSpider(Spider):
         )
 
     def start_requests(self):
-        """ generate start requests """
+        """generate start requests"""
 
         yield Request(
             url=self._api_url(query={"order_by": "popularity"}),
