@@ -30,6 +30,19 @@ class BggJsonSpider(Spider):
     )
     item_classes = (GameItem,)
 
+    url = "https://api.geekdo.com/api/historicalrankgraph?objectid={bgg_id}&objecttype=thing&rankobjectid={game_type_id}"
+    game_types = {
+        "overall": 1,
+        "war": 4664,
+        "children": 4665,
+        "abstract": 4666,
+        "customizable": 4667,
+        "thematic": 5496,
+        "strategy": 5497,
+        "party": 5498,
+        "family": 5499,
+    }
+
     custom_settings = {
         "DOWNLOAD_DELAY": 0.5,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
@@ -41,6 +54,15 @@ class BggJsonSpider(Spider):
         "ROBOTSTXT_OBEY": False,
         "ITEM_PIPELINES": {"scrapy_extensions.ValidatePipeline": None},
     }
+
+    def get_game_type(self) -> str:
+        """TODO."""
+        return self.settings.get("GAME_TYPE") or "overall"
+
+    def get_game_type_id(self, game_type: Optional[str] = None) -> Optional[int]:
+        """TODO."""
+        game_type = game_type or self.get_game_type()
+        return self.game_types.get(game_type)
 
     def parse_csv(self, text, id_field="bgg_id"):
         """Parse a CSV string for IDs."""
@@ -58,12 +80,16 @@ class BggJsonSpider(Spider):
         @scrapes TODO
         """
 
+        game_type_id = self.get_game_type_id()
+        if not game_type_id:
+            self.logger.error("Invalid game type <%s>", self.get_game_type())
+            return
+
         try:
             for bgg_id, name in self.parse_csv(response.text):
                 meta = {"name": name, "bgg_id": bgg_id}
                 yield Request(
-                    url="https://api.geekdo.com/api/historicalrankgraph"
-                    + f"?objectid={bgg_id}&objecttype=thing&rankobjectid=5497",
+                    url=self.url.format(game_type_id=game_type_id, bgg_id=bgg_id),
                     callback=self.parse_game,
                     meta=meta,
                 )
