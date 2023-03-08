@@ -75,7 +75,7 @@ class BggJsonSpider(Spider):
         for game in csv.DictReader(file):
             item_id = parse_int(game.get(id_field))
             if item_id:
-                yield item_id, game.get("name")
+                yield item_id, game.get("name"), parse_int(game.get("num_votes"))
 
     def parse(self, response):
         """
@@ -98,12 +98,13 @@ class BggJsonSpider(Spider):
         )
 
         try:
-            for item_id, name in self.parse_csv(response.text):
+            for item_id, name, priority in self.parse_csv(response.text):
                 meta = {"name": name, "item_id": item_id}
                 yield Request(
                     url=self.url.format(game_type_id=game_type_id, item_id=item_id),
                     callback=self.parse_game,
                     meta=meta,
+                    priority=priority or 0,
                 )
 
         except Exception:
