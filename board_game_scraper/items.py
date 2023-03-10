@@ -519,6 +519,7 @@ class UserItem(TypedItem):
     )
     image_url_download = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     image_file = Field(serializer=JSON_SERIALIZER, parser=parse_json)
+    image_blurhash = Field(serializer=JSON_SERIALIZER, parser=parse_json)
 
     published_at = Field(
         dtype=datetime,

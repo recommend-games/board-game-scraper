@@ -110,6 +110,7 @@ MULTI_FEED_EXPORT_FIELDS = {
         "external_link",
         "image_url",
         "image_file",
+        "image_blurhash",
         "published_at",
         "updated_at",
         "scraped_at",
