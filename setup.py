@@ -62,7 +62,7 @@ REQUIRED = (
     "pyyaml",
     "requests",
     "scrapy<2.1.0",
-    "scrapy-extensions[images]>=0.3.0",
+    "scrapy-extensions[images]>=0.3.1",
     "twisted",
     "w3lib",
 )

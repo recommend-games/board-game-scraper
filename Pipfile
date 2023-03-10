@@ -25,7 +25,7 @@ pytrie = "*"
 pyyaml = "*"
 requests = "*"
 scrapy = "<2.1.0"
-scrapy-extensions = {extras = ["images"], version = ">=0.3.0"}
+scrapy-extensions = {extras = ["images"], version = ">=0.3.1"}
 smart-open = {extras = ["all"], version = ">=1.8.1"}
 twisted = "<22.0.0" # https://stackoverflow.com/a/73046084/2634131
 "w3lib" = "*"
