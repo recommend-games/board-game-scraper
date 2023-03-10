@@ -67,6 +67,7 @@ FEED_EXPORT_FIELDS = (
     "implementation",
     "integration",
     "rank",
+    "add_rank",
     "num_votes",
     "avg_rating",
     "stddev_rating",
@@ -201,9 +202,10 @@ ITEM_PIPELINES = {
     "scrapy_extensions.ValidatePipeline": 200,
     "board_game_scraper.pipelines.ResolveLabelPipeline": 300,
     "board_game_scraper.pipelines.ResolveImagePipeline": 400,
-    "scrapy.pipelines.images.ImagesPipeline": None,
-    "scrapy_extensions.pipelines.BlurImagesPipeline": 600,
+    "board_game_scraper.pipelines.LimitImagesPipeline": 500,
+    "scrapy.pipelines.images.ImagesPipeline": 600,
     "scrapy.pipelines.images.FilesPipeline": None,
+    "board_game_scraper.pipelines.CleanItemPipeline": 900,
 }
 
 # See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
@@ -265,9 +267,13 @@ DONT_RUN_BEFORE_DATE = os.getenv("DONT_RUN_BEFORE_DATE")
 
 MEDIA_ALLOW_REDIRECTS = True
 
+# LimitImagesPipeline
+LIMIT_IMAGES_TO_DOWNLOAD = 0
+LIMIT_IMAGES_URLS_FIELD = "image_url"
+
 # Image processing
 IMAGES_STORE = os.path.join(BASE_DIR, "images")
-IMAGES_URLS_FIELD = "image_url"
+IMAGES_URLS_FIELD = "image_url_download"
 IMAGES_RESULT_FIELD = "image_file"
 IMAGES_EXPIRES = 360
 # IMAGES_THUMBS = {"thumb": (1024, 1024)}
@@ -277,6 +283,10 @@ FILES_STORE = os.path.join(BASE_DIR, "rules")
 FILES_URLS_FIELD = "rules_url"
 FILES_RESULT_FIELD = "rules_file"
 FILES_EXPIRES = 180
+
+# CleanItemPipeline
+CLEAN_ITEM_DROP_FALSEY = True
+CLEAN_ITEM_DROP_VALUES = None
 
 # Board Game Atlas
 BGA_CLIENT_ID = os.getenv("BGA_CLIENT_ID")

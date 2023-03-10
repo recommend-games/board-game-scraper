@@ -36,7 +36,7 @@ def merge_config(
     kwargs.setdefault("key_types", "int" if spider in ("bgg", "luding") else "str")
     kwargs.setdefault("latest", "scraped_at")
     kwargs.setdefault("latest_types", "date")
-    kwargs.setdefault("latest_min", curr_date - timedelta(days=90))
+    # kwargs.setdefault("latest_min", curr_date - timedelta(days=360))
     kwargs.setdefault("concat_output", True)
 
     if parse_bool(full):
@@ -48,7 +48,7 @@ def merge_config(
         kwargs["out_path"] = out_path or DATA_DIR / "scraped" / f"{spider}_{item}.jl"
         kwargs.setdefault(
             "fieldnames_exclude",
-            ("image_file", "rules_file", "published_at", "updated_at", "scraped_at"),
+            ("published_at", "updated_at", "scraped_at"),
         )
         kwargs.setdefault("sort_keys", True)
 
@@ -106,6 +106,7 @@ def merge_configs(spider, full=False):
             else (
                 "published_at",
                 "rank",
+                "add_rank",
                 "bgg_id",
                 "name",
                 "year",
@@ -131,6 +132,7 @@ def merge_configs(spider, full=False):
                 "published_at",
                 "bgg_id",
                 "rank",
+                "add_rank",
                 "name",
                 "year",
                 "num_votes",
@@ -325,12 +327,15 @@ def main():
     LOGGER.info(args)
 
     for spider in args.spiders:
-        _stop_merge_start(
-            spider=spider,
-            compose_file=args.compose_file,
-            timeout=args.timeout,
-            cool_down=args.cool_down,
-        )
+        try:
+            _stop_merge_start(
+                spider=spider,
+                compose_file=args.compose_file,
+                timeout=args.timeout,
+                cool_down=args.cool_down,
+            )
+        except Exception:
+            LOGGER.exception("There was an error when processing spider <%s>", spider)
 
 
 if __name__ == "__main__":

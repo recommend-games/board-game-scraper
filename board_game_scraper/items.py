@@ -91,7 +91,7 @@ def _serialize_bool(item):
 
 
 class GameItem(TypedItem):
-    """ item representing a game """
+    """item representing a game"""
 
     JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
     JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
@@ -170,6 +170,7 @@ class GameItem(TypedItem):
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
+    image_url_download = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     image_file = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     video_url = Field(
         dtype=list,
@@ -341,6 +342,13 @@ class GameItem(TypedItem):
         input_processor=POS_INT_PROCESSOR,
         default=None,
     )
+    add_rank = Field(
+        dtype=list,
+        input_processor=IDENTITY,
+        output_processor=IDENTITY,
+        serializer=JSON_SERIALIZER,
+        parser=parse_json,
+    )
     num_votes = Field(
         dtype=int,
         dtype_convert=parse_int,
@@ -457,7 +465,7 @@ class GameItem(TypedItem):
 
 
 class UserItem(TypedItem):
-    """ item representing a user """
+    """item representing a user"""
 
     JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
     JSON_SERIALIZER = identity if JSON_OUTPUT else serialize_json
@@ -508,6 +516,7 @@ class UserItem(TypedItem):
         serializer=JSON_SERIALIZER,
         parser=parse_json,
     )
+    image_url_download = Field(serializer=JSON_SERIALIZER, parser=parse_json)
     image_file = Field(serializer=JSON_SERIALIZER, parser=parse_json)
 
     published_at = Field(
@@ -533,7 +542,7 @@ class UserItem(TypedItem):
 
 
 class RatingItem(TypedItem):
-    """ item representing a rating """
+    """item representing a rating"""
 
     JSON_OUTPUT = SETTINGS.get("FEED_FORMAT") in ("jl", "json", "jsonl", "jsonlines")
     BOOL_SERIALIZER = identity if JSON_OUTPUT else _serialize_bool

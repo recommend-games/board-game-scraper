@@ -2,6 +2,8 @@
 
 """ Board Game Atlas spider """
 
+import os
+
 from functools import partial
 from itertools import chain
 from urllib.parse import urlencode
@@ -41,7 +43,7 @@ def _extract_requests(response=None):
 
 
 class BgaSpider(Spider):
-    """ Board Game Atlas spider """
+    """Board Game Atlas spider"""
 
     name = "bga"
     allowed_domains = ("boardgameatlas.com",)
@@ -53,11 +55,13 @@ class BgaSpider(Spider):
         "DOWNLOAD_DELAY": 30,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+        "LIMIT_IMAGES_TO_DOWNLOAD": parse_int(os.getenv("LIMIT_IMAGES_TO_DOWNLOAD_BGA"))
+        or 0,
     }
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        """ initialise spider from crawler """
+        """initialise spider from crawler"""
 
         kwargs.setdefault("settings", crawler.settings)
         spider = cls(*args, **kwargs)
@@ -103,7 +107,7 @@ class BgaSpider(Spider):
         )
 
     def start_requests(self):
-        """ generate start requests """
+        """generate start requests"""
 
         yield Request(
             url=self._api_url(query={"order_by": "popularity"}),

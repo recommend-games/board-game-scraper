@@ -12,7 +12,7 @@ from .utils import identity, replace_all_entities
 
 
 class GameLoader(ItemLoader):
-    """ loader for GameItem """
+    """loader for GameItem"""
 
     default_input_processor = MapCompose(
         identity, str, remove_tags, replace_all_entities, normalize_space
@@ -21,11 +21,11 @@ class GameLoader(ItemLoader):
 
 
 class GameJsonLoader(JsonLoader, GameLoader):
-    """ loader for GameItem plus JMESPath capabilities """
+    """loader for GameItem plus JMESPath capabilities"""
 
 
 class UserLoader(ItemLoader):
-    """ loader for UserItem """
+    """loader for UserItem"""
 
     default_input_processor = MapCompose(
         identity, str, remove_tags, replace_all_entities, normalize_space
@@ -34,7 +34,7 @@ class UserLoader(ItemLoader):
 
 
 class RatingLoader(ItemLoader):
-    """ loader for RatingItem """
+    """loader for RatingItem"""
 
     default_input_processor = MapCompose(
         identity, str, remove_tags, replace_all_entities, normalize_space
@@ -43,4 +43,4 @@ class RatingLoader(ItemLoader):
 
 
 class RatingJsonLoader(JsonLoader, RatingLoader):
-    """ loader for RatingItem plus JMESPath capabilities """
+    """loader for RatingItem plus JMESPath capabilities"""

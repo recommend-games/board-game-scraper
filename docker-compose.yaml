@@ -1,20 +1,21 @@
-version: '3.8'
+version: '3'
 
 services:
-    bga:
-        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
-        container_name: bg-scraper-bga
-        build: '.'
-        command: ['python', '-m', 'board_game_scraper', 'bga']
-        env_file: .env
-        environment:
-            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
-            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
-        volumes:
-            - ./feeds:/app/feeds
-        restart: always
-        stop_grace_period: 15m
-        stop_signal: SIGINT
+    # bga:
+    #     image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+    #     container_name: bg-scraper-bga
+    #     build: '.'
+    #     command: ['python', '-m', 'board_game_scraper', 'bga']
+    #     env_file: .env
+    #     environment:
+    #         CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+    #         DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+    #     volumes:
+    #         - ./feeds:/app/feeds
+    #         - ./images:/app/images
+    #     restart: unless-stopped
+    #     stop_grace_period: 15m
+    #     stop_signal: SIGINT
 
     bgg:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
@@ -25,11 +26,17 @@ services:
         environment:
             CLOSESPIDER_TIMEOUT: 10800 # 3 hours
             DONT_RUN_BEFORE_SEC: 3600 # 1 hour
-            GOOGLE_APPLICATION_CREDENTIALS: /app/gs.json
+            # GOOGLE_APPLICATION_CREDENTIALS: /app/gs.json
+            TELNETCONSOLE_ENABLED: 1
+            TELNETCONSOLE_USERNAME: scrapy
+            TELNETCONSOLE_PASSWORD: recommend.games
+        ports:
+            - 6023:6023
         volumes:
             - ./feeds:/app/feeds
-            - ../recommend-games-server/gs.json:/app/gs.json
-        restart: always
+            - ./images:/app/images
+            # - ../recommend-games-server/gs.json:/app/gs.json
+        restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
 
@@ -44,7 +51,8 @@ services:
             DONT_RUN_BEFORE_SEC: 10800 # 3 hours
         volumes:
             - ./feeds:/app/feeds
-        restart: always
+            - ./images:/app/images
+        restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
 
@@ -59,7 +67,168 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
-        restart: always
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-abstract:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-abstract
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_rankings',
+            '--feeds-subdir', 'bgg_rankings_abstract',
+            '-a', 'bgg_path=abstracts/browse/boardgame',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-children:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-children
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_rankings',
+            '--feeds-subdir', 'bgg_rankings_children',
+            '-a', 'bgg_path=childrensgames/browse/boardgame',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-customizable:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-customizable
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_rankings',
+            '--feeds-subdir', 'bgg_rankings_customizable',
+            '-a', 'bgg_path=cgs/browse/boardgame',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-family:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-family
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_rankings',
+            '--feeds-subdir', 'bgg_rankings_family',
+            '-a', 'bgg_path=familygames/browse/boardgame',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-party:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-party
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_rankings',
+            '--feeds-subdir', 'bgg_rankings_party',
+            '-a', 'bgg_path=partygames/browse/boardgame',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-strategy:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-strategy
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_rankings',
+            '--feeds-subdir', 'bgg_rankings_strategy',
+            '-a', 'bgg_path=strategygames/browse/boardgame',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-thematic:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-thematic
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_rankings',
+            '--feeds-subdir', 'bgg_rankings_thematic',
+            '-a', 'bgg_path=thematic/browse/boardgame',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-war:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-war
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_rankings',
+            '--feeds-subdir', 'bgg_rankings_war',
+            '-a', 'bgg_path=wargames/browse/boardgame',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 36000 # 10 hours
+            DONT_RUN_BEFORE_SEC: 21600 # 6 hours
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+        restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
 
@@ -75,7 +244,206 @@ services:
             SCRAPER_FILE_TAG: '-geeklist${SCRAPER_FILE_TAG}'
         volumes:
             - ./feeds:/app/feeds
-        restart: always
+            - ./images:/app/images
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings',
+            '-a', 'game_type=overall',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json-abstract:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-abstract
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_abstract',
+            '-a', 'game_type=abstract',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json-children:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-children
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_children',
+            '-a', 'game_type=children',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json-customizable:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-customizable
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_customizable',
+            '-a', 'game_type=customizable',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json-family:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-family
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_family',
+            '-a', 'game_type=family',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json-party:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-party
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_party',
+            '-a', 'game_type=party',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json-strategy:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-strategy
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_strategy',
+            '-a', 'game_type=strategy',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json-thematic:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-thematic
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_thematic',
+            '-a', 'game_type=thematic',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
+        stop_grace_period: 15m
+        stop_signal: SIGINT
+
+    bgg-rankings-json-war:
+        image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
+        container_name: bg-scraper-bgg-rankings-json-war
+        build: '.'
+        command: [
+            'python', '-m', 'board_game_scraper', 'bgg_json_rankings',
+            '--feeds-subdir', 'bgg_rankings_war',
+            '-a', 'game_type=war',
+        ]
+        env_file: .env
+        environment:
+            CLOSESPIDER_TIMEOUT: 129600 # 36 hours
+            DONT_RUN_BEFORE_SEC: 86400 # 24 hours
+            SCRAPER_FILE_TAG: '-json${SCRAPER_FILE_TAG}'
+        volumes:
+            - ./feeds:/app/feeds
+            - ./images:/app/images
+            - ../board-game-data:/board-game-data
+        restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
 
@@ -90,7 +458,8 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
-        restart: always
+            - ./images:/app/images
+        restart: unless-stopped
         stop_grace_period: 30m
         stop_signal: SIGINT
 
@@ -105,7 +474,8 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
-        restart: always
+            - ./images:/app/images
+        restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
 
@@ -120,7 +490,8 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
-        restart: always
+            - ./images:/app/images
+        restart: unless-stopped
         stop_grace_period: 30m
         stop_signal: SIGINT
 
@@ -135,12 +506,13 @@ services:
             DONT_RUN_BEFORE_SEC: 21600 # 6 hours
         volumes:
             - ./feeds:/app/feeds
-        restart: always
+            - ./images:/app/images
+        restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
 
     news:
-        image: news-scraper:0.17.21
+        image: registry.gitlab.com/mshepherd/news-scraper:0.18.0
         container_name: bg-scraper-news
         volumes:
             - ./feeds/news/output:/root/output
@@ -155,7 +527,7 @@ services:
             LOGSTASH_HOST: ''
             LOGSTASH_PORT: ''
             LOGSTASH_PROTOCOL: none
-        restart: always
+        restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
 
@@ -174,7 +546,7 @@ services:
     #     #     SPARK_MASTER: spark://spark-master:7077
     #     volumes:
     #         - ./feeds:/app/feeds
-    #     restart: always
+    #     restart: unless-stopped
     #     stop_grace_period: 15m
     #     stop_signal: SIGINT
 
@@ -187,7 +559,7 @@ services:
     #     environment:
     #         - INIT_DAEMON_STEP=setup_spark
     #         - "constraint:node==<yourmasternode>"
-    #     restart: always
+    #     restart: unless-stopped
 
     # spark-worker-1:
     #     image: bde2020/spark-worker:2.4.5-hadoop2.7
@@ -199,7 +571,7 @@ services:
     #     environment:
     #         - "SPARK_MASTER=spark://spark-master:7077"
     #         - "constraint:node==<yourworkernode>"
-    #     restart: always
+    #     restart: unless-stopped
 
     # spark-worker-2:
     #     image: bde2020/spark-worker:2.4.5-hadoop2.7
@@ -211,4 +583,4 @@ services:
     #     environment:
     #         - "SPARK_MASTER=spark://spark-master:7077"
     #         - "constraint:node==<yourworkernode>"
-    #     restart: always
+    #     restart: unless-stopped

@@ -1,4 +1,4 @@
-# board-game-scraper
+# 🎲 Board Game Scraper 🕸
 
 Scraping data about board games from the web. View the data live at
 [Recommend.Games](https://recommend.games/)! Install via

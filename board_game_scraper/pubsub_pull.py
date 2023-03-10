@@ -8,8 +8,10 @@ import logging
 import os
 import sys
 
+from functools import partial
 from itertools import count
 from time import sleep
+from typing import Optional
 
 from pytility import normalize_space
 
@@ -24,24 +26,66 @@ from .utils import now, pubsub_client
 LOGGER = logging.getLogger(__name__)
 
 
-def _process_messages(messages, output, header=False, encoding="utf-8"):
+def _process_messages_csv(
+    *,
+    messages,
+    output,
+    header=False,
+    message_col="message",
+    message_process=None,
+    encoding="utf-8",
+):
     writer = csv.writer(output)
 
     if header:
-        writer.writerow(("date", "user"))
+        writer.writerow(("date", message_col))
 
     for message in messages:
         try:
             date = message.message.publish_time.replace(nanosecond=0).isoformat()
-            user = normalize_space(message.message.data.decode(encoding)).lower()
-            if date and user:
-                writer.writerow((date, user))
+            content = message.message.data.decode(encoding)
+            if callable(message_process):
+                content = message_process(content)
+            if date and content:
+                writer.writerow((date, content))
                 yield message.ack_id
             else:
                 LOGGER.error("there was a problem processing message %r", message)
 
         except Exception:
             LOGGER.exception("unable to process message %r", message)
+
+
+def _process_messages_raw(
+    *,
+    messages,
+    output,
+    header=False,
+    message_process=None,
+    encoding="utf-8",
+):
+    del header  # required to align with _process_messages_csv
+    for message in messages:
+        try:
+            content = message.message.data.decode(encoding)
+            if callable(message_process):
+                content = message_process(content)
+            if content:
+                output.write(content)
+                output.write("\n")
+                yield message.ack_id
+            else:
+                LOGGER.error("there was a problem processing message %r", message)
+
+        except Exception:
+            LOGGER.exception("unable to process message %r", message)
+
+
+def _format_from_path(path: Optional[str]) -> Optional[str]:
+    if not path:
+        return None
+    ext = path.rsplit(".", 1)[-1]
+    return ext.lower()
 
 
 def _parse_args():
@@ -66,10 +110,27 @@ def _parse_args():
         help="Output location",
     )
     parser.add_argument(
+        "--format",
+        "-f",
+        choices=("csv", "raw"),
+        help="Output format",
+    )
+    parser.add_argument(
         "--header",
         "-H",
         action="store_true",
         help="include CSV header",
+    )
+    parser.add_argument(
+        "--message-col",
+        "-C",
+        help="Label of the message column",
+    )
+    parser.add_argument(
+        "--message-process",
+        "-P",
+        choices=("lower", "normalize"),
+        help="How to process the message",
     )
     parser.add_argument(
         "--batch-size",
@@ -125,6 +186,28 @@ def main():
         LOGGER.error("Google Cloud PubSub project and subscription are required")
         sys.exit(1)
 
+    output_format = args.format or _format_from_path(args.out_path) or "raw"
+    LOGGER.info("Using output format <%s>", output_format)
+
+    message_col = args.message_col or "message"
+
+    if args.message_process == "lower":
+        message_process = lambda m: normalize_space(m).lower()
+    elif args.message_process == "normalize":
+        message_process = normalize_space
+    else:
+        message_process = None
+
+    process_messages = (
+        partial(
+            _process_messages_csv,
+            message_col=message_col,
+            message_process=message_process,
+        )
+        if output_format == "csv"
+        else partial(_process_messages_raw, message_process=message_process)
+    )
+
     if args.sleep:
         LOGGER.info("going to sleep for %.1f seconds", args.sleep)
         sleep(args.sleep)
@@ -155,7 +238,7 @@ def main():
 
         if not args.out_path or args.out_path == "-":
             ack_ids = tuple(
-                _process_messages(
+                process_messages(
                     messages=response.received_messages,
                     output=sys.stdout,
                     header=args.header and (i == 0),
@@ -178,14 +261,14 @@ def main():
             LOGGER.info("writing results to <%s>", out_path)
             with open(out_path, "w", newline="") as out_file:
                 ack_ids = tuple(
-                    _process_messages(
+                    process_messages(
                         messages=response.received_messages,
                         output=out_file,
                         header=args.header,
                     )
                 )
 
-        LOGGER.info("%d message(s) succesfully processed", len(ack_ids))
+        LOGGER.info("%d message(s) successfully processed", len(ack_ids))
 
         if ack_ids and not args.no_ack:
             LOGGER.info(

@@ -2,9 +2,10 @@
 
 """ Spielen.de spider """
 
+import os
 import re
 
-from pytility import clear_list
+from pytility import clear_list, parse_int
 from scrapy import Spider
 
 from ..items import GameItem
@@ -27,7 +28,7 @@ def _parse_int(text):
 
 
 class SpielenSpider(Spider):
-    """ Spielen.de spider """
+    """Spielen.de spider"""
 
     name = "spielen"
     allowed_domains = ("spielen.de",)
@@ -48,6 +49,10 @@ class SpielenSpider(Spider):
         "DOWNLOAD_DELAY": 10,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 1,
+        "LIMIT_IMAGES_TO_DOWNLOAD": parse_int(
+            os.getenv("LIMIT_IMAGES_TO_DOWNLOAD_SPIELEN")
+        )
+        or 0,
     }
 
     def parse(self, response):

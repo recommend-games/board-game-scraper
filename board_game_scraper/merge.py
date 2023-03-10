@@ -110,8 +110,22 @@ def merge_files(
     sort_descending=False,
     concat_output=False,
     log_level=None,
+    dry_run: bool = False,
 ):
-    """ merge files into one """
+    """merge files into one"""
+
+    in_paths = list(map(str, arg_to_iter(in_paths)))
+
+    if dry_run:
+        LOGGER.info(
+            "[DRY RUN] Merging items from [%d paths] into <%s>",
+            len(in_paths),
+            out_path,
+        )
+        for in_path in in_paths:
+            LOGGER.info("[DRY RUN] Merging file <%s>", in_path)
+        LOGGER.info("[DRY RUN] Done merging.")
+        return
 
     spark = _spark_session(log_level=log_level)
 
@@ -119,8 +133,6 @@ def merge_files(
         raise RuntimeError(
             "Please make sure Spark is installed and configured correctly!"
         )
-
-    in_paths = list(map(str, arg_to_iter(in_paths)))
 
     LOGGER.info(
         "Merging items from %s into <%s> with Spark session %r",
@@ -307,6 +319,7 @@ def _parse_args():
     parser.add_argument(
         "--concat", "-c", action="store_true", help="concatenate output into one file"
     )
+    parser.add_argument("--dry-run", "-n", action="store_true", help="dry run")
     parser.add_argument(
         "--verbose",
         "-v",
@@ -360,6 +373,7 @@ def main():
         else "INFO"
         if args.verbose > 0
         else "WARN",
+        dry_run=args.dry_run,
     )
 
 

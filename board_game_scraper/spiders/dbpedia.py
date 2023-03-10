@@ -2,9 +2,11 @@
 
 """ DBpedia spider """
 
+import os
+
 from urllib.parse import urlencode
 
-from pytility import batchify, normalize_space
+from pytility import batchify, parse_int, normalize_space
 from scrapy import Request, Spider
 from scrapy.utils.misc import arg_to_iter
 
@@ -39,7 +41,7 @@ def _sparql_xpath(
 
 
 class DBpediaSpider(Spider):
-    """ DBpedia spider """
+    """DBpedia spider"""
 
     name = "dbpedia"
     allowed_domains = ("dbpedia.org",)
@@ -50,6 +52,10 @@ class DBpediaSpider(Spider):
         "DOWNLOAD_DELAY": 20,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 2,
+        "LIMIT_IMAGES_TO_DOWNLOAD": parse_int(
+            os.getenv("LIMIT_IMAGES_TO_DOWNLOAD_DBPEDIA")
+        )
+        or 0,
     }
 
     game_types = (
@@ -294,7 +300,7 @@ class DBpediaSpider(Spider):
             yield Request(self._api_url(query), callback=self.parse_games, priority=1)
 
     def start_requests(self):
-        """ generate start requests """
+        """generate start requests"""
 
         dbp_types = getattr(self, "game_types", None) or ()
         wd_types = getattr(WikidataSpider, "game_types", None) or ()

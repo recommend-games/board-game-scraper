@@ -6,10 +6,13 @@ import logging
 import math
 import re
 
+from itertools import islice
 from urllib.parse import quote, unquote_plus
+from typing import Optional
 
 import jmespath
 
+from itemadapter import ItemAdapter
 from pytility import clear_list, take_first
 from scrapy import Request
 from scrapy.exceptions import DropItem, NotConfigured
@@ -24,11 +27,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DataTypePipeline:
-    """ convert fields to their required data type """
+    """convert fields to their required data type"""
 
     # pylint: disable=no-self-use,unused-argument
     def process_item(self, item, spider):
-        """ convert to data type """
+        """convert to data type"""
 
         for field in item.fields:
             dtype = item.fields[field].get("dtype")
@@ -56,11 +59,11 @@ class DataTypePipeline:
 
 
 class ResolveLabelPipeline:
-    """ resolve labels """
+    """resolve labels"""
 
     @classmethod
     def from_crawler(cls, crawler):
-        """ init from crawler """
+        """init from crawler"""
 
         url = crawler.settings.get("RESOLVE_LABEL_URL")
         fields = crawler.settings.getlist("RESOLVE_LABEL_FIELDS")
@@ -127,7 +130,7 @@ class ResolveLabelPipeline:
         return deferred
 
     def process_item(self, item, spider):
-        """ resolve IDs to labels in specified fields """
+        """resolve IDs to labels in specified fields"""
 
         if not any(item.get(field) for field in self.fields):
             return item
@@ -141,7 +144,7 @@ class ResolveLabelPipeline:
 
 
 class ResolveImagePipeline:
-    """ resolve image URLs """
+    """resolve image URLs"""
 
     fields = ("image_url",)
     hostnames = (
@@ -174,8 +177,103 @@ class ResolveImagePipeline:
 
     # pylint: disable=unused-argument
     def process_item(self, item, spider):
-        """ resolve resource image URLs to actual file locations """
+        """resolve resource image URLs to actual file locations"""
         for field in self.fields:
             if item.get(field):
                 item[field] = clear_list(map(self._parse_url, arg_to_iter(item[field])))
+        return item
+
+
+class LimitImagesPipeline:
+    """Copy a limited number of image URLs to be downloaded from source to target."""
+
+    source_field: str
+    target_field: str
+    limit: Optional[int] = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        """Init from crawler."""
+
+        source_field = crawler.settings.get("LIMIT_IMAGES_URLS_FIELD")
+        target_field = crawler.settings.get("IMAGES_URLS_FIELD")
+
+        if not source_field or not target_field:
+            raise NotConfigured
+
+        limit = crawler.settings.getint("LIMIT_IMAGES_TO_DOWNLOAD", -1)
+
+        return cls(
+            source_field=source_field,
+            target_field=target_field,
+            limit=limit,
+        )
+
+    def __init__(
+        self, source_field: str, target_field: str, limit: Optional[int] = None
+    ):
+        self.source_field = source_field
+        self.target_field = target_field
+        self.limit = limit
+
+    # pylint: disable=unused-argument
+    def process_item(self, item, spider):
+        """Copy a limited number of image URLs to be downloaded from source to target."""
+
+        # adding target field would result in error; return item as-is
+        if hasattr(item, "fields") and self.target_field not in item.fields:
+            return item
+
+        if self.limit is None or self.limit < 0:  # copy through everything
+            item[self.target_field] = list(arg_to_iter(item.get(self.source_field)))
+            return item
+
+        if not self.limit:  # limit is zero
+            item[self.target_field] = []
+            return item
+
+        # actual limit
+        item[self.target_field] = list(
+            islice(arg_to_iter(item.get(self.source_field)), self.limit)
+        )
+        return item
+
+
+class CleanItemPipeline:
+    """Clean up unnecessary values from an item."""
+
+    drop_falsey: bool
+    drop_values: Optional[tuple]
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        """Init from crawler."""
+
+        drop_falsey = crawler.settings.getbool("CLEAN_ITEM_DROP_FALSEY")
+        drop_values = (
+            tuple(arg_to_iter(crawler.settings.getlist("CLEAN_ITEM_DROP_VALUES")))
+            or None
+        )
+
+        if not drop_falsey and not drop_values:
+            raise NotConfigured
+
+        return cls(drop_falsey=drop_falsey, drop_values=drop_values)
+
+    def __init__(self, drop_falsey: bool, drop_values: Optional[tuple]):
+        self.drop_falsey = drop_falsey
+        self.drop_values = drop_values
+
+    # pylint: disable=unused-argument
+    def process_item(self, item, spider):
+        """Clean up unnecessary values from an item."""
+
+        adapter = ItemAdapter(item)
+
+        for key in tuple(adapter.keys()):
+            if (self.drop_falsey and not adapter[key]) or (
+                self.drop_values is not None and adapter[key] in self.drop_values
+            ):
+                del adapter[key]
+
         return item

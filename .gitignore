@@ -106,6 +106,7 @@ pip-selfcheck.json
 
 .tc/
 analytics/
+backup/
 cluster
 crawls/
 feeds*/

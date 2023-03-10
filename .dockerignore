@@ -107,6 +107,7 @@
 
 # other
 **/*.bk
+**/*backup*/
 **/data*/
 **/logs/
 **/tests/
@@ -131,3 +132,4 @@ feeds
 jobs
 results
 test
+images
