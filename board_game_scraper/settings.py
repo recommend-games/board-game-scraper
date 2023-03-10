@@ -39,6 +39,7 @@ FEED_EXPORT_FIELDS = (
     "official_url",
     "image_url",
     "image_file",
+    "image_blurhash",
     "video_url",
     "rules_url",
     "rules_file",
@@ -109,6 +110,7 @@ MULTI_FEED_EXPORT_FIELDS = {
         "external_link",
         "image_url",
         "image_file",
+        "image_blurhash",
         "published_at",
         "updated_at",
         "scraped_at",
@@ -204,6 +206,7 @@ ITEM_PIPELINES = {
     "board_game_scraper.pipelines.ResolveImagePipeline": 400,
     "board_game_scraper.pipelines.LimitImagesPipeline": 500,
     "scrapy.pipelines.images.ImagesPipeline": 600,
+    "scrapy_extensions.pipelines.BlurHashPipeline": 700,
     "scrapy.pipelines.images.FilesPipeline": None,
     "board_game_scraper.pipelines.CleanItemPipeline": 900,
 }
@@ -277,6 +280,11 @@ IMAGES_URLS_FIELD = "image_url_download"
 IMAGES_RESULT_FIELD = "image_file"
 IMAGES_EXPIRES = 360
 # IMAGES_THUMBS = {"thumb": (1024, 1024)}
+
+# BlurHash
+BLURHASH_FIELD = "image_blurhash"
+BLURHASH_X_COMPONENTS = 4
+BLURHASH_Y_COMPONENTS = 4
 
 # File processing
 FILES_STORE = os.path.join(BASE_DIR, "rules")

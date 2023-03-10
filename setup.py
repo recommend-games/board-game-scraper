@@ -10,7 +10,7 @@ import os
 import sys
 from shutil import rmtree
 
-from setuptools import find_packages, setup, Command
+from setuptools import Command, find_packages, setup
 
 # Package meta-data.
 NAME = "board-game-scraper"
@@ -42,7 +42,7 @@ URL_MAILING = None
 URL_TWITTER = "https://twitter.com/recommend_games"
 EMAIL = "markus@recommend.games"
 AUTHOR = "Markus Shepherd"
-REQUIRES_PYTHON = ">=3.6.0"
+REQUIRES_PYTHON = ">=3.7.0"
 VERSION = None  # will be read from __version__.py
 
 # What packages are required for this module to be executed?
@@ -51,6 +51,7 @@ REQUIRED = (
     "boto",
     "dedupe>=2.0.0",
     "google-cloud-pubsub",
+    "itemadapter",
     "jmespath",
     "pillow",
     "pympler",
@@ -61,7 +62,7 @@ REQUIRED = (
     "pyyaml",
     "requests",
     "scrapy<2.1.0",
-    "scrapy-extensions",
+    "scrapy-extensions[images]>=0.3.0",
     "twisted",
     "w3lib",
 )
@@ -181,9 +182,11 @@ setup(
         "Framework :: Scrapy",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Games/Entertainment :: Board Games",
     ],
     # $ setup.py publish support.
