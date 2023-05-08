@@ -17,7 +17,8 @@ echo "${SERVICES[@]}"
 for SERVICE in ${SERVICES}
 do
     echo "Starting ${SERVICE}…"
-    docker compose --file "${COMPOSE_FILE}" up --detach "${SERVICE}"
+    docker compose --file "${COMPOSE_FILE}" \
+        up --detach --no-recreate "${SERVICE}"
     echo "Going to sleep for ${SLEEP_TIME} seconds…"
     sleep "${SLEEP_TIME}s"
 done

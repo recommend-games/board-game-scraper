@@ -196,8 +196,8 @@ def _docker_start(name):
             pass
 
     try:
-        subprocess.run(["docker-compose", "start", name], check=True)
-        LOGGER.info("Started via docker-compose CLI call")
+        subprocess.run(["docker", "compose", "start", name], check=True)
+        LOGGER.info("Started via docker compose CLI call")
         return True
     except Exception:
         pass
@@ -226,12 +226,12 @@ def _docker_stop(name, timeout=None):
 
     try:
         args = (
-            ["docker-compose", "stop", name]
+            ["docker", "compose", "stop", name]
             if timeout is None
-            else ["docker-compose", "stop", "--timeout", str(timeout), name]
+            else ["docker", "compose", "stop", "--timeout", str(timeout), name]
         )
         subprocess.run(args=args, check=True)
-        LOGGER.info("Stopped via docker-compose CLI call")
+        LOGGER.info("Stopped via docker compose CLI call")
         return True
     except Exception:
         pass
