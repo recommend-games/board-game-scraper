@@ -220,7 +220,9 @@ class ScrapePremiumUsersExtension(LoopingExtension):
                     and last_scraped + self.prevent_rescrape_for > curr_time
                 ):
                     LOGGER.info(
-                        "Dropped <%s>: last scraped %s", user_name, last_scraped
+                        "Dropped <%s>: last scraped %s",
+                        user_name,
+                        last_scraped,
                     )
                     continue
 
