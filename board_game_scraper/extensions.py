@@ -4,6 +4,7 @@
 
 import logging
 import os
+import sys
 from datetime import timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Union
@@ -231,7 +232,7 @@ class ScrapePremiumUsersExtension(LoopingExtension):
             LOGGER.info("Scheduling collection request for <%s>", user_name)
             request = spider.collection_request(
                 user_name=user_name,
-                priority=1,
+                priority=sys.maxsize,
                 dont_filter=True,
             )
             spider.crawler.engine.crawl(request, spider)
