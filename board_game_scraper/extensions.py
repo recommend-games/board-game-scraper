@@ -4,14 +4,15 @@
 
 import logging
 import os
-
 from datetime import timedelta, timezone
 from pathlib import Path
+from typing import Iterable, Union
 
 from pytility import parse_date, parse_float
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.job import job_dir
+from scrapy.utils.misc import arg_to_iter
 from scrapy_extensions import LoopingExtension
 
 from .utils import now, pubsub_client
@@ -149,6 +150,89 @@ class PullQueueExtension(LoopingExtension):
         spider.crawler.engine.crawl(request, spider)
 
         return True
+
+
+class ScrapePremiumUsersExtension(LoopingExtension):
+    """Schedule a collection request for premium users on a regular interval."""
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        """Initialise from crawler."""
+
+        if not crawler.settings.getbool("SCRAPE_PREMIUM_USERS_ENABLED"):
+            raise NotConfigured
+
+        premium_users = tuple(
+            arg_to_iter(crawler.settings.getlist("SCRAPE_PREMIUM_USERS_LIST"))
+        )
+
+        if not premium_users:
+            raise NotConfigured
+
+        interval = crawler.settings.getfloat("SCRAPE_PREMIUM_USERS_INTERVAL", 60 * 60)
+
+        prevent_rescrape_for = (
+            crawler.settings.getfloat("SCRAPE_PREMIUM_USERS_PREVENT_RESCRAPE_FOR")
+            or None
+        )
+
+        return cls(
+            crawler=crawler,
+            premium_users=premium_users,
+            interval=interval,
+            prevent_rescrape_for=prevent_rescrape_for,
+        )
+
+    def __init__(
+        self,
+        crawler,
+        premium_users: Iterable[str],
+        interval: float,
+        prevent_rescrape_for: Union[float, timedelta, None] = None,
+    ):
+        self.premium_users = tuple(user.lower() for user in premium_users)
+
+        prevent_rescrape_for = (
+            prevent_rescrape_for
+            if isinstance(prevent_rescrape_for, timedelta)
+            else parse_float(prevent_rescrape_for)
+        )
+        self.prevent_rescrape_for = (
+            timedelta(seconds=prevent_rescrape_for)
+            if isinstance(prevent_rescrape_for, float)
+            else prevent_rescrape_for
+        )
+        self.last_scraped = {}
+
+        self.setup_looping_task(self._schedule_requests, crawler, interval)
+
+    def _schedule_requests(self, spider):
+        if not hasattr(spider, "collection_request"):
+            return
+
+        for user_name in self.premium_users:
+            if self.prevent_rescrape_for:
+                last_scraped = self.last_scraped.get(user_name)
+                curr_time = now()
+
+                if (
+                    last_scraped
+                    and last_scraped + self.prevent_rescrape_for > curr_time
+                ):
+                    LOGGER.info(
+                        "Dropped <%s>: last scraped %s", user_name, last_scraped
+                    )
+                    continue
+
+                self.last_scraped[user_name] = curr_time
+
+            LOGGER.info("Scheduling collection request for <%s>", user_name)
+            request = spider.collection_request(
+                user_name=user_name,
+                priority=1,
+                dont_filter=True,
+            )
+            spider.crawler.engine.crawl(request, spider)
 
 
 class StateTag:
