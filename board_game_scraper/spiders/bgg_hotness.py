@@ -12,6 +12,8 @@ from ..items import GameItem
 from ..loaders import GameLoader
 from ..utils import now
 
+DATE_FORMAT = "%Y-%m-%dT%H-%M-%S"
+
 
 class BggHotnessSpider(Spider):
     """BoardGameGeek hotness spider."""
@@ -39,10 +41,16 @@ class BggHotnessSpider(Spider):
 
             self.logger.info("Processing <%s>", path_file)
 
-            date = parse_date(path_file.stem, tzinfo=timezone.utc)
+            date = parse_date(
+                path_file.stem,
+                tzinfo=timezone.utc,
+                format_str=DATE_FORMAT,
+            )
 
             yield Request(
-                url=path_file.as_uri(), callback=self.parse, meta={"published_at": date}
+                url=path_file.as_uri(),
+                callback=self.parse,
+                meta={"published_at": date},
             )
 
     def start_requests(self):
