@@ -192,7 +192,8 @@ EXTENSIONS = {
     "scrapy_extensions.NicerAutoThrottle": 0,
     "board_game_scraper.extensions.StateTag": 0,
     "board_game_scraper.extensions.DontRunBeforeTag": 0,
-    "board_game_scraper.extensions.PullQueueExtension": 100,
+    "board_game_scraper.extensions.ScrapePremiumUsersExtension": 100,
+    "board_game_scraper.extensions.PullQueueExtension": 200,
     "scrapy_extensions.MonitorDownloadsExtension": 500,
     "scrapy_extensions.DumpStatsExtension": 500,
 }
@@ -311,3 +312,13 @@ PULL_QUEUE_PREVENT_RESCRAPE_FOR = (
     os.getenv("PULL_QUEUE_PREVENT_RESCRAPE_FOR") or 6 * 60 * 60  # 6 hours
 )
 PULL_QUEUE_PULL_TIMEOUT = os.getenv("PULL_QUEUE_PULL_TIMEOUT") or 5  # 5 seconds
+
+# Scrape premium users
+SCRAPE_PREMIUM_USERS_ENABLED = True
+SCRAPE_PREMIUM_USERS_LIST = os.getenv("SCRAPE_PREMIUM_USERS_LIST")
+SCRAPE_PREMIUM_USERS_INTERVAL = (
+    os.getenv("SCRAPE_PREMIUM_USERS_INTERVAL") or 60 * 60  # 1 hour
+)
+SCRAPE_PREMIUM_USERS_PREVENT_RESCRAPE_FOR = (
+    os.getenv("SCRAPE_PREMIUM_USERS_PREVENT_RESCRAPE_FOR") or 3 * 60 * 60  # 3 hours
+)
