@@ -412,20 +412,32 @@ def pubsub_client():
     return None
 
 
-def _load_yaml(path: Union[str, Path]) -> Iterable[Dict[str, Any]]:
+def _load_yaml(
+    path: Union[str, Path],
+    encoding: str = "utf-8",
+) -> Iterable[Dict[str, Any]]:
+    path = Path(path).resolve()
     LOGGER.info("Loading YAML from <%s>", path)
-    with open(path) as yaml_file:
-        yield from yaml.safe_load(yaml_file)
+    try:
+        with path.open(encoding=encoding) as yaml_file:
+            yield from yaml.safe_load(yaml_file)
+    except Exception:
+        LOGGER.exception("Unable to load YAML from <%s>", path)
 
 
-def _load_yamls(paths: Iterable[Union[str, Path]]) -> Iterable[Dict[str, Any]]:
+def _load_yamls(
+    paths: Iterable[Union[str, Path]],
+    encoding: str = "utf-8",
+) -> Iterable[Dict[str, Any]]:
     for path in paths:
-        yield from _load_yaml(path)
+        yield from _load_yaml(path, encoding)
 
 
 def load_premium_users(
-    files: Union[str, Path, Iterable[Union[str, Path]]],
-    compare_date=None,
+    dirs: Union[str, Path, Iterable[Union[str, Path]], None] = None,
+    files: Union[str, Path, Iterable[Union[str, Path]], None] = None,
+    compare_date: Union[datetime, str, None] = None,
+    encoding: str = "utf-8",
 ) -> Iterable[str]:
     """Load premium users from YAML files and compare against given date."""
 
@@ -435,7 +447,19 @@ def load_premium_users(
     )
     LOGGER.info("Comparing premium expiration dates against <%s>", compare_date)
 
-    for row in _load_yamls(arg_to_iter(files)):
+    for file_dir in arg_to_iter(dirs):
+        file_dir = Path(file_dir).resolve()
+        if file_dir.is_dir():
+            LOGGER.info("Loading YAML files from config dir <%s>", file_dir)
+            yield from load_premium_users(
+                files=file_dir.glob("*.yaml"),
+                compare_date=compare_date,
+                encoding=encoding,
+            )
+        else:
+            LOGGER.warning("Skipping non-existing config dir <%s>", file_dir)
+
+    for row in _load_yamls(arg_to_iter(files), encoding):
         for username, expiry_date in row.items():
             username = username.lower()
             expiry_date = parse_date(expiry_date, tzinfo=timezone.utc)
