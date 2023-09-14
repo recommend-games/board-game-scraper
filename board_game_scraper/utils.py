@@ -25,6 +25,7 @@ from pytility import (
 )
 from scrapy.item import BaseItem, Item
 from w3lib.html import replace_entities
+import yaml
 
 try:
     # pylint: disable=redefined-builtin
@@ -409,3 +410,40 @@ def pubsub_client():
         LOGGER.exception("unable to initialise PubSub client")
 
     return None
+
+
+def _load_yaml(path: Union[str, Path]) -> Iterable[Dict[str, Any]]:
+    LOGGER.info("Loading YAML from <%s>", path)
+    with open(path) as yaml_file:
+        yield from yaml.safe_load(yaml_file)
+
+
+def _load_yamls(paths: Iterable[Union[str, Path]]) -> Iterable[Dict[str, Any]]:
+    for path in paths:
+        yield from _load_yaml(path)
+
+
+def load_premium_users(
+    files: Union[str, Path, Iterable[Union[str, Path]]],
+    compare_date=None,
+) -> Iterable[str]:
+    """Load premium users from YAML files and compare against given date."""
+
+    compare_date = parse_date(compare_date, tzinfo=timezone.utc) or parse_date(
+        datetime.utcnow(),
+        tzinfo=timezone.utc,
+    )
+    LOGGER.info("Comparing premium expiration dates against <%s>", compare_date)
+
+    for row in _load_yamls(arg_to_iter(files)):
+        for username, expiry_date in row.items():
+            username = username.lower()
+            expiry_date = parse_date(expiry_date, tzinfo=timezone.utc)
+            if expiry_date < compare_date:
+                LOGGER.info(
+                    "Premium for user <%s> ended on <%s>",
+                    username,
+                    expiry_date,
+                )
+            else:
+                yield username
