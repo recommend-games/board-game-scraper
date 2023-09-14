@@ -10,16 +10,16 @@ services:
         environment:
             CLOSESPIDER_TIMEOUT: 10800 # 3 hours
             DONT_RUN_BEFORE_SEC: 3600 # 1 hour
-            # GOOGLE_APPLICATION_CREDENTIALS: /app/gs.json
             TELNETCONSOLE_ENABLED: 1
             TELNETCONSOLE_USERNAME: scrapy
             TELNETCONSOLE_PASSWORD: recommend.games
+            SCRAPE_PREMIUM_USERS_CONFIG_DIR: /app/premium
         ports:
             - 6023:6023
         volumes:
             - ./feeds:/app/feeds
             - ./images:/app/images
-            # - ../recommend-games-server/gs.json:/app/gs.json
+            - ../recommend-games-config/users/premium:/app/premium
         restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
