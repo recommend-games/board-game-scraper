@@ -16,7 +16,7 @@ from scrapy.utils.job import job_dir
 from scrapy.utils.misc import arg_to_iter
 from scrapy_extensions import LoopingExtension
 
-from .utils import now, pubsub_client
+from .utils import load_premium_users, now, pubsub_client
 
 LOGGER = logging.getLogger(__name__)
 
@@ -163,9 +163,15 @@ class ScrapePremiumUsersExtension(LoopingExtension):
         if not crawler.settings.getbool("SCRAPE_PREMIUM_USERS_ENABLED"):
             raise NotConfigured
 
-        premium_users = tuple(
+        premium_users_list = tuple(
             arg_to_iter(crawler.settings.getlist("SCRAPE_PREMIUM_USERS_LIST"))
         )
+        premium_users_from_dir = tuple(
+            load_premium_users(
+                dirs=crawler.settings.get("SCRAPE_PREMIUM_USERS_CONFIG_DIR"),
+            )
+        )
+        premium_users = premium_users_list + premium_users_from_dir
 
         if not premium_users:
             raise NotConfigured
