@@ -20,13 +20,14 @@ def download_bgg_dump(
     username: str,
     password: str,
     target_dir: Union[str, Path],
+    force_overwrite: bool = False,
 ) -> None:
     """Download the latest BGG data dump."""
 
     target_dir = Path(target_dir).resolve()
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    LOGGER.info("Downloading latest BGG dump to <%s>…", target_dir)
+    LOGGER.info("Downloading latest BGG dump to <%s>", target_dir)
 
     login_url = "https://boardgamegeek.com/login/api/v1"
     html_url = "https://boardgamegeek.com/data_dumps/bg_ranks"
@@ -50,7 +51,14 @@ def download_bgg_dump(
             download_url = link.xpath("@href").get()
             file_name = link.xpath("@download").get()
             file_path = target_dir / file_name
-            LOGGER.info("Downloading <%s> to <%s>…", download_url, file_path)
+
+            LOGGER.info("Downloading <%s> to <%s>", download_url, file_path)
+
+            if file_path.exists():
+                if not force_overwrite:
+                    LOGGER.info("Skipping <%s> as it already exists.", file_path)
+                    continue
+                LOGGER.info("Overwriting <%s> as it already exists.", file_path)
 
             download_response = session.get(download_url)
             download_response.raise_for_status()
@@ -68,6 +76,12 @@ def _parse_args():
         "-d",
         default=BASE_DIR / "feeds" / "bgg_dump",
         help="Output directory",
+    )
+    parser.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help="Force overwrite existing files",
     )
     parser.add_argument(
         "--verbose",
@@ -96,7 +110,12 @@ def main():
     username = os.getenv("BGG_USERNAME")
     password = os.getenv("BGG_PASSWORD")
 
-    download_bgg_dump(username, password, args.out_dir)
+    download_bgg_dump(
+        username=username,
+        password=password,
+        target_dir=args.out_dir,
+        force_overwrite=args.force,
+    )
 
 
 if __name__ == "__main__":
