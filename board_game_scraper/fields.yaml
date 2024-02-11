@@ -31,5 +31,3 @@
   type: Exact
 - field: spielen_id
   type: Exact
-- field: bga_id
-  type: Exact

@@ -6,7 +6,7 @@ BASE_DIR="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 LOGS_DIR="$(readlink --canonicalize "${BASE_DIR}/logs")"
 
 if [ $# -eq 0 ] || [[ "${1}" == 'all' ]]; then
-    SPIDERS=('bga' 'bgg_hotness' 'dbpedia' 'luding' 'spielen' 'wikidata' 'bgg')
+    SPIDERS=('bgg_hotness' 'dbpedia' 'luding' 'spielen' 'wikidata' 'bgg')
 else
     SPIDERS=("$@")
 fi

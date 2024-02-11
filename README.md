@@ -9,7 +9,6 @@ pip install board-game-scraper
 
 ## Sources
 
-* [Board Game Atlas](https://www.boardgameatlas.com/) (`bga`)
 * [BoardGameGeek](https://boardgamegeek.com/) (`bgg`)
 * [DBpedia](https://wiki.dbpedia.org/) (`dbpedia`)
 * [Luding.org](https://luding.org/) (`luding`)

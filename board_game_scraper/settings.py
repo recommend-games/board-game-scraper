@@ -88,7 +88,6 @@ FEED_EXPORT_FIELDS = (
     "dbpedia_id",
     "luding_id",
     "spielen_id",
-    "bga_id",
     "published_at",
     "updated_at",
     "scraped_at",
@@ -129,10 +128,6 @@ MULTI_FEED_EXPORT_FIELDS = {
         "bgg_user_preordered",
         "bgg_user_wishlist",
         "bgg_user_play_count",
-        "bga_id",
-        "bga_user_id",
-        "bga_user_name",
-        "bga_user_rating",
         "comment",
         "published_at",
         "updated_at",
@@ -296,12 +291,6 @@ FILES_EXPIRES = 180
 # CleanItemPipeline
 CLEAN_ITEM_DROP_FALSEY = True
 CLEAN_ITEM_DROP_VALUES = None
-
-# Board Game Atlas
-BGA_CLIENT_ID = os.getenv("BGA_CLIENT_ID")
-BGA_SCRAPE_IMAGES = False
-BGA_SCRAPE_VIDEOS = False
-BGA_SCRAPE_REVIEWS = False
 
 PULL_QUEUE_ENABLED = False
 PULL_QUEUE_PROJECT = os.getenv("PULL_QUEUE_PROJECT")
