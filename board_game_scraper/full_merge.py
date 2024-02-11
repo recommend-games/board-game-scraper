@@ -60,19 +60,6 @@ def merge_configs(spider, full=False):
 
     full = parse_bool(full)
 
-    if spider == "bga":
-        yield merge_config(spider="bga", item="GameItem", full=full)
-        yield merge_config(
-            spider="bga",
-            item="RatingItem",
-            full=full,
-            keys=("bga_user_id", "bga_id"),
-            fieldnames_exclude=("bgg_user_play_count",)
-            if parse_bool(full)
-            else ("bgg_user_play_count", "published_at", "updated_at", "scraped_at"),
-        )
-        return
-
     if spider == "bgg":
         yield merge_config(spider="bgg", item="GameItem", full=full)
         yield merge_config(

@@ -441,7 +441,6 @@ class GameItem(TypedItem):
         default=None,
     )
     spielen_id = Field(dtype=str)
-    bga_id = Field(dtype=str)
 
     published_at = Field(
         dtype=datetime,
@@ -626,16 +625,6 @@ class RatingItem(TypedItem):
     )
     bgg_user_play_count = Field(
         dtype=int, dtype_convert=parse_int, input_processor=NN_INT_PROCESSOR, default=0
-    )
-
-    bga_id = Field(dtype=str)
-    bga_user_id = Field(dtype=str)
-    bga_user_name = Field(dtype=str, input_processor=MapCompose(identity, str))
-    bga_user_rating = Field(
-        dtype=float,
-        dtype_convert=parse_float,
-        default=None,
-        input_processor=POS_FLOAT_PROCESSOR,
     )
 
     comment = Field(
