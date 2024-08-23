@@ -4,13 +4,11 @@
 
 import argparse
 import logging
-import os.path
 import sys
 
 from datetime import date, timedelta, timezone
 from pathlib import Path
 from shutil import rmtree
-from subprocess import run
 from time import sleep
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -54,12 +52,10 @@ def _get_git_repo(path: Union[Path, str, None]) -> Optional["Repo"]:
 
 def update_news(
     *,
-    s3_src,
     path_feeds,
     path_merged,
     path_split,
     split_git_update=False,
-    s3_dst=None,
     split_size=None,
     log_level=None,
     dry_run: bool = False,
@@ -73,9 +69,8 @@ def update_news(
     path_split = Path(path_split).resolve()
 
     LOGGER.info(
-        "%sSync from <%s>, merge from <%s> into <%s>, split into <%s>",
+        "%sMerge from <%s> into <%s> and split into <%s>",
         dry_run_prefix,
-        s3_src,
         path_feeds,
         path_merged,
         path_split,
@@ -112,9 +107,6 @@ def update_news(
     else:
         repo = None
 
-    if s3_dst:
-        LOGGER.info("%sUpload results to <%s>", dry_run_prefix, s3_dst)
-
     LOGGER.info("%sDeleting existing dir <%s>", dry_run_prefix, path_split.parent)
     if not dry_run:
         if repo is None:
@@ -140,10 +132,6 @@ def update_news(
         path_feeds.mkdir(parents=True, exist_ok=True)
         path_merged.parent.mkdir(parents=True, exist_ok=True)
         path_split.parent.mkdir(parents=True, exist_ok=True)
-
-    LOGGER.info("%sS3 sync from <%s> to <%s>", dry_run_prefix, s3_src, path_feeds)
-    if not dry_run:
-        run(["aws", "s3", "sync", s3_src, os.path.join(path_feeds, "")], check=True)
 
     merge_files(
         in_paths=path_feeds.rglob("*.jl"),
@@ -197,53 +185,12 @@ def update_news(
                         remote,
                     )
 
-    if s3_dst:
-        LOGGER.info(
-            "%sS3 sync from <%s> to <%s>",
-            dry_run_prefix,
-            path_split.parent,
-            s3_dst,
-        )
-        if not dry_run:
-            run(
-                [
-                    "aws",
-                    "s3",
-                    "sync",
-                    "--acl",
-                    "public-read",
-                    "--exclude",
-                    ".gitignore",
-                    "--exclude",
-                    ".DS_Store",
-                    "--exclude",
-                    ".bucket",
-                    "--size-only",
-                    "--delete",
-                    os.path.join(path_split.parent, ""),
-                    s3_dst,
-                ],
-                check=True,
-            )
-
     LOGGER.info("%sDone updating news.", dry_run_prefix)
 
 
 def _parse_args():
     parser = argparse.ArgumentParser(
         description="News syncing, merging, splitting, and uploading.",
-    )
-    parser.add_argument(
-        "--src-bucket",
-        "-b",
-        default="scrape.news.recommend.games",
-        help="S3 bucket with scraped data",
-    )
-    parser.add_argument(
-        "--dst-bucket",
-        "-B",
-        # default="news.recommend.games",
-        help="S3 bucket to upload to",
     )
     parser.add_argument(
         "--feeds",
@@ -339,11 +286,9 @@ def main():
             file_obj.write(dont_run_before.isoformat())
 
     update_news(
-        s3_src=f"s3://{args.src_bucket}/",
         path_feeds=args.feeds,
         path_merged=args.merged,
         path_split=args.split,
-        s3_dst=f"s3://{args.dst_bucket}/" if args.dst_bucket else None,
         split_size=args.split_size,
         split_git_update=args.git,
         log_level="DEBUG"
