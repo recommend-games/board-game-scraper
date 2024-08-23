@@ -9,6 +9,7 @@ import os
 import sys
 
 from pathlib import Path
+from typing import Optional, Union
 
 from pytility import batchify
 from scrapy.utils.misc import arg_to_iter
@@ -79,6 +80,7 @@ def split_files(
     size=None,
     fields=FIELDS,
     exclude_empty=False,
+    indent: Optional[int] = None,
     dry_run: bool = False,
 ):
     """Split a JSON lines file into JSON files of a given size."""
@@ -116,7 +118,7 @@ def split_files(
         }
 
         if path_out == "-":
-            json.dump(result, sys.stdout, sort_keys=True)
+            json.dump(result, sys.stdout, sort_keys=True, indent=indent)
             print()
 
         else:
@@ -124,7 +126,7 @@ def split_files(
             LOGGER.info("%sWriting batch #%d to <%s>", dry_run_prefix, i, out_path)
             if not dry_run:
                 with open(out_path, "w") as out_file:
-                    json.dump(result, out_file, sort_keys=True)
+                    json.dump(result, out_file, sort_keys=True, indent=indent)
 
     LOGGER.info("%sDone splitting.", dry_run_prefix)
 

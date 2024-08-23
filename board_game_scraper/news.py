@@ -153,6 +153,7 @@ def update_news(
         path_out=path_split,
         size=split_size,
         exclude_empty=True,
+        indent=4,
         dry_run=dry_run,
     )
 
