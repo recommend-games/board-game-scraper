@@ -4,6 +4,7 @@ services:
     bgg:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-bgg
+        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bgg']
         env_file: .env
@@ -27,6 +28,7 @@ services:
     bgg-hotness:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-bgg-hotness
+        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bgg_hotness']
         env_file: .env
@@ -43,6 +45,7 @@ services:
     dbpedia:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-dbpedia
+        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'dbpedia']
         env_file: .env
@@ -59,6 +62,7 @@ services:
     luding:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-luding
+        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'luding']
         env_file: .env
@@ -75,6 +79,7 @@ services:
     spielen:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-spielen
+        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'spielen']
         env_file: .env
@@ -91,6 +96,7 @@ services:
     wikidata:
         image: registry.gitlab.com/recommend.games/board-game-scraper:${LIBRARY_VERSION}
         container_name: bg-scraper-wikidata
+        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'wikidata']
         env_file: .env
@@ -107,15 +113,15 @@ services:
     news:
         image: registry.gitlab.com/mshepherd/news-scraper:0.18.0
         container_name: bg-scraper-news
+        platform: linux/amd64
         volumes:
-            - ./feeds/news/output:/root/output
-            - ~/.aws:/root/.aws
+            - ./feeds/news:/root/output
         env_file: .env
         environment:
             ENVIRONMENT: docker
-            OUTPUT_DIR: s3://scrape.news.recommend.games
+            OUTPUT_DIR: /root/output
             ELASTICSEARCH_STORAGE_ENABLED: 0
-            COUCHBASE_CACHE_ENABLED: 1
+            COUCHBASE_CACHE_ENABLED: 0
             COUCHBASE_ENTITY_LINKING_ENABLED: 0
             LOGSTASH_HOST: ''
             LOGSTASH_PORT: ''
