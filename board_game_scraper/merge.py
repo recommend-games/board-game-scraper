@@ -112,7 +112,15 @@ def merge_files(
     log_level=None,
     dry_run: bool = False,
 ):
-    """merge files into one"""
+    """
+    Merge files into one. Execute the following steps:
+
+    - Filter out rows older than latest_min
+    - For each row with identical keys, keep the latest one
+    - Sort the output by keys, latest, or fields
+    - Select only specified fields or exclude some fields
+    - For each row, remove empty fields and sort keys alphabetically
+    """
 
     in_paths = list(map(str, arg_to_iter(in_paths)))
 
