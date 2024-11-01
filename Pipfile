@@ -16,9 +16,9 @@ google-cloud-pubsub = "*"
 itemadapter = "*"
 jmespath = "*"
 pillow = "*"
+polars = "*"
 pympler = "*"
 pyopenssl = "==22.0.0" # https://github.com/scrapy/scrapy/issues/5638
-pyspark = "*"
 python-dotenv = "*"
 pytility = {extras = ["dates"], version = "*"}
 pytrie = "*"
