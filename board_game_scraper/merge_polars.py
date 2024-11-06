@@ -56,7 +56,14 @@ def merge_files(
         f"[{len(in_paths)} paths]" if len(in_paths) > 10 else in_paths,
         out_path,
     )
-    data = pl.scan_ndjson(in_paths, schema=schema)
+    data = pl.scan_ndjson(
+        source=in_paths,
+        schema=schema,
+        batch_size=512,
+        low_memory=True,
+        rechunk=True,
+        ignore_errors=True,
+    )
 
     latest_col = latest_col if isinstance(latest_col, list) else [latest_col]
     if latest_min is not None:
