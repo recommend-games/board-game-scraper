@@ -7,6 +7,7 @@ from typing import Any, List, Union
 import polars as pl
 from polars._typing import IntoExpr
 from tqdm import tqdm
+from board_game_scraper.items import GAME_ITEM_SCHEMA
 
 LOGGER = logging.getLogger(__name__)
 PATH_LIKE = Union[str, Path]
@@ -50,7 +51,11 @@ def merge_files(
         f"[{len(in_paths)} paths]" if len(in_paths) > 10 else in_paths,
         out_path,
     )
-    data = pl.scan_ndjson(in_paths, infer_schema_length=None)
+    data = pl.scan_ndjson(
+        in_paths,
+        schema=GAME_ITEM_SCHEMA,
+        infer_schema_length=None,
+    )
 
     latest_col = latest_col if isinstance(latest_col, list) else [latest_col]
     if latest_min is not None:
@@ -123,7 +128,7 @@ def merge_files(
 def main():
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     merge_files(
-        in_paths=list(Path("feeds/bgg/GameItem/").glob("*.jl")),
+        in_paths="feeds/bgg/GameItem/",
         out_path="test.jl",
         key_col="bgg_id",
         latest_col=pl.col("scraped_at").str.to_datetime(time_zone="UTC"),
