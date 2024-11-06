@@ -649,6 +649,46 @@ class UserItem(TypedItem):
     )
 
 
+USER_ITEM_SCHEMA = pl.Schema(
+    {
+        "item_id": pl.Int64,
+        "bgg_user_name": pl.String,
+        "first_name": pl.String,
+        "last_name": pl.String,
+        "registered": pl.Int64,
+        "last_login": pl.String,
+        "country": pl.String,
+        "region": pl.String,
+        "city": pl.String,
+        "external_link": pl.List(pl.String),
+        "image_url": pl.List(pl.String),
+        "image_url_download": pl.List(pl.String),
+        "image_file": pl.List(
+            pl.Struct(
+                {
+                    "url": pl.String,
+                    "path": pl.String,
+                    "checksum": pl.String,
+                }
+            )
+        ),
+        "image_blurhash": pl.List(
+            pl.Struct(
+                {
+                    "url": pl.String,
+                    "path": pl.String,
+                    "checksum": pl.String,
+                    "blurhash": pl.String,
+                }
+            )
+        ),
+        "published_at": pl.String,
+        "updated_at": pl.String,
+        "scraped_at": pl.String,
+    }
+)
+
+
 class RatingItem(TypedItem):
     """item representing a rating"""
 
@@ -765,3 +805,26 @@ class RatingItem(TypedItem):
         serializer=serialize_date,
         parser=parse_date,
     )
+
+
+RATING_ITEM_SCHEMA = pl.Schema(
+    {
+        "item_id": pl.Int64,
+        "bgg_id": pl.Int64,
+        "bgg_user_name": pl.String,
+        "bgg_user_rating": pl.Float64,
+        "bgg_user_owned": pl.Boolean,
+        "bgg_user_prev_owned": pl.Boolean,
+        "bgg_user_for_trade": pl.Boolean,
+        "bgg_user_want_in_trade": pl.Boolean,
+        "bgg_user_want_to_play": pl.Boolean,
+        "bgg_user_want_to_buy": pl.Boolean,
+        "bgg_user_preordered": pl.Boolean,
+        "bgg_user_wishlist": pl.Int64,
+        "bgg_user_play_count": pl.Int64,
+        "comment": pl.String,
+        "published_at": pl.String,
+        "updated_at": pl.String,
+        "scraped_at": pl.String,
+    }
+)

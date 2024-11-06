@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-BASE_DIR="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
+BASE_DIR='/Users/markus/Recommend.Games/board-game-scraper'
 COMPOSE_FILE="${BASE_DIR}/docker-compose.yaml"
 SLEEP_TIME=600
 
