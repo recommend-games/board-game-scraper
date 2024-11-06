@@ -7,7 +7,11 @@ from typing import Any, List, Union
 import polars as pl
 from polars._typing import IntoExpr
 from tqdm import tqdm
-from board_game_scraper.items import GAME_ITEM_SCHEMA
+from board_game_scraper.items import (
+    GAME_ITEM_SCHEMA,
+    RATING_ITEM_SCHEMA,
+    USER_ITEM_SCHEMA,
+)
 
 LOGGER = logging.getLogger(__name__)
 PATH_LIKE = Union[str, Path]
@@ -16,6 +20,7 @@ PATH_LIKE = Union[str, Path]
 def merge_files(
     *,
     in_paths: Union[PATH_LIKE, List[PATH_LIKE]],
+    schema: pl.Schema,
     out_path: PATH_LIKE,
     key_col: Union[IntoExpr, List[IntoExpr]],
     latest_col: Union[IntoExpr, List[IntoExpr]],
@@ -51,11 +56,7 @@ def merge_files(
         f"[{len(in_paths)} paths]" if len(in_paths) > 10 else in_paths,
         out_path,
     )
-    data = pl.scan_ndjson(
-        in_paths,
-        schema=GAME_ITEM_SCHEMA,
-        infer_schema_length=None,
-    )
+    data = pl.scan_ndjson(in_paths, schema=schema)
 
     latest_col = latest_col if isinstance(latest_col, list) else [latest_col]
     if latest_min is not None:
@@ -127,13 +128,39 @@ def merge_files(
 
 def main():
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+
+    item_type = sys.argv[1] if len(sys.argv) > 1 else "game"
+    LOGGER.info("Merging %ss", item_type)
+
+    fieldnames_exclude = ["published_at", "scraped_at"]
+
+    if item_type == "game":
+        path = "GameItem"
+        schema = GAME_ITEM_SCHEMA
+        key_col = "bgg_id"
+        fieldnames_exclude += ["updated_at"]
+
+    elif item_type == "rating":
+        path = "RatingItem"
+        schema = RATING_ITEM_SCHEMA
+        key_col = [pl.col("bgg_user_name").str.to_lowercase(), "bgg_id"]
+
+    elif item_type == "user":
+        path = "UserItem"
+        schema = USER_ITEM_SCHEMA
+        key_col = pl.col("bgg_user_name").str.to_lowercase()
+
+    else:
+        raise ValueError(f"Unknown item type: {item_type}")
+
     merge_files(
-        in_paths="feeds/bgg/GameItem/",
-        out_path="test.jl",
-        key_col="bgg_id",
+        in_paths=f"feeds/bgg/{path}/",
+        schema=schema,
+        out_path=f"{item_type}s_merged.jl",
+        key_col=key_col,
         latest_col=pl.col("scraped_at").str.to_datetime(time_zone="UTC"),
-        sort_fields="bgg_id",
-        fieldnames_exclude=["published_at", "updated_at", "scraped_at"],
+        sort_fields=key_col,
+        fieldnames_exclude=fieldnames_exclude,
         drop_empty=True,
         sort_keys=True,
         progress_bar=True,
