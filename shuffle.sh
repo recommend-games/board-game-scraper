@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-BASE_DIR='/Users/markus/Recommend.Games/board-game-scraper'
+BASE_DIR="${HOME}/Recommend.Games/board-game-scraper"
 COMPOSE_FILE="${BASE_DIR}/docker-compose.yaml"
 SLEEP_TIME=600
 
