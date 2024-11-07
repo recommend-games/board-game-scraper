@@ -809,7 +809,7 @@ class RatingItem(TypedItem):
 
 RATING_ITEM_SCHEMA = pl.Schema(
     {
-        "item_id": pl.Int64,
+        "item_id": pl.String,
         "bgg_id": pl.Int64,
         "bgg_user_name": pl.String,
         "bgg_user_rating": pl.Float64,
