@@ -1,0 +1,18 @@
+{
+  "template": "https://github.com/woltapp/wolt-python-package-cookiecutter",
+  "commit": "b25684a2c63387153b83a1cc03ea332be8c8279a",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "author_name": "Markus Shepherd",
+      "author_email": "markus@recommend.games",
+      "github_username": "recommend-games",
+      "project_name": "Board Game Scraper",
+      "project_slug": "board-game-scraper",
+      "package_name": "board_game_scraper",
+      "project_short_description": "Scraping data about board games from the web",
+      "_template": "https://github.com/woltapp/wolt-python-package-cookiecutter"
+    }
+  },
+  "directory": null
+}
