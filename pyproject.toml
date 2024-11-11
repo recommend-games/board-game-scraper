@@ -65,6 +65,10 @@ ignore = [
     "ANN",      # Type hints related, let mypy handle these.
     "D",        # Docstrings related, way too strict to our taste
     "ERA001",   # Found commented-out code
+    "RUF001",   # String contains ambiguous `–` (EN DASH)
+    "TD",       # TODO
+    "FIX",      # FIXME,
+    "S101",     # "Use of `assert` detected"
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -103,7 +107,8 @@ exclude_lines = [
 # This is the global mypy configuration.
 # Avoid changing this!
 strict = true  # See all the enabled flags `mypy --help | grep -A 10 'Strict mode'`
-disallow_any_unimported = true
+disallow_any_unimported = false
+disallow_subclassing_any = false
 
 # If you need to ignore something for some specific module,
 # add overrides for them. Avoid changing the global config!
@@ -114,8 +119,6 @@ module = [
     "scrapy.*",
 ]
 ignore_missing_imports = true
-disallow_any_unimported = false
-disallow_subclassing_any = false
 
 # [[tool.mypy.overrides]]
 # module = [

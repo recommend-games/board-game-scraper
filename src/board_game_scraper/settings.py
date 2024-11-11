@@ -14,10 +14,11 @@ NEWSPIDER_MODULE = "board_game_scraper.spiders"
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-# USER_AGENT = "board_game_scraper (+http://www.yourdomain.com)"
+USER_AGENT = "board_game_scraper (+https://recommend.games)"
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
+ROBOTSTXT_PARSER = "scrapy.robotstxt.PythonRobotParser"
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 # CONCURRENT_REQUESTS = 32
