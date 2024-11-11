@@ -1,5 +1,3 @@
-version: '3'
-
 services:
     bgg:
         image: registry.gitlab.com/recommend.games/board-game-scraper:2.22.0
