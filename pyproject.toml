@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "board-game-scraper"
-version = "0.0.1"
+version = "3.0.0-alpha.1"
 description = "Scraping data about board games from the web"
 authors = [
     "Markus Shepherd <markus@recommend.games>",
@@ -33,6 +33,8 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.9.0, <4.0"
+
+scrapy = ">=2.11.0, <3.0"
 
 [tool.poetry.group.dev.dependencies]
 mkdocstrings = {version = ">=0.23", extras = ["python"]}
