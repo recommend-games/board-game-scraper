@@ -32,7 +32,7 @@ repos:
       types: [ python ]
     - id: mypy
       name: mypy
-      entry: poetry run mypy . --exclude v2
+      entry: poetry run mypy --exclude v2 .
       require_serial: true
       language: system
       types: [python]

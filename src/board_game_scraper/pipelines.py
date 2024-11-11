@@ -5,9 +5,10 @@
 
 
 # useful for handling different item types with a single interface
-from itemadapter import ItemAdapter  # noqa: F401
 
 
 class BoardGameScraperPipeline:
-    def process_item(self, item, spider):  # noqa: ARG002
-        return item
+    pass
+
+    # def process_item(self, item, spider):
+    #     return item
