@@ -1,20 +1,45 @@
+exclude: '^v2/.*$'
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v3.3.0
+  rev: v4.0.1
   hooks:
-  - id: check-yaml
-  - id: end-of-file-fixer
-  - id: trailing-whitespace
-- repo: https://github.com/psf/black
-  rev: 22.6.0
-  hooks:
-  - id: black
+    - id: check-ast
+    - id: check-added-large-files
+    - id: check-merge-conflict
+    - id: check-case-conflict
+    - id: check-docstring-first
+    - id: check-json
+    - id: check-yaml
+    - id: debug-statements
+    - id: end-of-file-fixer
+      exclude: 'CHANGELOG.md'
+    - id: trailing-whitespace
+    - id: mixed-line-ending
 - repo: local
   hooks:
-    - id: version-env
-      name: Writing version to .env
-      description: Reading library __version__ and saving it to .env
-      entry: pipenv run python -m board_game_scraper.version_env
+    - id: ruff-format
+      name: ruff-format
+      entry: poetry run ruff format
+      require_serial: true
       language: system
-      files: '__version__\.py'
+      types: [ python ]
+    - id: ruff
+      name: ruff
+      # Add --fix, in case you want it to autofix when this hook runs
+      entry: poetry run ruff check --fix --unsafe-fixes --force-exclude
+      require_serial: true
+      language: system
+      types: [ python ]
+    - id: mypy
+      name: mypy
+      entry: poetry run mypy --exclude v2 .
+      require_serial: true
+      language: system
+      types: [python]
+      pass_filenames: false
+    - id: kacl-verify
+      name: kacl-verify
+      entry: poetry run kacl-cli verify
+      language: system
+      files: 'CHANGELOG.md'
       pass_filenames: false
