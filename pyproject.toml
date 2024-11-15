@@ -35,7 +35,9 @@ packages = [
 python = ">=3.9.0, <4.0"
 
 itemadapter = "*"
+itemloaders = ">=1.1.0, <2.0"
 jmespath = "*"
+parsel = ">=1.8.1, <2.0"
 pyyaml = "*"
 requests = "*"
 scrapy = ">=2.11.0, <3.0"
