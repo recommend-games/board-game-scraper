@@ -4,7 +4,6 @@ import logging
 import math
 import re
 import statistics
-import warnings
 from collections.abc import Iterable
 from itertools import repeat
 from pathlib import Path
@@ -265,8 +264,10 @@ class BggSpider(SitemapSpider):
     def has_seen_bgg_id(self, bgg_id: int) -> bool:
         state = getattr(self, "state", None)
         if state is None or not isinstance(state, dict):
-            warnings.warn("No spider state found", stacklevel=2)
-            return False
+            self.logger.warning(
+                "No spider state found – this means it won't be persisted",
+            )
+            self.state = state = {}
 
         bgg_ids_seen = cast(set[int], state.setdefault("bgg_ids_seen", set()))
         seen = bgg_id in bgg_ids_seen
