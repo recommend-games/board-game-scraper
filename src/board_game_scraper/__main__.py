@@ -59,7 +59,11 @@ def spider_kwargs(spider: str, /, **kwargs: Any) -> dict[str, Any]:
         kwargs.setdefault("premium_users_dir", RG_CONFIG_DIR / "users" / "premium")
 
     elif spider == "bgg_hotness":
-        pass  # TODO: Local files dir will go here
+        kwargs.setdefault(
+            "local_files_dir",
+            PROJECT_DIR / "feeds" / "bgg_hotness" / "raw",
+        )
+        kwargs.setdefault("always_scrape_url", True)
 
     else:
         msg = f"Unknown spider: {spider}"
