@@ -17,8 +17,10 @@ from board_game_scraper.utils.parsers import parse_float
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+    from datetime import datetime
     from typing import Self, TypeVar
 
+    from scrapy import Spider
     from scrapy.crawler import Crawler
 
     Typed = TypeVar("Typed")
@@ -89,7 +91,7 @@ class ScrapePremiumUsersExtension(LoopingExtension):
             if isinstance(prevent_rescrape_for, float)
             else prevent_rescrape_for
         )
-        self.last_scraped = {}
+        self.last_scraped: dict[str, datetime] = {}
 
         self.setup_looping_task(
             task=self._schedule_requests,
@@ -97,7 +99,7 @@ class ScrapePremiumUsersExtension(LoopingExtension):
             interval=interval,
         )
 
-    def _schedule_requests(self, spider):
+    def _schedule_requests(self, spider: Spider) -> None:
         from board_game_scraper.spiders.bgg import BggSpider
 
         if not isinstance(spider, BggSpider):
@@ -106,6 +108,11 @@ class ScrapePremiumUsersExtension(LoopingExtension):
 
         if not spider.scrape_collections and not spider.scrape_users:
             LOGGER.warning("Skipping <%s>: not scraping collections or users", spider)
+            return
+
+        engine = spider.crawler.engine
+        if engine is None:
+            LOGGER.warning("Skipping <%s>: no engine", spider)
             return
 
         for user_name in self.premium_users:
@@ -133,7 +140,7 @@ class ScrapePremiumUsersExtension(LoopingExtension):
                     priority=sys.maxsize,
                     dont_filter=True,
                 )
-                spider.crawler.engine.crawl(collection_request)
+                engine.crawl(collection_request)
 
             if spider.scrape_users:
                 LOGGER.info("Scheduling user request for <%s>", user_name)
@@ -142,4 +149,4 @@ class ScrapePremiumUsersExtension(LoopingExtension):
                     priority=sys.maxsize,
                     dont_filter=True,
                 )
-                spider.crawler.engine.crawl(user_request)
+                engine.crawl(user_request)
