@@ -33,12 +33,29 @@ class BggHotnessSpider(Spider):
         "AUTOTHROTTLE_ENABLED": False,
     }
 
-    def __init__(self, *, local_files_dir: Path | str | None = None, **kwargs):
+    def __init__(
+        self,
+        *,
+        local_files_dir: Path | str | None = None,
+        always_scrape_url: bool = False,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
 
         self.local_files_dir = (
             Path(local_files_dir).resolve() if local_files_dir else None
         )
+        self.always_scrape_url = always_scrape_url
+
+    def start_requests(self) -> Generator[Request]:
+        """Initial requests, either locally or from BGG."""
+
+        if self.local_files_dir:
+            yield from self.local_start_requests()
+            if not self.always_scrape_url:
+                return
+
+        yield from super().start_requests()
 
     def local_start_requests(self) -> Generator[Request]:
         if not self.local_files_dir:
@@ -72,15 +89,6 @@ class BggHotnessSpider(Spider):
                 cb_kwargs={"published_at": date},
                 dont_filter=True,
             )
-
-    def start_requests(self) -> Generator[Request]:
-        """Initial requests, either locally or from BGG."""
-
-        if self.local_files_dir:
-            yield from self.local_start_requests()
-
-        else:
-            yield from super().start_requests()
 
     def parse(
         self,
