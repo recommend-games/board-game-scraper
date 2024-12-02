@@ -450,10 +450,16 @@ class BggSpider(SitemapSpider):
             bgg_user_name or extract_query_param(response.url, "name"),
         )
 
-        return self.extract_user_item(
-            response=response,
-            selector=cast(Selector, response.xpath("/user")[0]),
-            bgg_user_name=bgg_user_name,
+        users = response.xpath("/user")
+
+        return (
+            self.extract_user_item(
+                response=response,
+                selector=cast(Selector, users[0]),
+                bgg_user_name=bgg_user_name,
+            )
+            if users
+            else None
         )
 
     def extract_game_item(
