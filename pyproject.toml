@@ -48,6 +48,7 @@ scrapy-extensions = {version = ">=1.0.1", extras = ["blurhash"]}
 w3lib = ">=2.0.0, <3.0"
 
 [tool.poetry.group.dev.dependencies]
+ipython = "*"
 mkdocstrings = {version = ">=0.23", extras = ["python"]}
 mkdocs-material = "*"
 mypy = "*"
