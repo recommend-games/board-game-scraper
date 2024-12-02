@@ -135,6 +135,9 @@ ITEM_PIPELINES = {
     "scrapy_extensions.BlurHashPipeline": 700,
 }
 
+# See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
+CLOSESPIDER_TIMEOUT = os.getenv("CLOSESPIDER_TIMEOUT") or 60 * 60 * 3  # 3 hours
+
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 AUTOTHROTTLE_ENABLED = True
