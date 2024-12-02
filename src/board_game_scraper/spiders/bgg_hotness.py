@@ -88,6 +88,7 @@ class BggHotnessSpider(Spider):
                 callback=self.parse,  # type: ignore[arg-type]
                 cb_kwargs={"published_at": date},
                 dont_filter=True,
+                priority=-1,
             )
 
     def parse(
