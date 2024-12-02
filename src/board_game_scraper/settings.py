@@ -15,29 +15,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 FEED_EXPORT_FILE_SUFFIX = os.getenv("FEED_EXPORT_FILE_SUFFIX") or ""
 FEEDS_DIR = f"{BASE_DIR}/feeds_v3/%(name)s"
 FEEDS_FILE_NAME = f"%(time)s-%(batch_id)05d{FEED_EXPORT_FILE_SUFFIX}.jl"
-GAME_ITEM_URI = f"{FEEDS_DIR}/GameItem/{FEEDS_FILE_NAME}"
-USER_ITEM_URI = f"{FEEDS_DIR}/UserItem/{FEEDS_FILE_NAME}"
 COLLECTION_ITEM_URI = f"{FEEDS_DIR}/CollectionItem/{FEEDS_FILE_NAME}"
+GAME_ITEM_URI = f"{FEEDS_DIR}/GameItem/{FEEDS_FILE_NAME}"
+RANKING_ITEM_URI = f"{FEEDS_DIR}/RankingItem/{FEEDS_FILE_NAME}"
+USER_ITEM_URI = f"{FEEDS_DIR}/UserItem/{FEEDS_FILE_NAME}"
 
 FEED_EXPORTERS = {
     "sparsejsonlines": "board_game_scraper.exporters.SparseJsonLinesItemExporter",
 }
 FEED_EXPORT_BATCH_ITEM_COUNT = 10_000
 FEEDS = {
+    COLLECTION_ITEM_URI: {
+        "item_classes": ["board_game_scraper.items.CollectionItem"],
+        "format": "sparsejsonlines",
+        "overwrite": False,
+        "store_empty": False,
+    },
     GAME_ITEM_URI: {
         "item_classes": ["board_game_scraper.items.GameItem"],
         "format": "sparsejsonlines",
         "overwrite": False,
         "store_empty": False,
     },
-    USER_ITEM_URI: {
-        "item_classes": ["board_game_scraper.items.UserItem"],
+    RANKING_ITEM_URI: {
+        "item_classes": ["board_game_scraper.items.RankingItem"],
         "format": "sparsejsonlines",
         "overwrite": False,
         "store_empty": False,
     },
-    COLLECTION_ITEM_URI: {
-        "item_classes": ["board_game_scraper.items.CollectionItem"],
+    USER_ITEM_URI: {
+        "item_classes": ["board_game_scraper.items.UserItem"],
         "format": "sparsejsonlines",
         "overwrite": False,
         "store_empty": False,

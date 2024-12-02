@@ -33,7 +33,7 @@ class BggHotnessSpider(Spider):
         "AUTOTHROTTLE_ENABLED": False,
     }
 
-    def _local_requests(self, path_dir: Path | str) -> Generator[Request]:
+    def local_start_requests(self, path_dir: Path | str) -> Generator[Request]:
         path_dir = Path(path_dir).resolve()
 
         for path_file in path_dir.iterdir():
@@ -52,6 +52,7 @@ class BggHotnessSpider(Spider):
                 url=path_file.as_uri(),
                 callback=self.parse,  # type: ignore[arg-type]
                 cb_kwargs={"published_at": date},
+                dont_filter=True,
             )
 
     def start_requests(self) -> Generator[Request]:
@@ -62,7 +63,7 @@ class BggHotnessSpider(Spider):
 
         if hotness_dir:
             self.logger.info("Loading local files from <%s>", hotness_dir)
-            yield from self._local_requests(hotness_dir)
+            yield from self.local_start_requests(hotness_dir)
 
         else:
             yield from super().start_requests()
@@ -79,7 +80,7 @@ class BggHotnessSpider(Spider):
         @scrapes published_at rank bgg_id name year image_url scraped_at
         """
 
-        scraped_at = now()
+        dt_now = now()
 
         for game in response.xpath("/items/item"):
             ldr = RankingLoader(response=response, selector=cast(Selector, game))
@@ -94,7 +95,6 @@ class BggHotnessSpider(Spider):
             ldr.add_xpath("image_url", "thumbnail/@value")
 
             ldr.add_value("published_at", published_at)
-            ldr.add_value("published_at", scraped_at)
-            ldr.add_value("scraped_at", scraped_at)
+            ldr.add_value("published_at", dt_now)
 
             yield cast(RankingItem, ldr.load_item())
