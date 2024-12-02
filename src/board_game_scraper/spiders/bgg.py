@@ -150,7 +150,7 @@ class BggSpider(SitemapSpider):
             len(bgg_ids),
             len(self.game_files),
         )
-        yield from self.game_requests(bgg_ids=bgg_ids, page=1, priority=1)
+        yield from self.game_requests(bgg_ids=bgg_ids, page=1, priority=-1)
 
     def user_and_collection_requests_from_files(self) -> Generator[Request]:
         user_names = frozenset(
@@ -166,10 +166,10 @@ class BggSpider(SitemapSpider):
         )
         if self.scrape_collections:
             for user_name in user_names:
-                yield self.collection_request(user_name=user_name, priority=2)
+                yield self.collection_request(user_name=user_name, priority=-1)
         if self.scrape_users:
             for user_name in user_names:
-                yield self.user_request(user_name=user_name, priority=3)
+                yield self.user_request(user_name=user_name, priority=-1)
 
     def premium_users_requests_from_dir(self) -> Generator[Request]:
         premium_users = frozenset(load_premium_users(dirs=self.premium_users_dir))
@@ -182,14 +182,14 @@ class BggSpider(SitemapSpider):
             for user_name in premium_users:
                 yield self.collection_request(
                     user_name=user_name,
-                    priority=3,
+                    priority=0,
                     dont_filter=True,
                 )
         if self.scrape_users:
             for user_name in premium_users:
                 yield self.user_request(
                     user_name=user_name,
-                    priority=4,
+                    priority=0,
                     dont_filter=True,
                 )
 
@@ -336,8 +336,8 @@ class BggSpider(SitemapSpider):
             mechanic cooperative compilation compilation_of family expansion \
             implementation integration rank add_rank num_votes avg_rating \
             stddev_rating bayes_rating complexity language_dependency num_owned \
-            num_trading num_wanting num_wishing num_comments num_weights bgg_id \
-            scraped_at
+            num_trading num_wanting num_wishlist num_comments num_complexity_votes \
+            bgg_id scraped_at
         """
 
         page, max_page = extract_page_number(response, self.request_page_size)
@@ -389,6 +389,7 @@ class BggSpider(SitemapSpider):
                 if self.scrape_collections:
                     yield self.collection_request(
                         user_name=collection_item.bgg_user_name,
+                        priority=0,
                     )
                 else:
                     yield collection_item
@@ -396,7 +397,7 @@ class BggSpider(SitemapSpider):
                 if self.scrape_users:
                     yield self.user_request(
                         user_name=collection_item.bgg_user_name,
-                        priority=1,
+                        priority=0,
                     )
 
     def parse_collection(
@@ -601,9 +602,9 @@ class BggSpider(SitemapSpider):
         ldr.add_xpath("num_owned", "statistics/ratings/owned/@value")
         ldr.add_xpath("num_trading", "statistics/ratings/trading/@value")
         ldr.add_xpath("num_wanting", "statistics/ratings/wanting/@value")
-        ldr.add_xpath("num_wishing", "statistics/ratings/wishing/@value")
+        ldr.add_xpath("num_wishlist", "statistics/ratings/wishing/@value")
         ldr.add_xpath("num_comments", "statistics/ratings/numcomments/@value")
-        ldr.add_xpath("num_weights", "statistics/ratings/numweights/@value")
+        ldr.add_xpath("num_complexity_votes", "statistics/ratings/numweights/@value")
 
         for rank in selector.xpath("statistics/ratings/ranks/rank[@type = 'family']"):
             ranking_item = self.extract_ranking_item(response=response, selector=rank)
@@ -690,8 +691,9 @@ class BggSpider(SitemapSpider):
         selector: Selector,
     ) -> RankingItem:
         ldr = RankingLoader(response=response, selector=selector)
-        ldr.add_xpath("ranking_type", "@name")
         ldr.add_xpath("ranking_id", "@id")
+        ldr.add_xpath("ranking_type", "@name")
+        ldr.add_xpath("ranking_name", "@friendlyname")
         ldr.add_xpath("rank", "@value")
         ldr.add_xpath("bayes_rating", "@bayesaverage")
         return cast(RankingItem, ldr.load_item())

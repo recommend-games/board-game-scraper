@@ -74,9 +74,9 @@ class GameItem:
     num_owned: int | None = None
     num_trading: int | None = None
     num_wanting: int | None = None
-    num_wishing: int | None = None
+    num_wishlist: int | None = None
     num_comments: int | None = None
-    num_weights: int | None = None
+    num_complexity_votes: int | None = None
 
     bgg_id: int | None = None
     freebase_id: str | None = None
@@ -96,8 +96,9 @@ class GameItem:
 
 @define(kw_only=True)
 class RankingItem:
-    ranking_type: str | None = None
     ranking_id: int | None = None
+    ranking_type: str | None = None
+    ranking_name: str | None = None
 
     bgg_id: int | None = field(
         default=None,
