@@ -33,10 +33,28 @@ class BggHotnessSpider(Spider):
         "AUTOTHROTTLE_ENABLED": False,
     }
 
-    def local_start_requests(self, path_dir: Path | str) -> Generator[Request]:
-        path_dir = Path(path_dir).resolve()
+    def __init__(self, *, local_files_dir: Path | str | None = None, **kwargs):
+        super().__init__(**kwargs)
 
-        for path_file in path_dir.iterdir():
+        self.local_files_dir = (
+            Path(local_files_dir).resolve() if local_files_dir else None
+        )
+
+    def local_start_requests(self) -> Generator[Request]:
+        if not self.local_files_dir:
+            self.logger.debug("No local files directory provided")
+            return
+
+        if not self.local_files_dir.is_dir():
+            self.logger.error(
+                "Local files directory <%s> does not exist",
+                self.local_files_dir,
+            )
+            return
+
+        self.logger.info("Loading local files from <%s>", self.local_files_dir)
+
+        for path_file in self.local_files_dir.iterdir():
             if not path_file.is_file():
                 continue
 
@@ -58,12 +76,8 @@ class BggHotnessSpider(Spider):
     def start_requests(self) -> Generator[Request]:
         """Initial requests, either locally or from BGG."""
 
-        # TODO: Use spider arg instead
-        hotness_dir = self.settings.get("BGG_HOTNESS_DIR")
-
-        if hotness_dir:
-            self.logger.info("Loading local files from <%s>", hotness_dir)
-            yield from self.local_start_requests(hotness_dir)
+        if self.local_files_dir:
+            yield from self.local_start_requests()
 
         else:
             yield from super().start_requests()
