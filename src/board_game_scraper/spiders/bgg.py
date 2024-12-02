@@ -78,6 +78,7 @@ class BggSpider(SitemapSpider):
         "DOWNLOAD_DELAY": 2.0,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
         "LIMIT_IMAGES_TO_DOWNLOAD": 1,
+        "SCRAPE_PREMIUM_USERS_ENABLED": True,
     }
 
     def __init__(

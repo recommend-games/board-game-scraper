@@ -116,6 +116,7 @@ EXTENSIONS = {
     "scrapy.extensions.spiderstate.SpiderState": 0,
     "scrapy.extensions.throttle.AutoThrottle": None,
     "scrapy_extensions.NicerAutoThrottle": 0,
+    "board_game_scraper.extensions.ScrapePremiumUsersExtension": 500,
 }
 
 # Configure item pipelines
@@ -185,6 +186,17 @@ LIMIT_IMAGES_URLS_FIELD = "image_url"
 BLURHASH_FIELD = "image_blurhash"
 BLURHASH_X_COMPONENTS = 4
 BLURHASH_Y_COMPONENTS = 4
+
+# Scrape premium users
+SCRAPE_PREMIUM_USERS_ENABLED = False
+SCRAPE_PREMIUM_USERS_LIST = os.getenv("SCRAPE_PREMIUM_USERS_LIST")
+SCRAPE_PREMIUM_USERS_CONFIG_DIR = os.getenv("SCRAPE_PREMIUM_USERS_CONFIG_DIR")
+SCRAPE_PREMIUM_USERS_INTERVAL = (
+    os.getenv("SCRAPE_PREMIUM_USERS_INTERVAL") or 60 * 60  # 1 hour
+)
+SCRAPE_PREMIUM_USERS_PREVENT_RESCRAPE_FOR = (
+    os.getenv("SCRAPE_PREMIUM_USERS_PREVENT_RESCRAPE_FOR") or 3 * 60 * 60  # 3 hours
+)
 
 # Set settings whose default value is deprecated to a future-proof value
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
