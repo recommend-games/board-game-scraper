@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Download BGG Dump Script Timer
+
+[Timer]
+OnBootSec=0
+OnUnitActiveSec=4h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
