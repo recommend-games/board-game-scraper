@@ -17,11 +17,16 @@ from scrapy.selector.unified import Selector
 from scrapy.spiders import SitemapSpider
 from scrapy.utils.misc import arg_to_iter
 
-from board_game_scraper.items import CollectionItem, GameItem, RankingItem, UserItem
+from board_game_scraper.items import (
+    CollectionItem,
+    GameItem,
+    LegacyRankingItem,
+    UserItem,
+)
 from board_game_scraper.loaders import (
     BggGameLoader,
     CollectionLoader,
-    RankingLoader,
+    LegacyRankingLoader,
     UserLoader,
 )
 from board_game_scraper.utils.files import (
@@ -689,14 +694,14 @@ class BggSpider(SitemapSpider):
         *,
         response: TextResponse,
         selector: Selector,
-    ) -> RankingItem:
-        ldr = RankingLoader(response=response, selector=selector)
-        ldr.add_xpath("ranking_id", "@id")
-        ldr.add_xpath("ranking_type", "@name")
-        ldr.add_xpath("ranking_name", "@friendlyname")
+    ) -> LegacyRankingItem:
+        ldr = LegacyRankingLoader(response=response, selector=selector)
+        ldr.add_xpath("game_type", "@name")
+        ldr.add_xpath("game_type_id", "@id")
+        ldr.add_xpath("name", "@friendlyname")
         ldr.add_xpath("rank", "@value")
         ldr.add_xpath("bayes_rating", "@bayesaverage")
-        return cast(RankingItem, ldr.load_item())
+        return cast(LegacyRankingItem, ldr.load_item())
 
     def extract_collection_item(
         self,

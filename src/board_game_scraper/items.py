@@ -124,6 +124,15 @@ class RankingItem:
 
 
 @define(kw_only=True)
+class LegacyRankingItem:
+    game_type: str | None = None
+    game_type_id: int | None = None
+    name: str | None = None
+    rank: int | None = None
+    bayes_rating: float | None = None
+
+
+@define(kw_only=True)
 class UserItem:
     item_id: int | None = None
     bgg_user_name: str | None = field(

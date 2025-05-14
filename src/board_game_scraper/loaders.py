@@ -9,7 +9,13 @@ from scrapy.http import Response
 from scrapy.loader import ItemLoader
 from w3lib.html import replace_entities
 
-from board_game_scraper.items import CollectionItem, GameItem, RankingItem, UserItem
+from board_game_scraper.items import (
+    CollectionItem,
+    GameItem,
+    LegacyRankingItem,
+    RankingItem,
+    UserItem,
+)
 from board_game_scraper.utils.parsers import parse_date, parse_float, parse_int
 from board_game_scraper.utils.strings import normalize_space
 
@@ -128,6 +134,16 @@ class RankingLoader(ItemLoader):
     published_at_in = MapCompose(parse_date)
     updated_at_in = MapCompose(parse_date)
     scraped_at_in = MapCompose(parse_date)
+
+
+class LegacyRankingLoader(ItemLoader):
+    default_item_class = LegacyRankingItem
+    # default_input_processor = MapCompose(...)
+    default_output_processor = TakeFirst()
+
+    game_type_id_in = MapCompose(parse_int)
+    rank_in = MapCompose(parse_int)
+    bayes_rating_in = MapCompose(parse_float)
 
 
 class UserLoader(ItemLoader):
