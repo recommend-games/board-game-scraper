@@ -698,7 +698,7 @@ class BggSpider(SitemapSpider):
         ldr = LegacyRankingLoader(response=response, selector=selector)
         ldr.add_xpath("game_type", "@name")
         ldr.add_xpath("game_type_id", "@id")
-        ldr.add_xpath("name", "@friendlyname")
+        ldr.add_value("name", remove_rank(selector.xpath("@friendlyname").get()))
         ldr.add_xpath("rank", "@value")
         ldr.add_xpath("bayes_rating", "@bayesaverage")
         return cast(LegacyRankingItem, ldr.load_item())
