@@ -116,8 +116,8 @@ class BggSpider(Spider):
     item_classes = (GameItem, UserItem, RatingItem)
     state = None
 
-    # https://www.boardgamegeek.com/wiki/page/BGG_XML_API2
-    xml_api_url = "https://www.boardgamegeek.com/xmlapi2"
+    # https://boardgamegeek.com/wiki/page/BGG_XML_API2
+    xml_api_url = "https://boardgamegeek.com/xmlapi2"
     page_size = 100
 
     custom_settings = {
@@ -370,7 +370,7 @@ class BggSpider(Spider):
     def parse_game(self, response):
         # pylint: disable=line-too-long
         """
-        @url https://www.boardgamegeek.com/xmlapi2/thing?id=13,822,36218&stats=1&versions=1&videos=1&ratingcomments=1&page=1&pagesize=100
+        @url https://boardgamegeek.com/xmlapi2/thing?id=13,822,36218&stats=1&versions=1&videos=1&ratingcomments=1&page=1&pagesize=100
         @returns items 3 3
         @returns requests 303 303
         @scrapes name alt_name year description \
@@ -595,7 +595,7 @@ class BggSpider(Spider):
     def parse_collection(self, response):
         # pylint: disable=line-too-long
         """
-        @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&stats=1&version=0
+        @url https://boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&stats=1&version=0
         @returns items 1000
         @returns requests 100
         @scrapes item_id bgg_id bgg_user_name bgg_user_owned bgg_user_prev_owned \
@@ -672,7 +672,7 @@ class BggSpider(Spider):
     # pylint: disable=no-self-use
     def parse_user(self, response, item=None):
         """
-        @url https://www.boardgamegeek.com/xmlapi2/user?name=Markus+Shepherd
+        @url https://boardgamegeek.com/xmlapi2/user?name=Markus+Shepherd
         @returns items 1 1
         @returns requests 0 0
         @scrapes item_id bgg_user_name first_name last_name registered last_login \
