@@ -124,6 +124,7 @@ class BggSpider(Spider):
         "DOWNLOAD_DELAY": 0.5,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
+        "AUTH_HEADER_ENABLED": True,
         "DELAYED_RETRY_ENABLED": True,
         "DELAYED_RETRY_HTTP_CODES": (202,),
         "DELAYED_RETRY_DELAY": 5.0,
@@ -166,6 +167,10 @@ class BggSpider(Spider):
         self.logger.info("scrape ratings: %r", self.scrape_ratings)
         self.logger.info("scrape collections: %r", self.scrape_collections)
         self.logger.info("scrape users: %r", self.scrape_users)
+
+        self.auth_token = settings.get("BGG_API_AUTH_TOKEN")
+        if not self.auth_token:
+            self.logger.warning("no BGG API auth token configured, requests may fail")
 
     def _spider_opened(self):
         state = getattr(self, "state", None)

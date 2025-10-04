@@ -175,7 +175,10 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {"scrapy_extensions.DelayedRetry": 555}
+DOWNLOADER_MIDDLEWARES = {
+    "board_game_scraper.middlewares.AuthHeaderMiddleware": 301,
+    "scrapy_extensions.DelayedRetry": 555,
+}
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -209,6 +212,11 @@ ITEM_PIPELINES = {
 
 # See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
 CLOSESPIDER_TIMEOUT = os.getenv("CLOSESPIDER_TIMEOUT")
+
+# Auth header middleware settings
+AUTH_HEADER_ENABLED = False
+AUTH_HEADER_NAME = "Authorization"
+AUTH_TOKEN_ATTR = "auth_token"
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
