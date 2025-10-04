@@ -25,7 +25,7 @@ class BggGeekListSpider(Spider):
     name = "bgg_geeklist"
     allowed_domains = ("boardgamegeek.com",)
     start_urls = (
-        "https://www.boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list",
+        "https://boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list",
     )
     item_classes = (GameItem,)
 
@@ -98,7 +98,7 @@ class BggGeekListSpider(Spider):
 
     def parse(self, response):
         """
-        @url https://www.boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list
+        @url https://boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list
         @returns items 0 0
         @returns requests 26
         """

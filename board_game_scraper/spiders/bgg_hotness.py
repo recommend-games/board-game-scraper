@@ -3,6 +3,7 @@
 """BoardGameGeek hotness spider."""
 
 from datetime import timezone
+import os
 from pathlib import Path
 
 from pytility import parse_date
@@ -20,17 +21,24 @@ class BggHotnessSpider(Spider):
 
     name = "bgg_hotness"
     allowed_domains = ("boardgamegeek.com",)
-    start_urls = ("https://www.boardgamegeek.com/xmlapi2/hot?type=boardgame",)
+    start_urls = ("https://boardgamegeek.com/xmlapi2/hot?type=boardgame",)
     item_classes = (GameItem,)
 
     custom_settings = {
         "DOWNLOAD_DELAY": 0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1024,
         "CONCURRENT_REQUESTS_PER_IP": 1024,
+        "AUTH_HEADER_ENABLED": True,
         "AUTOTHROTTLE_ENABLED": False,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 1024,
         "AUTOTHROTTLE_HTTP_CODES": (429, 503, 504),
     }
+
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name, **kwargs)
+        self.auth_token = os.environ.get("BGG_API_AUTH_TOKEN")
+        if not self.auth_token:
+            self.logger.warning("no BGG API auth token configured, requests may fail")
 
     def _local_requests(self, path_dir="."):
         path_dir = Path(path_dir).resolve()
@@ -67,7 +75,7 @@ class BggHotnessSpider(Spider):
 
     def parse(self, response):
         """
-        @url https://www.boardgamegeek.com/xmlapi2/hot?type=boardgame
+        @url https://boardgamegeek.com/xmlapi2/hot?type=boardgame
         @returns items 50 50
         @returns requests 0 0
         @scrapes published_at rank bgg_id name year image_url scraped_at
