@@ -168,7 +168,7 @@ class BggSpider(Spider):
         self.logger.info("scrape collections: %r", self.scrape_collections)
         self.logger.info("scrape users: %r", self.scrape_users)
 
-        self.auth_token = settings.get("BGG_API_AUTH_TOKEN")
+        self.auth_token = os.environ.get("BGG_API_AUTH_TOKEN")
         if not self.auth_token:
             self.logger.warning("no BGG API auth token configured, requests may fail")
 
