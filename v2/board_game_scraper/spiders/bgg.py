@@ -116,14 +116,15 @@ class BggSpider(Spider):
     item_classes = (GameItem, UserItem, RatingItem)
     state = None
 
-    # https://www.boardgamegeek.com/wiki/page/BGG_XML_API2
-    xml_api_url = "https://www.boardgamegeek.com/xmlapi2"
+    # https://boardgamegeek.com/wiki/page/BGG_XML_API2
+    xml_api_url = "https://boardgamegeek.com/xmlapi2"
     page_size = 100
 
     custom_settings = {
-        "DOWNLOAD_DELAY": 0.5,
+        "DOWNLOAD_DELAY": 5.0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
+        "AUTH_HEADER_ENABLED": True,
         "DELAYED_RETRY_ENABLED": True,
         "DELAYED_RETRY_HTTP_CODES": (202,),
         "DELAYED_RETRY_DELAY": 5.0,
@@ -166,6 +167,10 @@ class BggSpider(Spider):
         self.logger.info("scrape ratings: %r", self.scrape_ratings)
         self.logger.info("scrape collections: %r", self.scrape_collections)
         self.logger.info("scrape users: %r", self.scrape_users)
+
+        self.auth_token = os.environ.get("BGG_API_AUTH_TOKEN")
+        if not self.auth_token:
+            self.logger.warning("no BGG API auth token configured, requests may fail")
 
     def _spider_opened(self):
         state = getattr(self, "state", None)
@@ -370,7 +375,7 @@ class BggSpider(Spider):
     def parse_game(self, response):
         # pylint: disable=line-too-long
         """
-        @url https://www.boardgamegeek.com/xmlapi2/thing?id=13,822,36218&stats=1&versions=1&videos=1&ratingcomments=1&page=1&pagesize=100
+        @url https://boardgamegeek.com/xmlapi2/thing?id=13,822,36218&stats=1&versions=1&videos=1&ratingcomments=1&page=1&pagesize=100
         @returns items 3 3
         @returns requests 303 303
         @scrapes name alt_name year description \
@@ -595,7 +600,7 @@ class BggSpider(Spider):
     def parse_collection(self, response):
         # pylint: disable=line-too-long
         """
-        @url https://www.boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&stats=1&version=0
+        @url https://boardgamegeek.com/xmlapi2/collection?username=Markus+Shepherd&subtype=boardgame&excludesubtype=boardgameexpansion&stats=1&version=0
         @returns items 1000
         @returns requests 100
         @scrapes item_id bgg_id bgg_user_name bgg_user_owned bgg_user_prev_owned \
@@ -672,7 +677,7 @@ class BggSpider(Spider):
     # pylint: disable=no-self-use
     def parse_user(self, response, item=None):
         """
-        @url https://www.boardgamegeek.com/xmlapi2/user?name=Markus+Shepherd
+        @url https://boardgamegeek.com/xmlapi2/user?name=Markus+Shepherd
         @returns items 1 1
         @returns requests 0 0
         @scrapes item_id bgg_user_name first_name last_name registered last_login \

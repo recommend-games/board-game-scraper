@@ -25,7 +25,7 @@ class BggGeekListSpider(Spider):
     name = "bgg_geeklist"
     allowed_domains = ("boardgamegeek.com",)
     start_urls = (
-        "https://www.boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list",
+        "https://boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list",
     )
     item_classes = (GameItem,)
 
@@ -34,7 +34,7 @@ class BggGeekListSpider(Spider):
     exclude_bgg_ids = frozenset((197551, 167330))
 
     custom_settings = {
-        "DOWNLOAD_DELAY": 0.5,
+        "DOWNLOAD_DELAY": 5.0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
         "DELAYED_RETRY_ENABLED": True,
@@ -98,7 +98,7 @@ class BggGeekListSpider(Spider):
 
     def parse(self, response):
         """
-        @url https://www.boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list
+        @url https://boardgamegeek.com/geeklist/30543/bgg-top-50-statistics-meta-list
         @returns items 0 0
         @returns requests 26
         """
