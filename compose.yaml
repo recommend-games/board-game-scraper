@@ -1,6 +1,6 @@
 services:
     bgg:
-        image: registry.gitlab.com/recommend.games/board-game-scraper:2.22.0
+        image: registry.gitlab.com/recommend.games/board-game-scraper:2.23.1
         container_name: bg-scraper-bgg
         platform: linux/amd64
         build: '.'
@@ -24,7 +24,7 @@ services:
         stop_signal: SIGINT
 
     bgg-hotness:
-        image: registry.gitlab.com/recommend.games/board-game-scraper:2.22.0
+        image: registry.gitlab.com/recommend.games/board-game-scraper:2.23.1
         container_name: bg-scraper-bgg-hotness
         platform: linux/amd64
         build: '.'
@@ -41,7 +41,7 @@ services:
         stop_signal: SIGINT
 
     dbpedia:
-        image: registry.gitlab.com/recommend.games/board-game-scraper:2.22.0
+        image: registry.gitlab.com/recommend.games/board-game-scraper:2.23.1
         container_name: bg-scraper-dbpedia
         platform: linux/amd64
         build: '.'
@@ -58,7 +58,7 @@ services:
         stop_signal: SIGINT
 
     luding:
-        image: registry.gitlab.com/recommend.games/board-game-scraper:2.22.0
+        image: registry.gitlab.com/recommend.games/board-game-scraper:2.23.1
         container_name: bg-scraper-luding
         platform: linux/amd64
         build: '.'
@@ -75,7 +75,7 @@ services:
         stop_signal: SIGINT
 
     spielen:
-        image: registry.gitlab.com/recommend.games/board-game-scraper:2.22.0
+        image: registry.gitlab.com/recommend.games/board-game-scraper:2.23.1
         container_name: bg-scraper-spielen
         platform: linux/amd64
         build: '.'
@@ -92,7 +92,7 @@ services:
         stop_signal: SIGINT
 
     wikidata:
-        image: registry.gitlab.com/recommend.games/board-game-scraper:2.22.0
+        image: registry.gitlab.com/recommend.games/board-game-scraper:2.23.1
         container_name: bg-scraper-wikidata
         platform: linux/amd64
         build: '.'
