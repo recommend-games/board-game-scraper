@@ -25,7 +25,7 @@ class BggHotnessSpider(Spider):
     item_classes = (GameItem,)
 
     custom_settings = {
-        "DOWNLOAD_DELAY": 0,
+        "DOWNLOAD_DELAY": 5.0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1024,
         "CONCURRENT_REQUESTS_PER_IP": 1024,
         "AUTH_HEADER_ENABLED": True,

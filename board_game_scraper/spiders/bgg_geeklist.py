@@ -34,7 +34,7 @@ class BggGeekListSpider(Spider):
     exclude_bgg_ids = frozenset((197551, 167330))
 
     custom_settings = {
-        "DOWNLOAD_DELAY": 0.5,
+        "DOWNLOAD_DELAY": 5.0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
         "DELAYED_RETRY_ENABLED": True,
