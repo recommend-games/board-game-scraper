@@ -1,4 +1,4 @@
-FROM python:3.8.9
+FROM python:3.8.20
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
