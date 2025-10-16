@@ -96,6 +96,7 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
     "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
+    "scrapy_extensions.middlewares.AuthHeaderMiddleware": 301,
     "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
@@ -151,6 +152,11 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = CONCURRENT_REQUESTS_PER_DOMAIN
 # Enable showing throttling stats for every response received:
 AUTOTHROTTLE_DEBUG = False
 AUTOTHROTTLE_HTTP_CODES = (429, 503, 504)
+
+# Auth header middleware settings
+AUTH_HEADER_ENABLED = False
+AUTH_HEADER_NAME = "Authorization"
+AUTH_TOKEN_ATTR = "auth_token"  # noqa: S105
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings

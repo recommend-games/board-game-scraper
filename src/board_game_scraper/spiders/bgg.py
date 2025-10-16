@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import re
 import statistics
 from itertools import repeat
@@ -78,8 +79,9 @@ class BggSpider(SitemapSpider):
     sitemap_alternate_links = True
 
     custom_settings = {  # noqa: RUF012
-        "DOWNLOAD_DELAY": 2.0,
+        "DOWNLOAD_DELAY": 5.0,
         "AUTOTHROTTLE_TARGET_CONCURRENCY": 4,
+        "AUTH_HEADER_ENABLED": True,
         "LIMIT_IMAGES_TO_DOWNLOAD": 1,
         "SCRAPE_PREMIUM_USERS_ENABLED": True,
     }
@@ -97,6 +99,10 @@ class BggSpider(SitemapSpider):
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
+
+        self.auth_token = os.environ.get("BGG_API_AUTH_TOKEN")
+        if not self.auth_token:
+            self.logger.warning("No BGG API auth token configured, requests may fail")
 
         self.scrape_ratings = to_bool(scrape_ratings or False)  # type: ignore[arg-type]
         self.logger.info("Scrape ratings: %s", self.scrape_ratings)
