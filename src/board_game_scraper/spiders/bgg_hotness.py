@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from scrapy import Spider
 from scrapy.http import Request, TextResponse
-from scrapy.selector.unified import Selector
 
-from board_game_scraper.items import RankingItem
 from board_game_scraper.loaders import RankingLoader
 from board_game_scraper.utils.dates import now
 from board_game_scraper.utils.parsers import parse_date
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+
+    from scrapy.selector.unified import Selector
+
+    from board_game_scraper.items import RankingItem
 
 
 DATE_FORMAT = "%Y-%m-%dT%H-%M-%S"
@@ -79,7 +81,7 @@ class BggHotnessSpider(Spider):
 
             date = parse_date(
                 path_file.stem,
-                tzinfo=timezone.utc,
+                tzinfo=UTC,
                 format_str=DATE_FORMAT,
             )
 
@@ -106,7 +108,7 @@ class BggHotnessSpider(Spider):
         dt_now = now()
 
         for game in response.xpath("/items/item"):
-            ldr = RankingLoader(response=response, selector=cast(Selector, game))
+            ldr = RankingLoader(response=response, selector=cast("Selector", game))
 
             ldr.add_value("ranking_type", "hotness")
             ldr.add_value("ranking_name", "BoardGameGeek Hotness")
@@ -120,4 +122,4 @@ class BggHotnessSpider(Spider):
             ldr.add_value("published_at", published_at)
             ldr.add_value("published_at", dt_now)
 
-            yield cast(RankingItem, ldr.load_item())
+            yield cast("RankingItem", ldr.load_item())

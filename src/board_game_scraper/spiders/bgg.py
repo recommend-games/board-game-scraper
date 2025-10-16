@@ -4,7 +4,6 @@ import logging
 import math
 import re
 import statistics
-from collections.abc import Iterable
 from itertools import repeat
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -13,16 +12,9 @@ from urllib.parse import urlencode
 from attrs.converters import to_bool
 from more_itertools import chunked
 from scrapy.http import Request, TextResponse
-from scrapy.selector.unified import Selector
 from scrapy.spiders import SitemapSpider
 from scrapy.utils.misc import arg_to_iter
 
-from board_game_scraper.items import (
-    CollectionItem,
-    GameItem,
-    LegacyRankingItem,
-    UserItem,
-)
 from board_game_scraper.loaders import (
     BggGameLoader,
     CollectionLoader,
@@ -39,11 +31,18 @@ from board_game_scraper.utils.strings import lower_or_none, normalize_space
 from board_game_scraper.utils.urls import extract_query_param
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable, Generator, Iterable
     from typing import Any
 
     from scrapy.http import Response
-    from scrapy.selector.unified import SelectorList
+    from scrapy.selector.unified import Selector, SelectorList
+
+    from board_game_scraper.items import (
+        CollectionItem,
+        GameItem,
+        LegacyRankingItem,
+        UserItem,
+    )
 
 
 LOGGER = logging.getLogger(__name__)
@@ -273,7 +272,7 @@ class BggSpider(SitemapSpider):
             )
             self.state = state = {}
 
-        bgg_ids_seen = cast(set[int], state.setdefault("bgg_ids_seen", set()))
+        bgg_ids_seen = cast("set[int]", state.setdefault("bgg_ids_seen", set()))
         seen = bgg_id in bgg_ids_seen
         bgg_ids_seen.add(bgg_id)
 
@@ -346,7 +345,7 @@ class BggSpider(SitemapSpider):
         """
 
         page, max_page = extract_page_number(response, self.request_page_size)
-        bgg_ids = cast(Iterable[int], response.meta.get("bgg_ids") or ())
+        bgg_ids = cast("Iterable[int]", response.meta.get("bgg_ids") or ())
 
         # Scrape next page if we haven't reached the last one yet
         # and this response contains any comments
@@ -363,7 +362,7 @@ class BggSpider(SitemapSpider):
             )
 
         for game in response.xpath("/items/item"):
-            game = cast(Selector, game)
+            game = cast("Selector", game)
             bgg_item_type = game.xpath("@type").get()
             if bgg_item_type != "boardgame":
                 self.logger.warning("Skipping item type <%s>", bgg_item_type)
@@ -434,7 +433,7 @@ class BggSpider(SitemapSpider):
         for game in games:
             collection_item = self.extract_collection_item(
                 response=response,
-                selector=cast(Selector, game),
+                selector=cast("Selector", game),
                 bgg_user_name=lower_or_none(bgg_user_name),
             )
             if collection_item:
@@ -462,7 +461,7 @@ class BggSpider(SitemapSpider):
         return (
             self.extract_user_item(
                 response=response,
-                selector=cast(Selector, users[0]),
+                selector=cast("Selector", users[0]),
                 bgg_user_name=bgg_user_name,
             )
             if users
@@ -615,7 +614,7 @@ class BggSpider(SitemapSpider):
             ranking_item = self.extract_ranking_item(response=response, selector=rank)
             ldr.add_value("add_rank", ranking_item)
 
-        return cast(GameItem, ldr.load_item())
+        return cast("GameItem", ldr.load_item())
 
     def player_count_votes(self, game: Selector) -> tuple[int, int, int, int]:
         min_players = parse_int_from_elem(game, "minplayers/@value")
@@ -701,7 +700,7 @@ class BggSpider(SitemapSpider):
         ldr.add_value("name", remove_rank(selector.xpath("@friendlyname").get()))
         ldr.add_xpath("rank", "@value")
         ldr.add_xpath("bayes_rating", "@bayesaverage")
-        return cast(LegacyRankingItem, ldr.load_item())
+        return cast("LegacyRankingItem", ldr.load_item())
 
     def extract_collection_item(
         self,
@@ -745,7 +744,7 @@ class BggSpider(SitemapSpider):
 
         ldr.add_xpath("updated_at", "status/@lastmodified")
 
-        return cast(CollectionItem, ldr.load_item())
+        return cast("CollectionItem", ldr.load_item())
 
     def extract_user_item(
         self,
@@ -772,7 +771,7 @@ class BggSpider(SitemapSpider):
         ldr.add_xpath("external_link", "webaddress/@value")
         ldr.add_xpath("image_url", "avatarlink/@value")
 
-        return cast(UserItem, ldr.load_item())
+        return cast("UserItem", ldr.load_item())
 
 
 def extract_page_number(
@@ -819,7 +818,7 @@ def extract_page_number(
         default=0,
     )
     max_page_from_response = (
-        int(math.ceil(total_items / request_page_size)) if total_items else None
+        math.ceil(total_items / request_page_size) if total_items else None
     )
 
     if max_page_from_meta:
@@ -845,7 +844,7 @@ def value_id(
     sep: str = ":",
 ) -> Generator[str]:
     for item in arg_to_iter(items):
-        item = cast(Selector, item)
+        item = cast("Selector", item)
         value = item.xpath("@value").get() or ""
         id_ = item.xpath("@id").get() or ""
         yield f"{value}{sep}{id_}" if id_ else value
@@ -864,7 +863,7 @@ def value_id_rank(
     sep: str = ":",
 ) -> Generator[str]:
     for item in arg_to_iter(items):
-        item = cast(Selector, item)
+        item = cast("Selector", item)
         value = remove_rank(item.xpath("@friendlyname").get()) or ""
         id_ = item.xpath("@id").get() or ""
         yield f"{value}{sep}{id_}" if id_ else value

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timezone
 from datetime import date as date_cls
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -40,14 +40,14 @@ def parse_float(number: Any) -> float | None:
 
 def _add_tz(
     date: datetime,
-    tzinfo: timezone = timezone.utc,
+    tzinfo: timezone = UTC,
 ) -> datetime:
     return date if date.tzinfo else date.replace(tzinfo=tzinfo)
 
 
 def parse_date(  # noqa: PLR0911
     date: Any,
-    tzinfo: timezone = timezone.utc,
+    tzinfo: timezone = UTC,
     format_str: str | None = None,
 ) -> datetime | None:
     """
