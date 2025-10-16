@@ -13,7 +13,7 @@ from board_game_scraper.utils.dates import now
 from board_game_scraper.utils.parsers import parse_date
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import AsyncGenerator, Generator
 
     from scrapy.selector.unified import Selector
 
@@ -55,15 +55,17 @@ class BggHotnessSpider(Spider):
         )
         self.always_scrape_url = always_scrape_url
 
-    def start_requests(self) -> Generator[Request]:
+    async def start(self) -> AsyncGenerator[Request]:
         """Initial requests, either locally or from BGG."""
 
         if self.local_files_dir:
-            yield from self.local_start_requests()
+            for request in self.local_start_requests():
+                yield request
             if not self.always_scrape_url:
                 return
 
-        yield from super().start_requests()
+        async for request in super().start():
+            yield request
 
     def local_start_requests(self) -> Generator[Request]:
         if not self.local_files_dir:
