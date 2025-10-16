@@ -5,7 +5,7 @@ inputs:
   python-version:
     required: false
     description: 'Python version'
-    default: '3.12'
+    default: '3.13'
 outputs: {}
 runs:
   using: 'composite'
@@ -14,7 +14,7 @@ runs:
       with:
         python-version: ${{inputs.python-version}}
     - name: Install poetry
-      run: python -m pip install poetry
+      run: python -m pip install poetry --all-extras --all-groups
       shell: bash
     - name: Create virtual environment
       run: poetry install
