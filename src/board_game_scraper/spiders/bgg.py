@@ -32,7 +32,7 @@ from board_game_scraper.utils.strings import lower_or_none, normalize_space
 from board_game_scraper.utils.urls import extract_query_param
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable
+    from collections.abc import AsyncGenerator, Callable, Generator, Iterable
     from typing import Any
 
     from scrapy.http import Response
@@ -104,10 +104,10 @@ class BggSpider(SitemapSpider):
         if not self.auth_token:
             self.logger.warning("No BGG API auth token configured, requests may fail")
 
-        self.scrape_ratings = to_bool(scrape_ratings or False)  # type: ignore[arg-type]
+        self.scrape_ratings = to_bool(scrape_ratings or False)
         self.logger.info("Scrape ratings: %s", self.scrape_ratings)
 
-        self.scrape_collections = to_bool(scrape_collections or False)  # type: ignore[arg-type]
+        self.scrape_collections = to_bool(scrape_collections or False)
         if self.scrape_collections and not self.scrape_ratings:
             self.logger.warning(
                 "Found `scrape_collections` without `scrape_ratings`, "
@@ -116,7 +116,7 @@ class BggSpider(SitemapSpider):
             self.scrape_collections = False
         self.logger.info("Scrape collections: %s", self.scrape_collections)
 
-        self.scrape_users = to_bool(scrape_users or False)  # type: ignore[arg-type]
+        self.scrape_users = to_bool(scrape_users or False)
         if self.scrape_users and not self.scrape_ratings:
             self.logger.warning(
                 "Found `scrape_users` without `scrape_ratings`, "
@@ -139,11 +139,15 @@ class BggSpider(SitemapSpider):
         if self.premium_users_dir:
             self.logger.info("Premium users dir: <%s>", self.premium_users_dir)
 
-    def start_requests(self) -> Generator[Request]:
-        yield from self.premium_users_requests_from_dir()
-        yield from self.user_and_collection_requests_from_files()
-        yield from self.game_requests_from_files()
-        yield from super().start_requests()
+    async def start(self) -> AsyncGenerator[Request]:
+        for request in self.premium_users_requests_from_dir():
+            yield request
+        for request in self.user_and_collection_requests_from_files():
+            yield request
+        for request in self.game_requests_from_files():
+            yield request
+        async for request in super().start():
+            yield request
 
     def game_requests_from_files(self) -> Generator[Request]:
         bgg_ids = frozenset(
@@ -449,7 +453,7 @@ class BggSpider(SitemapSpider):
         self,
         response: TextResponse,
         bgg_user_name: str | None = None,
-    ) -> UserItem:
+    ) -> UserItem | None:
         """
         @url https://boardgamegeek.com/xmlapi2/user?name=markus+shepherd
         @returns requests 0 0

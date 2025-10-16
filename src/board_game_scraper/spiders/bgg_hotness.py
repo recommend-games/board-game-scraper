@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import Spider
 from scrapy.http import Request, TextResponse
@@ -27,7 +27,7 @@ class BggHotnessSpider(Spider):
     name = "bgg_hotness"
     allowed_domains = ("boardgamegeek.com", "geekdo-images.com")
 
-    start_urls = ("https://boardgamegeek.com/xmlapi2/hot?type=boardgame",)
+    start_urls = ("https://boardgamegeek.com/xmlapi2/hot?type=boardgame",)  # type: ignore[assignment]
 
     custom_settings = {  # noqa: RUF012
         "DOWNLOAD_DELAY": 0,
@@ -42,8 +42,8 @@ class BggHotnessSpider(Spider):
         *,
         local_files_dir: Path | str | None = None,
         always_scrape_url: bool = False,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         self.auth_token = os.environ.get("BGG_API_AUTH_TOKEN")
@@ -101,7 +101,7 @@ class BggHotnessSpider(Spider):
                 priority=-1,
             )
 
-    def parse(
+    def parse(  # type: ignore[override]
         self,
         response: TextResponse,
         published_at: datetime | None = None,

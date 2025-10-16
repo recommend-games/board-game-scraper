@@ -30,13 +30,13 @@ repos:
       require_serial: true
       language: system
       types: [ python ]
-    # - id: mypy
-    #   name: mypy
-    #   entry: poetry run mypy --exclude v2 .
-    #   require_serial: true
-    #   language: system
-    #   types: [python]
-    #   pass_filenames: false
+    - id: mypy
+      name: mypy
+      entry: poetry run mypy --exclude v2 .
+      require_serial: true
+      language: system
+      types: [python]
+      pass_filenames: false
     - id: kacl-verify
       name: kacl-verify
       entry: poetry run kacl-cli verify
