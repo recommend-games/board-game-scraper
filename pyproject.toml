@@ -18,10 +18,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
@@ -32,7 +28,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9.0, <4.0"
+python = ">=3.13.0, <3.14.0"
 
 attrs = "*"
 itemadapter = "*"
@@ -43,8 +39,8 @@ parsel = ">=1.8.1, <2.0"
 python-dateutil = "*"
 pyyaml = "*"
 requests = "*"
-scrapy = ">=2.11.0, <3.0"
-scrapy-extensions = {version = ">=1.0.1", extras = ["blurhash"]}
+scrapy = ">=2.13.0, <3.0"
+scrapy-extensions = {version = ">=1.1.0", extras = ["blurhash"]}
 w3lib = ">=2.0.0, <3.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -73,7 +69,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-target-version = "py39" # The lowest supported version
+target-version = "py313" # The lowest supported version
 
 [tool.ruff.lint]
 # By default, enable all the lint rules.
