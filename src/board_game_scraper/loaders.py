@@ -97,9 +97,9 @@ class GameLoader(ItemLoader):
     num_owned_in = MapCompose(parse_int)
     num_trading_in = MapCompose(parse_int)
     num_wanting_in = MapCompose(parse_int)
-    num_wishing_in = MapCompose(parse_int)
+    num_wishlist_in = MapCompose(parse_int)
     num_comments_in = MapCompose(parse_int)
-    num_weights_in = MapCompose(parse_int)
+    num_complexity_votes_in = MapCompose(parse_int)
 
     bgg_id_in = MapCompose(parse_int)
     luding_id_in = MapCompose(parse_int)
