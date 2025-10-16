@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -32,6 +33,7 @@ class BggHotnessSpider(Spider):
         "DOWNLOAD_DELAY": 0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1024,
         "CONCURRENT_REQUESTS_PER_IP": 1024,
+        "AUTH_HEADER_ENABLED": True,
         "AUTOTHROTTLE_ENABLED": False,
     }
 
@@ -43,6 +45,10 @@ class BggHotnessSpider(Spider):
         **kwargs,
     ):
         super().__init__(**kwargs)
+
+        self.auth_token = os.environ.get("BGG_API_AUTH_TOKEN")
+        if not self.auth_token:
+            self.logger.warning("No BGG API auth token configured, requests may fail")
 
         self.local_files_dir = (
             Path(local_files_dir).resolve() if local_files_dir else None
