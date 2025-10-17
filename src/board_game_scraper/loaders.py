@@ -3,7 +3,6 @@ from __future__ import annotations
 from functools import partial
 from typing import Any
 
-from attrs.converters import to_bool
 from itemloaders.processors import Identity, MapCompose, TakeFirst
 from scrapy.http import Response
 from scrapy.loader import ItemLoader
@@ -16,7 +15,12 @@ from board_game_scraper.items import (
     RankingItem,
     UserItem,
 )
-from board_game_scraper.utils.parsers import parse_date, parse_float, parse_int
+from board_game_scraper.utils.parsers import (
+    parse_bool,
+    parse_date,
+    parse_float,
+    parse_int,
+)
 from board_game_scraper.utils.strings import normalize_space
 
 normalize_space_with_newline = partial(normalize_space, preserve_newline=True)
@@ -174,13 +178,13 @@ class CollectionLoader(ItemLoader):
     bgg_id_in = MapCompose(parse_int)
 
     bgg_user_rating_in = MapCompose(parse_float)
-    bgg_user_owned_in = MapCompose(to_bool)
-    bgg_user_prev_owned_in = MapCompose(to_bool)
-    bgg_user_for_trade_in = MapCompose(to_bool)
-    bgg_user_want_in_trade_in = MapCompose(to_bool)
-    bgg_user_want_to_play_in = MapCompose(to_bool)
-    bgg_user_want_to_buy_in = MapCompose(to_bool)
-    bgg_user_preordered_in = MapCompose(to_bool)
+    bgg_user_owned_in = MapCompose(parse_bool)
+    bgg_user_prev_owned_in = MapCompose(parse_bool)
+    bgg_user_for_trade_in = MapCompose(parse_bool)
+    bgg_user_want_in_trade_in = MapCompose(parse_bool)
+    bgg_user_want_to_play_in = MapCompose(parse_bool)
+    bgg_user_want_to_buy_in = MapCompose(parse_bool)
+    bgg_user_preordered_in = MapCompose(parse_bool)
     bgg_user_wishlist_in = MapCompose(parse_int)
     bgg_user_play_count_in = MapCompose(parse_int)
 

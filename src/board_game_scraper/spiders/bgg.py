@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 from urllib.parse import urlencode
 
-from attrs.converters import to_bool
 from more_itertools import chunked
 from scrapy.http import Request, TextResponse
 from scrapy.spiders import SitemapSpider
@@ -27,7 +26,7 @@ from board_game_scraper.utils.files import (
     load_premium_users,
     parse_file_paths,
 )
-from board_game_scraper.utils.parsers import parse_int
+from board_game_scraper.utils.parsers import parse_bool, parse_int
 from board_game_scraper.utils.strings import lower_or_none, normalize_space
 from board_game_scraper.utils.urls import extract_query_param
 
@@ -104,10 +103,10 @@ class BggSpider(SitemapSpider):
         if not self.auth_token:
             self.logger.warning("No BGG API auth token configured, requests may fail")
 
-        self.scrape_ratings = to_bool(scrape_ratings or False)
+        self.scrape_ratings = parse_bool(scrape_ratings) or False
         self.logger.info("Scrape ratings: %s", self.scrape_ratings)
 
-        self.scrape_collections = to_bool(scrape_collections or False)
+        self.scrape_collections = parse_bool(scrape_collections) or False
         if self.scrape_collections and not self.scrape_ratings:
             self.logger.warning(
                 "Found `scrape_collections` without `scrape_ratings`, "
@@ -116,7 +115,7 @@ class BggSpider(SitemapSpider):
             self.scrape_collections = False
         self.logger.info("Scrape collections: %s", self.scrape_collections)
 
-        self.scrape_users = to_bool(scrape_users or False)
+        self.scrape_users = parse_bool(scrape_users) or False
         if self.scrape_users and not self.scrape_ratings:
             self.logger.warning(
                 "Found `scrape_users` without `scrape_ratings`, "

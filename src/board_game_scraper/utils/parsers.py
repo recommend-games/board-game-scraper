@@ -4,6 +4,10 @@ from datetime import UTC, datetime, timezone
 from datetime import date as date_cls
 from typing import TYPE_CHECKING
 
+from attrs.converters import to_bool
+
+from board_game_scraper.utils.strings import normalize_space
+
 if TYPE_CHECKING:
     from typing import Any
 
@@ -100,3 +104,14 @@ def parse_date(  # noqa: PLR0911
         pass
 
     return None
+
+
+def parse_bool(value: Any) -> bool | None:
+    if isinstance(value, (str, bytes)):
+        value = normalize_space(value)
+    if value in ("", None):
+        return None
+    try:
+        return to_bool(value)
+    except ValueError:
+        return None
