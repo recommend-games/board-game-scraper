@@ -1,0 +1,12 @@
+[Unit]
+Description=Run BGG Ranked CSV Script
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/markus/Recommend.Games/bgg-ranked-csv/bgg-ranked-csv.sh
+StandardOutput=append:/home/markus/Recommend.Games/board-game-scraper/logs/games.recommend.bgg_ranked_csv.log
+StandardError=append:/home/markus/Recommend.Games/board-game-scraper/logs/games.recommend.bgg_ranked_csv.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>games.recommend.download_bgg_dump</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/Users/markus/.local/bin/poetry</string>
+            <string>--directory</string>
+            <string>/Users/markus/Recommend.Games/board-game-scraper</string>
+            <string>run</string>
+            <string>dotenv</string>
+            <string>--file</string>
+            <string>/Users/markus/Recommend.Games/board-game-scraper/.env</string>
+            <string>run</string>
+            <string>python</string>
+            <string>-m</string>
+            <string>board_game_scraper.download_bgg_dump</string>
+        </array>
+        <key>StandardOutPath</key>
+        <string>/Users/markus/Recommend.Games/board-game-scraper/logs/games.recommend.download_bgg_dump.log</string>
+        <key>StandardErrorPath</key>
+        <string>/Users/markus/Recommend.Games/board-game-scraper/logs/games.recommend.download_bgg_dump.log</string>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>StartInterval</key>
+        <!-- Every 6 hours -->
+        <integer>14400</integer>
+    </dict>
+</plist>

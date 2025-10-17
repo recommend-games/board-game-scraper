@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Download BGG Dump Script
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/markus/.local/bin/poetry --directory /home/markus/Recommend.Games/board-game-scraper run dotenv --file /home/markus/Recommend.Games/board-game-scraper/.env run python -m board_game_scraper.download_bgg_dump
+StandardOutput=append:/home/markus/Recommend.Games/board-game-scraper/logs/games.recommend.download_bgg_dump.log
+StandardError=append:/home/markus/Recommend.Games/board-game-scraper/logs/games.recommend.download_bgg_dump.log
+
+[Install]
+WantedBy=multi-user.target

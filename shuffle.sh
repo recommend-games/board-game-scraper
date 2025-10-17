@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-BASE_DIR="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
-COMPOSE_FILE="${BASE_DIR}/docker-compose.yaml"
+BASE_DIR="${HOME}/Recommend.Games/board-game-scraper"
+COMPOSE_FILE="${BASE_DIR}/compose.yaml"
 SLEEP_TIME=600
 
 echo "Running these services from compose file <${COMPOSE_FILE}>:"

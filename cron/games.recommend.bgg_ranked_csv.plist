@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>games.recommend.bgg_ranked_csv</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/Users/markus/Recommend.Games/bgg-ranked-csv/bgg-ranked-csv.sh</string>
+        </array>
+        <key>StandardOutPath</key>
+        <string>/Users/markus/Recommend.Games/board-game-scraper/logs/games.recommend.bgg_ranked_csv.log</string>
+        <key>StandardErrorPath</key>
+        <string>/Users/markus/Recommend.Games/board-game-scraper/logs/games.recommend.bgg_ranked_csv.log</string>
+        <key>RunAtLoad</key>
+        <false/>
+        <key>StartCalendarInterval</key>
+        <dict>
+            <key>Hour</key>
+            <integer>14</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <key>ThrottleInterval</key>
+        <integer>3600</integer>
+    </dict>
+</plist>

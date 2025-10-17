@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Curl Hotness Script
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/markus/Recommend.Games/board-game-scraper/curl_hotness.sh
+StandardOutput=append:/home/markus/Recommend.Games/board-game-scraper/logs/games.recommend.curl_hotness.log
+StandardError=append:/home/markus/Recommend.Games/board-game-scraper/logs/games.recommend.curl_hotness.log
+
+[Install]
+WantedBy=multi-user.target

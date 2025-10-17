@@ -1,25 +1,25 @@
 """Download the latest BGG data dump."""
 
+from __future__ import annotations
+
 import argparse
 import logging
 import os
 import sys
-
 from pathlib import Path
-from typing import Union
 
 import requests
-
 from scrapy.selector import Selector
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 LOGGER = logging.getLogger(__name__)
 
 
 def download_bgg_dump(
     username: str,
     password: str,
-    target_dir: Union[str, Path],
+    target_dir: str | Path,
+    *,
     force_overwrite: bool = False,
 ) -> None:
     """Download the latest BGG data dump."""
@@ -37,7 +37,7 @@ def download_bgg_dump(
             "credentials": {
                 "username": username,
                 "password": password,
-            }
+            },
         }
         login_response = session.post(login_url, json=credentials)
         login_response.raise_for_status()
@@ -49,7 +49,9 @@ def download_bgg_dump(
 
         for link in selector.css("#maincontent a[download]"):
             download_url = link.xpath("@href").get()
+            assert isinstance(download_url, str)
             file_name = link.xpath("@download").get()
+            assert isinstance(file_name, str)
             file_path = target_dir / file_name
 
             LOGGER.info("Downloading <%s> to <%s>", download_url, file_path)
@@ -69,7 +71,7 @@ def download_bgg_dump(
     LOGGER.info("Done.")
 
 
-def _parse_args():
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Download the latest BGG data dump.")
     parser.add_argument(
         "--out-dir",
@@ -94,7 +96,7 @@ def _parse_args():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     """Command line entry point."""
 
     args = _parse_args()
@@ -109,6 +111,9 @@ def main():
 
     username = os.getenv("BGG_USERNAME")
     password = os.getenv("BGG_PASSWORD")
+
+    assert isinstance(username, str), "BGG_USERNAME is required."
+    assert isinstance(password, str), "BGG_PASSWORD is required."
 
     download_bgg_dump(
         username=username,
