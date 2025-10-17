@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 import os
@@ -58,6 +59,7 @@ class BggSpider(SitemapSpider):
     bgg_id_regex = re.compile(r"/boardgame(compilation|implementation)?/(\d+)")
     request_page_size = 100
     game_request_batch_size = 20
+    start_request_yield_interval = 100
 
     scrape_ratings = False
     scrape_collections = False
@@ -139,14 +141,25 @@ class BggSpider(SitemapSpider):
             self.logger.info("Premium users dir: <%s>", self.premium_users_dir)
 
     async def start(self) -> AsyncGenerator[Request]:
-        for request in self.premium_users_requests_from_dir():
-            yield request
-        for request in self.user_and_collection_requests_from_files():
-            yield request
-        for request in self.game_requests_from_files():
-            yield request
+        for requests in (
+            self.premium_users_requests_from_dir(),
+            self.user_and_collection_requests_from_files(),
+            self.game_requests_from_files(),
+        ):
+            async for request in self._yield_start_requests(requests):
+                yield request
         async for request in super().start():
             yield request
+
+    async def _yield_start_requests(
+        self,
+        requests: Iterable[Request],
+    ) -> AsyncGenerator[Request]:
+        chunk_size = self.start_request_yield_interval
+        for index, request in enumerate(requests, start=1):
+            yield request
+            if chunk_size > 0 and index % chunk_size == 0:
+                await asyncio.sleep(0)
 
     def game_requests_from_files(self) -> Generator[Request]:
         bgg_ids = frozenset(
