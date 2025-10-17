@@ -229,7 +229,7 @@ class BggSpider(SitemapSpider):
             else:
                 yield request
 
-        yield from self.game_requests(bgg_ids=bgg_ids, priority=-1)
+        yield from self.game_requests(bgg_ids=bgg_ids, page=1, priority=-1)
 
     def game_requests(
         self,
@@ -252,9 +252,9 @@ class BggSpider(SitemapSpider):
                 action="thing",
                 id=",".join(map(str, chunk)),
                 type="boardgame",
-                videos="1",
+                videos="1" if page == 1 else None,
                 stats="1" if page == 1 else None,
-                ratingcomments="1" if page == 1 else None,
+                ratingcomments="1" if self.scrape_ratings else None,
                 page=str(page),
                 pagesize=str(self.request_page_size),
             )
@@ -293,6 +293,7 @@ class BggSpider(SitemapSpider):
         *,
         user_name: str,
         priority: int = 0,
+        played: int | str | None = None,
         **kwargs: Any,
     ) -> Request:
         user_name = user_name.lower()
@@ -304,6 +305,7 @@ class BggSpider(SitemapSpider):
             excludesubtype="boardgameexpansion",
             stats="1",
             version="0",
+            played=str(played) if played is not None else None,
         )
 
         return Request(
@@ -439,6 +441,14 @@ class BggSpider(SitemapSpider):
         bgg_user_name = lower_or_none(
             bgg_user_name or extract_query_param(response.url, "username"),
         )
+
+        played_param = extract_query_param(response.url, "played")
+        if played_param != "1" and bgg_user_name:
+            yield self.collection_request(
+                user_name=bgg_user_name,
+                priority=response.request.priority if response.request else 0,
+                played=1,
+            )
 
         for game in games:
             collection_item = self.extract_collection_item(
