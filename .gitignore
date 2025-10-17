@@ -78,6 +78,9 @@ venv.bak/
 # IDEs
 .idea/
 
+# ruff
+.ruff_cache/
+
 # Project specific
 .scrapy/
 feeds/

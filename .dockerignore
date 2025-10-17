@@ -105,6 +105,9 @@
 # mypy
 **/.mypy*
 
+# ruff
+**/.ruff_cache/
+
 # other
 **/*.bk
 **/*backup*/
@@ -122,6 +125,7 @@
 **/LICENSE*
 
 **/Dockerfile
+**/compose.yaml
 **/docker-compose.yaml
 **/requirements*
 **/tox.ini
@@ -129,6 +133,7 @@
 analytics
 cluster
 feeds
+feeds_v3
 jobs
 results
 test
