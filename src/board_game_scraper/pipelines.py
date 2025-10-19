@@ -83,3 +83,38 @@ class LimitImagesPipeline:
             islice(arg_to_iter(adapter.get(self.source_field)), self.limit),
         )
         return item
+
+
+class RemoveFieldsPipeline:
+    """Remove specified fields from items."""
+
+    fields_to_remove: frozenset[str]
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        """Init from crawler."""
+
+        fields = crawler.settings.getlist("FIELDS_TO_REMOVE")
+
+        if not fields:
+            raise NotConfigured
+
+        return cls(fields_to_remove=frozenset(fields))
+
+    def __init__(self, fields_to_remove: frozenset[str]):
+        self.fields_to_remove = fields_to_remove
+
+    def process_item(
+        self,
+        item: Typed,
+        spider: Spider,  # noqa: ARG002
+    ) -> Typed:
+        """Remove specified fields from the given item."""
+
+        adapter = ItemAdapter(item)
+
+        for field in self.fields_to_remove:
+            if field in adapter:
+                del adapter[field]
+
+        return item

@@ -134,6 +134,7 @@ ITEM_PIPELINES = {
     "board_game_scraper.pipelines.LimitImagesPipeline": 500,
     "scrapy.pipelines.images.ImagesPipeline": 600,
     "scrapy_extensions.BlurHashPipeline": 700,
+    "board_game_scraper.pipelines.RemoveFieldsPipeline": 800,
 }
 
 # See https://doc.scrapy.org/en/latest/topics/extensions.html#module-scrapy.extensions.closespider
@@ -192,9 +193,12 @@ IMAGES_RESULT_FIELD = "image_file"
 IMAGES_EXPIRES = 360
 # IMAGES_THUMBS = {"thumb": (1024, 1024)}
 
-# Limit images to download
+# Limit images to download (`LimitImagesPipeline`)
 LIMIT_IMAGES_TO_DOWNLOAD = 0
 LIMIT_IMAGES_URLS_FIELD = "image_url"
+
+# Fields to remove before exporting items (`RemoveFieldsPipeline`)
+FIELDS_TO_REMOVE = ("image_url_download",)
 
 # BlurHash
 BLURHASH_FIELD = "image_blurhash"
