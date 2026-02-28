@@ -122,10 +122,10 @@ class BggSpider(Spider):
     xml_api_url = "https://boardgamegeek.com/xmlapi2"
     page_size = 100
 
-    games_csv_path = None
-    users_csv_path = None
-    games_id_field = "bgg_id"
-    users_name_field = "bgg_user_name"
+    games_csv_path = os.environ.get("BGG_GAMES_CSV_PATH")
+    users_csv_path = os.environ.get("BGG_USERS_CSV_PATH")
+    games_id_field = os.environ.get("BGG_GAMES_ID_FIELD") or "bgg_id"
+    users_name_field = os.environ.get("BGG_USERS_NAME_FIELD") or "bgg_user_name"
 
     custom_settings = {
         "DOWNLOAD_DELAY": 5.0,
