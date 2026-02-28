@@ -4,7 +4,6 @@ services:
     bgg:
         image: registry.gitlab.com/recommend.games/board-game-scraper
         container_name: bg-scraper-bgg
-        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bgg']
         env_file: .env
@@ -31,7 +30,6 @@ services:
     bgg-hotness:
         image: registry.gitlab.com/recommend.games/board-game-scraper
         container_name: bg-scraper-bgg-hotness
-        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'bgg_hotness']
         env_file: .env
@@ -48,7 +46,6 @@ services:
     dbpedia:
         image: registry.gitlab.com/recommend.games/board-game-scraper
         container_name: bg-scraper-dbpedia
-        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'dbpedia']
         env_file: .env
@@ -65,7 +62,6 @@ services:
     luding:
         image: registry.gitlab.com/recommend.games/board-game-scraper
         container_name: bg-scraper-luding
-        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'luding']
         env_file: .env
@@ -82,7 +78,6 @@ services:
     spielen:
         image: registry.gitlab.com/recommend.games/board-game-scraper
         container_name: bg-scraper-spielen
-        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'spielen']
         env_file: .env
@@ -99,7 +94,6 @@ services:
     wikidata:
         image: registry.gitlab.com/recommend.games/board-game-scraper
         container_name: bg-scraper-wikidata
-        platform: linux/amd64
         build: '.'
         command: ['python', '-m', 'board_game_scraper', 'wikidata']
         env_file: .env
@@ -116,7 +110,6 @@ services:
     news:
         image: registry.gitlab.com/mshepherd/news-scraper:0.18.0
         container_name: bg-scraper-news
-        platform: linux/amd64
         volumes:
             - ./feeds/news:/root/output
         env_file: .env
