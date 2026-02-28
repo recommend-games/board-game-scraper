@@ -185,6 +185,7 @@ class BggSpider(Spider):
             self.logger.warning("CSV path does not exist: %s", path)
             return
 
+        self.logger.info("Reading column <%s> from CSV file <%s>", column_name, path)
         try:
             with path.open(encoding=encoding, newline="") as f:
                 for row in csv.DictReader(f):
