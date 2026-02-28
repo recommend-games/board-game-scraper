@@ -13,12 +13,15 @@ services:
             TELNETCONSOLE_USERNAME: scrapy
             TELNETCONSOLE_PASSWORD: recommend.games
             SCRAPE_PREMIUM_USERS_CONFIG_DIR: /app/premium
+            BGG_GAMES_CSV_PATH: /app/data/bgg_GameItem.csv
+            BGG_GAMES_ID_FIELD: bgg_id
         ports:
             - 6023:6023
         volumes:
             - ./feeds:/app/feeds
             - ./images:/app/images
             - ../recommend-games-config/users/premium:/app/premium
+            - ../board-game-data/scraped:/app/data
         restart: unless-stopped
         stop_grace_period: 15m
         stop_signal: SIGINT
