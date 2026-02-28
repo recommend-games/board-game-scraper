@@ -2,11 +2,13 @@
 
 """ BoardGameGeek spider """
 
+import csv
 import os
 import re
 import statistics
 
 from functools import partial
+from pathlib import Path
 from itertools import repeat
 from urllib.parse import urlencode
 
@@ -120,6 +122,11 @@ class BggSpider(Spider):
     xml_api_url = "https://boardgamegeek.com/xmlapi2"
     page_size = 100
 
+    games_csv_path = None
+    users_csv_path = None
+    games_id_field = "bgg_id"
+    users_name_field = "bgg_user_name"
+
     custom_settings = {
         "DOWNLOAD_DELAY": 5.0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
@@ -171,6 +178,52 @@ class BggSpider(Spider):
         self.auth_token = os.environ.get("BGG_API_AUTH_TOKEN")
         if not self.auth_token:
             self.logger.warning("no BGG API auth token configured, requests may fail")
+
+    def _read_csv_column(self, path, column_name, encoding="utf-8"):
+        """Read a CSV file and return the list of non-empty values in the given column."""
+        if not path.exists():
+            self.logger.warning("CSV path does not exist: %s", path)
+            return
+
+        try:
+            with path.open(encoding=encoding, newline="") as f:
+                for row in csv.DictReader(f):
+                    if row.get(column_name):
+                        yield str(row.get(column_name, "")).strip()
+
+        except (OSError, csv.Error) as exc:
+            self.logger.warning("Could not read CSV %s: %s", path, exc)
+
+    def start_requests(self):
+        """Yield requests from optional CSV paths, then from start_urls."""
+        if getattr(self, "games_csv_path", None):
+            path = Path(self.games_csv_path).resolve()
+            id_field = getattr(self, "games_id_field", "bgg_id")
+            ids = clear_list(map(parse_int, self._read_csv_column(path, id_field)))
+            self.logger.info(
+                "Yielding %d game request(s) from CSV %s",
+                len(ids),
+                path,
+            )
+            yield from self._game_requests(*ids)
+
+        if getattr(self, "users_csv_path", None):
+            path = Path(self.users_csv_path).resolve()
+            name_field = getattr(self, "users_name_field", "bgg_user_name")
+            names = clear_list([s.lower() for s in self._read_csv_column(path, name_field) if s])
+            self.logger.info(
+                "Yielding %d user request(s) from CSV %s",
+                len(names),
+                path,
+            )
+            scraped_at = now()
+            for user_name in names:
+                if self.scrape_collections:
+                    yield self.collection_request(user_name)
+                else:
+                    yield self._user_item_or_request(user_name, scraped_at=scraped_at)
+
+        yield from super().start_requests()
 
     def _spider_opened(self):
         state = getattr(self, "state", None)
