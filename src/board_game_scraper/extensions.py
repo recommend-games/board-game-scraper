@@ -59,10 +59,7 @@ class ScrapePremiumUsersExtension(LoopingExtension):
 
         interval = crawler.settings.getfloat("SCRAPE_PREMIUM_USERS_INTERVAL", 60 * 60)
 
-        prevent_rescrape_for = (
-            crawler.settings.getfloat("SCRAPE_PREMIUM_USERS_PREVENT_RESCRAPE_FOR")
-            or None
-        )
+        prevent_rescrape_for = crawler.settings.getfloat("SCRAPE_PREMIUM_USERS_PREVENT_RESCRAPE_FOR") or None
 
         return cls(
             crawler=crawler,
@@ -82,14 +79,10 @@ class ScrapePremiumUsersExtension(LoopingExtension):
         LOGGER.info("Scraping %d premium users", len(self.premium_users))
 
         prevent_rescrape_for = (
-            prevent_rescrape_for
-            if isinstance(prevent_rescrape_for, timedelta)
-            else parse_float(prevent_rescrape_for)
+            prevent_rescrape_for if isinstance(prevent_rescrape_for, timedelta) else parse_float(prevent_rescrape_for)
         )
         self.prevent_rescrape_for = (
-            timedelta(seconds=prevent_rescrape_for)
-            if isinstance(prevent_rescrape_for, float)
-            else prevent_rescrape_for
+            timedelta(seconds=prevent_rescrape_for) if isinstance(prevent_rescrape_for, float) else prevent_rescrape_for
         )
         self.last_scraped: dict[str, datetime] = {}
 
@@ -120,10 +113,7 @@ class ScrapePremiumUsersExtension(LoopingExtension):
                 last_scraped = self.last_scraped.get(user_name)
                 curr_time = now()
 
-                if (
-                    last_scraped
-                    and last_scraped + self.prevent_rescrape_for > curr_time
-                ):
+                if last_scraped and last_scraped + self.prevent_rescrape_for > curr_time:
                     LOGGER.info(
                         "Dropped <%s>: last scraped %s",
                         user_name,

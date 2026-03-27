@@ -39,9 +39,7 @@ def extract_bgg_user_name(url: str | ParseResult | None) -> str | None:
     if not url:
         return None
     match = REGEX_BGG_USER.match(url.path)
-    user_name = (
-        unquote_plus(match.group(1)) if match else extract_query_param(url, "username")
-    )
+    user_name = unquote_plus(match.group(1)) if match else extract_query_param(url, "username")
     return user_name.lower() if user_name else None
 
 
@@ -57,11 +55,7 @@ def extract_wikidata_id(url: str | ParseResult | None) -> str | None:
 def extract_wikipedia_id(url: str | ParseResult | None) -> str | None:
     """extract Wikipedia ID from URL"""
     url = parse_url(url, ("en.wikipedia.org", "en.m.wikipedia.org"))
-    return (
-        unquote_plus(url.path[6:]) or None
-        if url and url.path.startswith("/wiki/")
-        else None
-    )
+    return unquote_plus(url.path[6:]) or None if url and url.path.startswith("/wiki/") else None
 
 
 def extract_dbpedia_id(url: str | ParseResult | None) -> str | None:
@@ -79,11 +73,7 @@ def extract_luding_id(url: str | ParseResult | None) -> int | None:
     if not url:
         return None
     match = REGEX_LUDING_ID.match(url.path)
-    return (
-        parse_int(match.group(1))
-        if match
-        else parse_int(extract_query_param(url, "gameid"))
-    )
+    return parse_int(match.group(1)) if match else parse_int(extract_query_param(url, "gameid"))
 
 
 def extract_spielen_id(url: str | ParseResult | None) -> str | None:
@@ -96,9 +86,7 @@ def extract_spielen_id(url: str | ParseResult | None) -> str | None:
         return None
     match = REGEX_SPIELEN_ID.match(url.path)
     spielen_id = unquote_plus(match.group(2)) if match else None
-    return (
-        spielen_id if parse_int(spielen_id) is None else extract_query_param(url, "id")
-    )
+    return spielen_id if parse_int(spielen_id) is None else extract_query_param(url, "id")
 
 
 def extract_freebase_id(url: str | ParseResult | None) -> str | None:
@@ -107,11 +95,7 @@ def extract_freebase_id(url: str | ParseResult | None) -> str | None:
     if not url:
         return None
     match = REGEX_FREEBASE_ID.match(url.path)
-    return (
-        f"/{match.group(1)}/{match.group(2)}"
-        if match
-        else extract_query_param(url, "id")
-    )
+    return f"/{match.group(1)}/{match.group(2)}" if match else extract_query_param(url, "id")
 
 
 def extract_ids(*urls: str | None) -> dict[str, list[int | str]]:

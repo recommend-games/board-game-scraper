@@ -16,13 +16,7 @@ NON_PRINTABLE_TANSLATE = {ord(character): None for character in NON_PRINTABLE_SE
 def to_str(string: Any, encoding: str = "utf-8") -> str | None:
     """Safely returns either string or None."""
 
-    string = (
-        string
-        if isinstance(string, str)
-        else string.decode(encoding)
-        if isinstance(string, bytes)
-        else None
-    )
+    string = string if isinstance(string, str) else string.decode(encoding) if isinstance(string, bytes) else None
 
     if string is None:
         return None

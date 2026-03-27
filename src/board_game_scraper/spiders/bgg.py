@@ -111,8 +111,7 @@ class BggSpider(SitemapSpider):
         self.scrape_collections = parse_bool(scrape_collections) or False
         if self.scrape_collections and not self.scrape_ratings:
             self.logger.warning(
-                "Found `scrape_collections` without `scrape_ratings`, "
-                "which will have no effect",
+                "Found `scrape_collections` without `scrape_ratings`, which will have no effect",
             )
             self.scrape_collections = False
         self.logger.info("Scrape collections: %s", self.scrape_collections)
@@ -120,8 +119,7 @@ class BggSpider(SitemapSpider):
         self.scrape_users = parse_bool(scrape_users) or False
         if self.scrape_users and not self.scrape_ratings:
             self.logger.warning(
-                "Found `scrape_users` without `scrape_ratings`, "
-                "which will have no effect",
+                "Found `scrape_users` without `scrape_ratings`, which will have no effect",
             )
             self.scrape_users = False
         self.logger.info("Scrape users: %s", self.scrape_users)
@@ -134,9 +132,7 @@ class BggSpider(SitemapSpider):
         self.user_files = parse_file_paths(user_files)
         self.logger.info("User and collection requests from files: %s", self.user_files)
 
-        self.premium_users_dir = (
-            Path(premium_users_dir).resolve() if premium_users_dir else None
-        )
+        self.premium_users_dir = Path(premium_users_dir).resolve() if premium_users_dir else None
         if self.premium_users_dir:
             self.logger.info("Premium users dir: <%s>", self.premium_users_dir)
 
@@ -373,11 +369,7 @@ class BggSpider(SitemapSpider):
 
         # Scrape next page if we haven't reached the last one yet
         # and this response contains any comments
-        if (
-            self.scrape_ratings
-            and page < max_page
-            and response.xpath("/items/item/comments/comment")
-        ):
+        if self.scrape_ratings and page < max_page and response.xpath("/items/item/comments/comment"):
             yield from self.game_requests(
                 bgg_ids=bgg_ids,
                 page=page + 1,
@@ -659,9 +651,7 @@ class BggSpider(SitemapSpider):
             return min_players, max_players, min_players, max_players
 
         votes = sorted(parse_player_count(poll))
-        recommended = [
-            vote[0] for vote in votes if self.filter_votes(*vote[1:], best=False)
-        ]
+        recommended = [vote[0] for vote in votes if self.filter_votes(*vote[1:], best=False)]
         best = [vote[0] for vote in votes if self.filter_votes(*vote[1:], best=True)]
 
         # TODO: Save complete results for all player counts
@@ -849,9 +839,7 @@ def extract_page_number(
         ),
         default=0,
     )
-    max_page_from_response = (
-        math.ceil(total_items / request_page_size) if total_items else None
-    )
+    max_page_from_response = math.ceil(total_items / request_page_size) if total_items else None
 
     if max_page_from_meta:
         if max_page_from_response and max_page_from_meta != max_page_from_response:
@@ -883,11 +871,7 @@ def value_id(
 
 
 def remove_rank(value: str | None) -> str | None:
-    return (
-        value[:-5]
-        if isinstance(value, str) and value.lower().endswith(" rank")
-        else value
-    )
+    return value[:-5] if isinstance(value, str) and value.lower().endswith(" rank") else value
 
 
 def value_id_rank(

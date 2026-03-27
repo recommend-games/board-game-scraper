@@ -69,8 +69,22 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/board_game_scraper"]
 
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+publish-url = "https://upload.pypi.org/legacy/"
+
+[tool.ty.environment]
+python = "./.venv"
+python-version = "3.13"
+
 [tool.ruff]
 target-version = "py313" # The lowest supported version
+line-length = 120
+fix = true
+
+[tool.ruff.format]
+preview = true
 
 [tool.ruff.lint]
 # By default, enable all the lint rules.

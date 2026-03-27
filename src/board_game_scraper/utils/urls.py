@@ -22,11 +22,7 @@ def extract_query_param(url: str | ParseResult, field: str) -> str | None:
 
 
 def _match(string: str, comparison: str | Pattern[str]) -> bool:
-    return (
-        string == comparison
-        if isinstance(comparison, str)
-        else bool(comparison.match(string))
-    )
+    return string == comparison if isinstance(comparison, str) else bool(comparison.match(string))
 
 
 def parse_url(
@@ -41,9 +37,6 @@ def parse_url(
         if url
         and url.hostname
         and url.path
-        and (
-            not hostnames
-            or any(_match(url.hostname, hostname) for hostname in hostnames)
-        )
+        and (not hostnames or any(_match(url.hostname, hostname) for hostname in hostnames))
         else None
     )

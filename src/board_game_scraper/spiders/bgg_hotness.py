@@ -50,9 +50,7 @@ class BggHotnessSpider(Spider):
         if not self.auth_token:
             self.logger.warning("No BGG API auth token configured, requests may fail")
 
-        self.local_files_dir = (
-            Path(local_files_dir).resolve() if local_files_dir else None
-        )
+        self.local_files_dir = Path(local_files_dir).resolve() if local_files_dir else None
         self.always_scrape_url = always_scrape_url
 
     async def start(self) -> AsyncGenerator[Request]:
