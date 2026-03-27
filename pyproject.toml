@@ -45,17 +45,13 @@ bg-scraper = "board_game_scraper.__main__:main"
 [dependency-groups]
 dev = [
     "ipython",
-    "mkdocstrings[python]>=0.23",
-    "mkdocs-material",
     "mypy",
     "pre-commit",
-    "pymdown-extensions",
     "pytest",
-    "pytest-github-actions-annotate-failures",
     "pytest-cov",
     "python-dotenv[cli]",
     "python-kacl",
-    "ruff>=0.2.0",
+    "ruff>=0.15.0",
     "types-jmespath",
     "types-python-dateutil",
     "types-pyyaml",
