@@ -8,7 +8,7 @@ import re
 import statistics
 from itertools import repeat
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlencode
 
 from more_itertools import chunked
@@ -33,7 +33,6 @@ from board_game_scraper.utils.urls import extract_query_param
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Generator, Iterable
-    from typing import Any
 
     from scrapy.http import Response
     from scrapy.selector.unified import Selector, SelectorList
@@ -277,7 +276,7 @@ class BggSpider(SitemapSpider):
 
             yield Request(
                 url=url,
-                callback=self.parse_games,  # type: ignore[arg-type]
+                callback=cast("Callable[..., Any]", self.parse_games),
                 priority=priority,
                 **kwargs_copy,
             )
@@ -318,7 +317,7 @@ class BggSpider(SitemapSpider):
 
         return Request(
             url=url,
-            callback=self.parse_collection,  # type: ignore[arg-type]
+            callback=cast("Callable[..., Any]", self.parse_collection),
             cb_kwargs={"bgg_user_name": user_name},
             priority=priority,
             **kwargs,
@@ -335,7 +334,7 @@ class BggSpider(SitemapSpider):
         url = self.api_url(action="user", name=user_name)
         return Request(
             url=url,
-            callback=self.parse_user,  # type: ignore[arg-type]
+            callback=cast("Callable[..., Any]", self.parse_user),
             cb_kwargs={"bgg_user_name": user_name},
             priority=priority,
             **kwargs,

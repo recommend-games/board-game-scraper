@@ -100,7 +100,7 @@ def extract_freebase_id(url: str | ParseResult | None) -> str | None:
 
 def extract_ids(*urls: str | None) -> dict[str, list[int | str]]:
     """extract all possible IDs from all the URLs"""
-    urls_parsed = tuple(map(urlparse, filter(None, urls)))
+    urls_parsed = tuple(urlparse(u) for u in urls if u is not None)
     return {
         "bgg_id": clear_list(map(extract_bgg_id, urls_parsed)),
         "freebase_id": clear_list(map(extract_freebase_id, urls_parsed)),

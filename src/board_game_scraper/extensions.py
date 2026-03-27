@@ -78,12 +78,12 @@ class ScrapePremiumUsersExtension(LoopingExtension):
         self.premium_users = frozenset(user.lower() for user in premium_users)
         LOGGER.info("Scraping %d premium users", len(self.premium_users))
 
-        prevent_rescrape_for = (
-            prevent_rescrape_for if isinstance(prevent_rescrape_for, timedelta) else parse_float(prevent_rescrape_for)
-        )
-        self.prevent_rescrape_for = (
-            timedelta(seconds=prevent_rescrape_for) if isinstance(prevent_rescrape_for, float) else prevent_rescrape_for
-        )
+        self.prevent_rescrape_for: timedelta | None
+        if isinstance(prevent_rescrape_for, timedelta):
+            self.prevent_rescrape_for = prevent_rescrape_for
+        else:
+            seconds = parse_float(prevent_rescrape_for)
+            self.prevent_rescrape_for = timedelta(seconds=seconds) if seconds is not None else None
         self.last_scraped: dict[str, datetime] = {}
 
         self.setup_looping_task(

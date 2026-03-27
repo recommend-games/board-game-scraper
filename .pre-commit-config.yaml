@@ -24,11 +24,10 @@ repos:
         args: [--exit-non-zero-on-fix, --unsafe-fixes]
       - id: ruff-format
 
-  # ty isn't passing yet
-  # - repo: https://github.com/allganize/ty-pre-commit
-  #   rev: v0.0.26
-  #   hooks:
-  #     - id: ty-check
+  - repo: https://github.com/allganize/ty-pre-commit
+    rev: v0.0.26
+    hooks:
+      - id: ty-check
 
   - repo: local
     hooks:

@@ -13,7 +13,7 @@ from board_game_scraper.utils.dates import now
 from board_game_scraper.utils.parsers import parse_date
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Generator
+    from collections.abc import AsyncGenerator, Callable, Generator
 
     from scrapy.selector.unified import Selector
 
@@ -93,13 +93,13 @@ class BggHotnessSpider(Spider):
 
             yield Request(
                 url=path_file.as_uri(),
-                callback=self.parse,  # type: ignore[arg-type]
+                callback=cast("Callable[..., Any]", self.parse),
                 cb_kwargs={"published_at": date},
                 dont_filter=True,
                 priority=-1,
             )
 
-    def parse(  # type: ignore[override]
+    def parse(  # type: ignore[override]  # ty: ignore[invalid-method-override]
         self,
         response: TextResponse,
         published_at: datetime | None = None,

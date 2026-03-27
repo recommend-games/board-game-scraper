@@ -60,6 +60,7 @@ dev = [
     "types-python-dateutil",
     "types-pyyaml",
     "types-requests",
+    "ty>=0.0.26",
 ]
 
 [build-system]
@@ -77,6 +78,9 @@ publish-url = "https://upload.pypi.org/legacy/"
 [tool.ty.environment]
 python = "./.venv"
 python-version = "3.13"
+
+[tool.ty.src]
+exclude = ["v2"]
 
 [tool.ruff]
 target-version = "py313" # The lowest supported version
@@ -102,6 +106,7 @@ ignore = [
     "S101",     # "Use of `assert` detected"
     "T201",     # Removes `print`s – WTF?
     "PLC0415",  # `import` should be at the top-level of a file
+    "COM812",
 ]
 
 [tool.ruff.lint.per-file-ignores]
