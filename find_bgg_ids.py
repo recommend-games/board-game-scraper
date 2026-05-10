@@ -7,6 +7,7 @@
 # ]
 # ///
 
+import argparse
 import logging
 import sys
 from collections.abc import Generator, Iterable
@@ -66,12 +67,51 @@ def _find_bgg_ids(
     return pl.concat(dfs).unique()
 
 
-if __name__ == "__main__":
+def main():
+    """Parse arguments and find BGG IDs."""
+    parser = argparse.ArgumentParser(description="Find BGG IDs in files.")
+    parser.add_argument("paths", nargs="+", help="input files or directories")
+    parser.add_argument("-o", "--output", help="output file")
+    parser.add_argument(
+        "-e",
+        "--extension",
+        choices=("csv", "jl"),
+        default="csv",
+        help="input file extension",
+    )
+    parser.add_argument(
+        "-c",
+        "--column",
+        default="bgg_id",
+        help="column name for BGG IDs",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="log level (repeat for more verbosity)",
+    )
+
+    args = parser.parse_args()
+
     logging.basicConfig(
         stream=sys.stderr,
-        level=logging.DEBUG,
+        level=logging.DEBUG if args.verbose > 0 else logging.INFO,
         format="%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s",
     )
-    data = _find_bgg_ids(sys.argv[1:]).collect()
-    print(data)
-    print(data.shape)
+
+    data = _find_bgg_ids(
+        paths=args.paths,
+        extension=args.extension,
+        column=args.column,
+    ).collect()
+
+    if args.output:
+        data.write_csv(args.output)
+    else:
+        data.write_csv(sys.stdout)
+
+
+if __name__ == "__main__":
+    main()
