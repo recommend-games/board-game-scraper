@@ -73,6 +73,12 @@ def main():
     parser.add_argument("paths", nargs="+", help="input files or directories")
     parser.add_argument("-o", "--output", help="output file")
     parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="overwrite output file if it exists",
+    )
+    parser.add_argument(
         "-e",
         "--extension",
         choices=("csv", "jl"),
@@ -101,14 +107,24 @@ def main():
         format="%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s",
     )
 
+    output_path = Path(args.output) if args.output else None
+    if output_path:
+        if output_path.exists() and not args.force:
+            LOGGER.error(
+                "Output file <%s> already exists. Use --force to overwrite.",
+                output_path,
+            )
+            sys.exit(1)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
     data = _find_bgg_ids(
         paths=args.paths,
         extension=args.extension,
         column=args.column,
     ).collect()
 
-    if args.output:
-        data.write_csv(args.output)
+    if output_path:
+        data.write_csv(output_path)
     else:
         data.write_csv(sys.stdout)
 
