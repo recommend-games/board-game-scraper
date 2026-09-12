@@ -27,6 +27,7 @@ dependencies = [
     "more-itertools",
     "parsel>=1.8.1,<2.0",
     "python-dateutil",
+    "pytility[dates]>=1.0.0",
     "pyyaml",
     "requests",
     "scrapy>=2.13.0,<3.0",
