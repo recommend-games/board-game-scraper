@@ -30,7 +30,7 @@ dependencies = [
     "pyyaml",
     "requests",
     "scrapy>=2.13.0,<3.0",
-    "scrapy-extensions[blurhash]>=1.1.0",
+    "scrapy-extensions[blurhash]>=1.2.0",
     "w3lib>=2.0.0,<3.0",
 ]
 

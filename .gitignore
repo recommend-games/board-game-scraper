@@ -88,3 +88,6 @@ feeds_v3/
 images/
 jobs/
 logs/
+
+# Claude
+.claude/
