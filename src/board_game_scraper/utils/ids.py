@@ -4,8 +4,9 @@ import re
 from typing import TYPE_CHECKING
 from urllib.parse import unquote_plus, urlparse
 
-from board_game_scraper.utils.iterables import clear_list
-from board_game_scraper.utils.parsers import parse_int
+from pytility.iterables import clear_list
+from pytility.parsers import parse_int
+
 from board_game_scraper.utils.urls import extract_query_param, parse_url
 
 if TYPE_CHECKING:

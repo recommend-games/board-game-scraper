@@ -5,41 +5,11 @@ from datetime import date as date_cls
 from typing import TYPE_CHECKING
 
 from attrs.converters import to_bool
-
-from board_game_scraper.utils.strings import normalize_space
+from pytility.parsers import parse_float
+from pytility.strings import normalize_space
 
 if TYPE_CHECKING:
     from typing import Any
-
-
-def parse_int(string: Any, base: int = 10) -> int | None:
-    """Safely convert an object to int if possible, else return None."""
-
-    if isinstance(string, int):
-        return string
-
-    try:
-        return int(string, base=base)
-    except (TypeError, ValueError):
-        pass
-
-    try:
-        return int(string)
-    except (TypeError, ValueError):
-        pass
-
-    return None
-
-
-def parse_float(number: Any) -> float | None:
-    """Safely convert an object to float if possible, else return None."""
-
-    try:
-        return float(number)
-    except (TypeError, ValueError):
-        pass
-
-    return None
 
 
 def _add_tz(

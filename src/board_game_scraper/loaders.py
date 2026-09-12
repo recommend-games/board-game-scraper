@@ -4,6 +4,8 @@ from functools import partial
 from typing import Any
 
 from itemloaders.processors import Identity, MapCompose, TakeFirst
+from pytility.parsers import parse_float, parse_int
+from pytility.strings import normalize_space
 from scrapy.http import Response
 from scrapy.loader import ItemLoader
 from w3lib.html import replace_entities
@@ -15,13 +17,7 @@ from board_game_scraper.items import (
     RankingItem,
     UserItem,
 )
-from board_game_scraper.utils.parsers import (
-    parse_bool,
-    parse_date,
-    parse_float,
-    parse_int,
-)
-from board_game_scraper.utils.strings import normalize_space
+from board_game_scraper.utils.parsers import parse_bool, parse_date
 
 normalize_space_with_newline = partial(normalize_space, preserve_newline=True)
 
