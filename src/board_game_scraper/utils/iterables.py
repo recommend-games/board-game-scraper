@@ -13,8 +13,3 @@ if TYPE_CHECKING:
 def clear_iterable[Typed](items: Iterable[Typed | None]) -> Iterable[Typed]:
     """Return unique items in order of first ocurrence."""
     return OrderedDict.fromkeys(filter(None, items)).keys()
-
-
-def clear_list[Typed](items: Iterable[Typed | None]) -> list[Typed]:
-    """Return unique items in order of first ocurrence."""
-    return list(clear_iterable(items))

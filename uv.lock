@@ -258,6 +258,7 @@ dependencies = [
     { name = "more-itertools" },
     { name = "parsel" },
     { name = "python-dateutil" },
+    { name = "pytility", extra = ["dates"] },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "scrapy" },
@@ -291,6 +292,7 @@ requires-dist = [
     { name = "more-itertools" },
     { name = "parsel", specifier = ">=1.8.1,<2.0" },
     { name = "python-dateutil" },
+    { name = "pytility", extras = ["dates"], specifier = ">=1.0.0" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "scrapy", specifier = ">=2.13.0,<3.0" },
@@ -1940,6 +1942,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/be/6e/1cbeb1a4c1e5f391504a7fdb1359b73f14bfff0a1c7ad863b49b5728422f/python_kacl-0.7.4.tar.gz", hash = "sha256:c7318dc9a1551a998456549957a932934ff66827702e1bacbc3b81d900bf7cb7", size = 58222, upload-time = "2026-08-28T15:10:41.351Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/d3/3c10c56e9de2fc9b16147feff0c4e56aed6882bd984a60c8049e1bd5d839/python_kacl-0.7.4-py3-none-any.whl", hash = "sha256:2774d3f065bb0de4546f75051e2dfdc7a49de07083b82ebe0f8a2355999fa842", size = 36285, upload-time = "2026-08-28T15:10:40.137Z" },
+]
+
+[[package]]
+name = "pytility"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/80/a8c0dd02785402130afc06c7a935c26214cc28b04b2e6ed80b3bd65bc53f/pytility-1.0.0.tar.gz", hash = "sha256:03f58287c7e8d80e79e3e1249c8d5227d007750ae80411246dd200ab8073bfaa", size = 44503, upload-time = "2026-09-12T21:15:40.306Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/da/45f922d801b68fbb84179bb21429b1853357ee0b446cd36310991756efdc/pytility-1.0.0-py3-none-any.whl", hash = "sha256:79f7ea3a43c297c02398bee00a187f5088f7ef7393bdff4956605ccf45e2251e", size = 8215, upload-time = "2026-09-12T21:15:39.04Z" },
+]
+
+[package.optional-dependencies]
+dates = [
+    { name = "python-dateutil" },
 ]
 
 [[package]]

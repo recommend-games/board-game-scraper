@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlencode
 
 from more_itertools import chunked
+from pytility.parsers import parse_int
+from pytility.strings import normalize_space
 from scrapy.http import Request, TextResponse
 from scrapy.spiders import SitemapSpider
 from scrapy.utils.misc import arg_to_iter
@@ -27,8 +29,8 @@ from board_game_scraper.utils.files import (
     load_premium_users,
     parse_file_paths,
 )
-from board_game_scraper.utils.parsers import parse_bool, parse_int
-from board_game_scraper.utils.strings import lower_or_none, normalize_space
+from board_game_scraper.utils.parsers import parse_bool
+from board_game_scraper.utils.strings import lower_or_none
 from board_game_scraper.utils.urls import extract_query_param
 
 if TYPE_CHECKING:

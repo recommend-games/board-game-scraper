@@ -7,13 +7,13 @@ import sys
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
+from pytility.parsers import parse_float
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import arg_to_iter
 from scrapy_extensions import LoopingExtension
 
 from board_game_scraper.utils.dates import now
 from board_game_scraper.utils.files import load_premium_users
-from board_game_scraper.utils.parsers import parse_float
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
