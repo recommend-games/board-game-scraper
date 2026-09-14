@@ -5,14 +5,24 @@ just hold fields. The ``metadata`` markers only document intent (``identity`` =
 part of the natural key, ``required`` = must be set for the row to mean
 anything); nothing enforces them here, that is a loader/pipeline job.
 
-Migration notes (not done in this file):
-  * loaders.py — link fields become ID lists; add ``LinkLoader``,
-    ``GameStatsLoader``; ``RankingLoader`` gains ``ranking_type``.
-  * bgg.py — ``extract_game_item`` splits into game + stats + ranking rows;
-    ``LegacyRankingItem`` / ``extract_ranking_item`` deleted.
-  * settings.py — a feed per item class.
-  * board-game-merger — new schemas for LinkItem / GameStatsItem / RankingItem;
-    GameItem loses stats/rank columns, link columns become ``List(Int64)``.
+Two groups of items:
+
+* Entities (``GameItem``, ``LinkItem``, ``BggUserItem``) — slowly-changing,
+  identity-keyed. One row per thing per source; a later scrape replaces the
+  earlier one. Cross-references between entities are ID lists, never names.
+* Observations (``BggStatsItem``, ``BggRankingItem``, ``BggCollectionItem``) —
+  each row is "at ``observed_at``, subject X had payload Y", rather than one
+  row per subject overwritten in place. ``scraped_at`` is when *we* fetched
+  the row; ``observed_at`` is when the fact held — equal for a live scrape,
+  but years apart for a historical dump. Whether every scrape's row is kept
+  or only changes are (deduping consecutive-identical observations, keeping
+  latest-only, …) is a merger/storage retention policy, not part of this
+  schema — and it should differ by item: ``BggStatsItem``/``BggRankingItem``
+  are bounded by game count and cheap to keep in full; ``BggCollectionItem``
+  is bounded by users times games and is not.
+
+``GameItem`` and ``LinkItem`` are source-generic (BGG, luding, wikidata, …).
+The ``Bgg*`` classes are BoardGameGeek-shaped and always carry ``source=bgg``.
 """
 
 from __future__ import annotations
@@ -29,15 +39,18 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
 __all__ = [
-    "CollectionItem",
+    "BggCollectionItem",
+    "BggPollItem",
+    "BggRankingItem",
+    "BggStatsItem",
+    "BggUserItem",
     "GameItem",
-    "GameStatsItem",
+    "Image",
     "LinkItem",
-    "LinkType",
-    "RankingItem",
+    "LinkKind",
+    "PollKind",
     "RankingType",
     "Source",
-    "UserItem",
 ]
 
 IDENTITY = {"identity": True}
@@ -48,6 +61,7 @@ IDENTITY_REQUIRED = {"identity": True, "required": True}
 class Source(StrEnum):
     """Where a record came from. Present on every item."""
 
+    bga = "bga"
     bgg = "bgg"
     dbpedia = "dbpedia"
     luding = "luding"
@@ -55,12 +69,16 @@ class Source(StrEnum):
     wikidata = "wikidata"
 
 
-class LinkType(StrEnum):
-    """The kind of thing a ``LinkItem`` describes — mirrors BGG ``<link>`` types."""
+class LinkKind(StrEnum):
+    """What kind of thing a ``LinkItem`` is — *not* how it relates to a game.
 
-    designer = "designer"
-    artist = "artist"
-    publisher = "publisher"
+    A person can be both a game's designer and its artist (BGG gives them one
+    shared id); the role is carried by which ``GameItem`` field references the
+    id, so ``designer`` and ``artist`` both point at the same ``person`` row.
+    """
+
+    person = "person"  # designer, artist — BGG shares the id namespace
+    company = "company"  # publisher
     category = "category"
     mechanic = "mechanic"
     family = "family"
@@ -68,13 +86,20 @@ class LinkType(StrEnum):
 
 
 class RankingType(StrEnum):
-    """The kind of ranking a ``RankingItem`` records."""
+    """The kind of BGG ranking a ``BggRankingItem`` records."""
 
     overall = "overall"  # BGG type="subtype" name="boardgame" — "Board Game Rank"
     game_type = "game_type"  # BGG type="family" — Strategy / Family / Party / War / …
     hotness = "hotness"  # BGG Hotness — the daily trending list
-    award = "award"  # Spiel des Jahres & co.; rank 1 = winner, >1 = nominee
-    charts = "charts"  # sales / play charts, if ever scraped
+
+
+class PollKind(StrEnum):
+    """Which BGG community poll a ``BggPollItem`` row comes from."""
+
+    numplayers = "numplayers"  # per player count: Best / Recommended / Not Recommended
+    playerage = "playerage"  # per suggested age
+    language_dependence = "language_dependence"  # per dependency level, 1-5
+    weight = "weight"  # per complexity rating, 1-5 — raw poll unconfirmed, see BggPollItem
 
 
 @define(kw_only=True)
@@ -86,8 +111,18 @@ class ScrapedItem:
     scraped_at: datetime = field(factory=now, metadata=REQUIRED)
 
 
-# Entities — slowly-changing, identity-keyed. One row per thing per source;
-# a later scrape replaces the earlier one. Cross-references are ID lists.
+@define(kw_only=True)
+class Image:
+    """One image found for an entity, and whether/how it was archived."""
+
+    url: str | None = None
+    fetch: bool = False  # request: should the pipeline download this one
+    file: str | None = None  # result: local path, once fetched
+    checksum: str | None = None
+    blurhash: str | None = None
+
+
+# --- Entities --------------------------------------------------------------- #
 
 
 @define(kw_only=True)
@@ -99,7 +134,7 @@ class GameItem(ScrapedItem):
     identity into a single game.
 
     Deliberately absent: community stats and rankings. Those change every scrape
-    and are kept as observations — see ``GameStatsItem`` and ``RankingItem``.
+    and are kept as observations — see ``BggStatsItem`` and ``BggRankingItem``.
     """
 
     name: str | None = field(default=None, metadata=REQUIRED)
@@ -107,29 +142,27 @@ class GameItem(ScrapedItem):
     year: int | None = None
     description: str | None = None
 
-    # Cross-references, by source-native ID (see ``LinkItem``). Never names.
-    designer: list[int] | None = None
-    artist: list[int] | None = None
-    publisher: list[int] | None = None
-    category: list[int] | None = None
-    mechanic: list[int] | None = None
-    family: list[int] | None = None
-    game_type: list[int] | None = None
+    # Cross-references, by source-native ``LinkItem.link_id`` (a string). The
+    # *role* is the field name: ``designer`` and ``artist`` may hold the same id.
+    designer: list[str] | None = None  # -> LinkItem kind=person
+    artist: list[str] | None = None  # -> LinkItem kind=person
+    publisher: list[str] | None = None  # -> LinkItem kind=company
+    category: list[str] | None = None  # -> LinkItem kind=category
+    mechanic: list[str] | None = None  # -> LinkItem kind=mechanic
+    family: list[str] | None = None  # -> LinkItem kind=family
+    game_type: list[str] | None = None  # -> LinkItem kind=game_type
 
-    # Related games, by ``bgg_id``.
-    compilation_of: list[int] | None = None
-    expansion: list[int] | None = None
-    implementation: list[int] | None = None
-    integration: list[int] | None = None
+    # Related games, by this same source's game id (like the link fields above).
+    compilation_of: list[str] | None = None
+    expansion: list[str] | None = None
+    implementation: list[str] | None = None
+    integration: list[str] | None = None
     cooperative: bool | None = None
     compilation: bool | None = None
 
     url: str | None = None
     official_url: list[str] | None = None
-    image_url: list[str] | None = None
-    image_url_download: list[str] | None = None
-    image_file: list[dict[str, str]] | None = None
-    image_blurhash: list[dict[str, str]] | None = None
+    images: list[Image] | None = None
     video_url: list[str] | None = None
     rules_url: list[str] | None = None
     rules_file: list[dict[str, str]] | None = None
@@ -152,6 +185,8 @@ class GameItem(ScrapedItem):
 
     # External identifiers — the join keys for cross-source merging.
     bgg_id: int | None = field(default=None, metadata=IDENTITY)
+    bga_id: int | None = field(default=None, metadata=IDENTITY)
+    bga_slug: str | None = field(default=None, metadata=IDENTITY)
     freebase_id: str | None = field(default=None, metadata=IDENTITY)
     wikidata_id: str | None = field(default=None, metadata=IDENTITY)
     wikipedia_id: str | None = field(default=None, metadata=IDENTITY)
@@ -168,38 +203,33 @@ class GameItem(ScrapedItem):
 class LinkItem(ScrapedItem):
     """A person, company or taxonomy term referenced by a game.
 
-    Maps to BGG ``<link>`` elements. Replaces the old ``"name:id"`` strings in
-    ``GameItem.designer`` etc.: the game now carries ``link_id`` and the name
-    lives here.
+    Replaces the old ``"name:id"`` strings in ``GameItem.designer`` etc.: the
+    game carries ``link_id``, the name lives here. One row per thing, not per
+    role — a designer-and-artist is a single ``person`` row.
 
-    Identity: ``(source, link_type, link_id)``.
+    Identity: ``(source, kind, link_id)``. ``link_id`` is always a string;
+    BGG ids are just numeric strings.
     """
 
-    link_id: int | str | None = field(default=None, metadata=IDENTITY_REQUIRED)
-    link_type: LinkType | None = field(default=None, metadata=IDENTITY_REQUIRED)
+    link_id: str | None = field(default=None, metadata=IDENTITY_REQUIRED)
+    kind: LinkKind | None = field(default=None, metadata=IDENTITY_REQUIRED)
     name: str | None = field(default=None, metadata=REQUIRED)
 
-    # Same term's ID on BGG, when a non-BGG source names it and we can tell.
-    bgg_id: int | None = field(default=None, metadata=IDENTITY)
-
     url: str | None = None
-    image_url: list[str] | None = None
-    image_url_download: list[str] | None = None
-    image_file: list[dict[str, str]] | None = None
-    image_blurhash: list[dict[str, str]] | None = None
+    images: list[Image] | None = None
 
     published_at: datetime | None = None
     updated_at: datetime | None = None
 
 
 @define(kw_only=True)
-class UserItem(ScrapedItem):
+class BggUserItem(ScrapedItem):
     """A BoardGameGeek user.
 
-    Identity: ``bgg_user_name`` (lower-cased).
+    Identity: ``user_name`` (lower-cased).
     """
 
-    bgg_user_name: str | None = field(
+    user_name: str | None = field(
         converter=lower_or_none,
         default=None,
         metadata=IDENTITY_REQUIRED,
@@ -216,24 +246,17 @@ class UserItem(ScrapedItem):
     city: str | None = None
 
     external_link: list[str] | None = None
-    image_url: list[str] | None = None
-    image_url_download: list[str] | None = None
-    image_file: list[dict[str, str]] | None = None
-    image_blurhash: list[dict[str, str]] | None = None
+    images: list[Image] | None = None
 
     published_at: datetime | None = None
     updated_at: datetime | None = None
 
 
-# Observations — append-only, timestamped. Each row is "at ``observed_at``, from
-# ``source``, subject X had payload Y". Nothing is overwritten; history is the
-# point. ``scraped_at`` (from ``ScrapedItem``) is when *we* fetched the row;
-# ``observed_at`` is when the fact held — equal for a live scrape, but years
-# apart for a historical dump.
+# --- Observations (BoardGameGeek) ------------------------------------------- #
 
 
 @define(kw_only=True)
-class GameStatsItem(ScrapedItem):
+class BggStatsItem(ScrapedItem):
     """A snapshot of BGG community statistics for one game.
 
     Identity: ``(bgg_id, observed_at)``. Everything here changes on every scrape
@@ -260,22 +283,44 @@ class GameStatsItem(ScrapedItem):
 
 
 @define(kw_only=True)
-class RankingItem(ScrapedItem):
-    """One game's position in one ranking at one point in time.
+class BggPollItem(ScrapedItem):
+    """One bucket's vote count from a BGG community poll, for one game.
+
+    Identity: ``(bgg_id, poll, bucket, label, observed_at)``. ``bucket`` is the
+    poll's primary axis (player count, suggested age, dependency level, …).
+    ``label`` is only load-bearing for ``numplayers``, where the same player
+    count has three rows — Best / Recommended / Not Recommended — that would
+    otherwise collide; for other polls it's a denormalised description of
+    ``bucket`` and safe to leave unset.
+    """
+
+    bgg_id: int | None = field(default=None, metadata=IDENTITY_REQUIRED)
+    poll: PollKind | None = field(default=None, metadata=IDENTITY_REQUIRED)
+    bucket: str | None = field(default=None, metadata=IDENTITY_REQUIRED)
+    label: str | None = field(default=None, metadata=IDENTITY)
+    observed_at: datetime = field(factory=now, metadata=IDENTITY_REQUIRED)
+
+    num_votes: int | None = field(default=None, metadata=REQUIRED)
+
+
+@define(kw_only=True)
+class BggRankingItem(ScrapedItem):
+    """One game's position in one BGG ranking at one point in time.
 
     Identity: ``(ranking_type, ranking_id, bgg_id, observed_at)``.
 
-    Covers every "chart" concept with a single shape:
       * ``overall``    — BGG's boardgame rank        (``ranking_id`` None)
-      * ``game_type``  — Strategy / Family / War / …  (``ranking_id`` = BGG game-type id,
-                         same int as the ``game_type`` ``LinkItem.link_id``)
+      * ``game_type``  — Strategy / Family / War / …  (``ranking_id`` = BGG
+                         game-type id, the ``game_type`` ``LinkItem.link_id``)
       * ``hotness``    — the daily Hotness list       (``ranking_id`` None)
-      * ``award``      — Spiel des Jahres & co.       (``ranking_id`` = award id)
+
+    Awards (Spiel des Jahres & co.) are *not* rankings — see the ``AwardItem``
+    note in the module docstring.
     """
 
     ranking_type: RankingType | None = field(default=None, metadata=IDENTITY_REQUIRED)
-    ranking_id: int | str | None = field(default=None, metadata=IDENTITY)
-    ranking_name: str | None = None  # "Strategy Game Rank", "Spiel des Jahres 2023"
+    ranking_id: str | None = field(default=None, metadata=IDENTITY)
+    ranking_name: str | None = None  # "Strategy Game Rank"
 
     bgg_id: int | None = field(default=None, metadata=IDENTITY_REQUIRED)
     observed_at: datetime = field(factory=now, metadata=IDENTITY_REQUIRED)
@@ -292,33 +337,41 @@ class RankingItem(ScrapedItem):
 
 
 @define(kw_only=True)
-class CollectionItem(ScrapedItem):
-    """One user's relationship to one game, as of one scrape.
+class BggCollectionItem(ScrapedItem):
+    """One entry in one user's BGG collection, as of one scrape.
 
-    Identity: ``(bgg_user_name, bgg_id, observed_at)``. Rating, ownership and
-    play count all drift over time, so this is an observation, not an edge.
+    Identity: ``(user_name, bgg_id, collection_id, observed_at)``.
+    ``collection_id`` (BGG's ``@collid``) is in the key but optional: a real
+    collection entry has one, and a user can have several for the same game
+    (different editions, a separate "previously owned" entry, …) — those
+    coexist because each has its own ``collection_id``. A play-count-only
+    aggregate (a game played but never added to the collection) has none, so
+    it sets ``collection_id`` to ``None``; that's a distinct, singular slot
+    per ``(user_name, bgg_id, observed_at)``. Rating, ownership and play
+    count drift over time, so this is an observation, not an edge.
     """
 
-    bgg_user_name: str | None = field(
+    user_name: str | None = field(
         converter=lower_or_none,
         default=None,
         metadata=IDENTITY_REQUIRED,
     )
     bgg_id: int | None = field(default=None, metadata=IDENTITY_REQUIRED)
+    collection_id: int | None = field(default=None, metadata=IDENTITY)
     observed_at: datetime = field(factory=now, metadata=IDENTITY_REQUIRED)
 
-    collection_id: int | None = None  # BGG's @collid — source-native, not the key
+    version_id: int | None = None  # BGG @versionid — the edition, when set
 
-    bgg_user_rating: float | None = None
-    bgg_user_owned: bool | None = None
-    bgg_user_prev_owned: bool | None = None
-    bgg_user_for_trade: bool | None = None
-    bgg_user_want_in_trade: bool | None = None
-    bgg_user_want_to_play: bool | None = None
-    bgg_user_want_to_buy: bool | None = None
-    bgg_user_preordered: bool | None = None
-    bgg_user_wishlist: int | None = None  # wishlist priority 1-5
-    bgg_user_play_count: int | None = None
+    rating: float | None = None
+    owned: bool | None = None
+    prev_owned: bool | None = None
+    for_trade: bool | None = None
+    want_in_trade: bool | None = None
+    want_to_play: bool | None = None
+    want_to_buy: bool | None = None
+    preordered: bool | None = None
+    wishlist: int | None = None  # wishlist priority 1-5
+    play_count: int | None = None
 
     comment: str | None = None
 
